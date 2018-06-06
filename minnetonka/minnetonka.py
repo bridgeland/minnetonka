@@ -1,0 +1,1895 @@
+"""minnetonka.py: defining a language for value modeling."""
+
+__author__ = "Dave Bridgeland"
+__copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
+__credits__ = ["Dave Bridgeland"]
+__version__ = "1"
+__maintainer__ = "Dave Bridgeland"
+__email__ = "dave@hangingsteel.com"
+__status__ = "Prototype"
+
+import warnings
+import copy
+import pdb
+import collections
+import itertools
+import logging
+import json
+import time
+import inspect
+import re
+
+from scipy.stats import norm
+
+import numpy as np
+
+"""
+Variables:
+    # create a variable with a constant value
+    DischargeBegins = variable('DischargeBegins', 12)
+
+    # the constant value can be any non-callable python object
+    Revenue = variable('Revenue', np.array([30.1, 15, 20]))
+    Cost = variable('Cost', {'drg001': 1000, 'drg003': 1005})
+
+    # a variable can have an optional docstring
+    Revenue = variable('Revenue',
+        '''The revenue for each business unit, as a 3 element array''',
+        np.array([30.1, 15, 20]))
+
+    # a variable can have a different constant in each treatment
+    DischargeEnds = variable('DischargeEnds',
+        PerTreatment({'As is': 20, 'To be': 18}))
+
+    # a variable can use an expression wrapped in a lambda ...
+    RandomValue = variable('RandomValue', lambda: random.random() + 1)
+
+    # ... or any Python callable
+    RandomValue = variable('RandomValue', random.random)
+
+    # the expression can depend on another variable ...
+    DischargeProgress = variable(
+        'DischargeProgress', lambda db: (current_step - db) / 4,
+        'DischargeBegins')
+
+    # ... or on multiple variables
+    Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+
+    # a variable can use different expressions in different treatments ...
+    DischargeEnds = variable('DischargeEnds',
+        PerTreatment(
+            {'As is': lambda db: db + 10, 'To be': lambda db: db + 5}),
+        'DischargeBegins')
+
+    # ... or an expression in one treatment and a constant in another
+    MortalityImprovement = variable('MortailityImprovement',
+        PerTreatment('
+            {'Value at risk': lambda x: x, 'Value expected': 0}),
+        'MortalityImprovementViaRRC')
+
+    # a varaible can be defined to be the previous value of another
+    OldFoo = previous('OldFoo', 'Foo', 1)
+
+    # an expression can use something in the model itself
+    Step = variable('Step', lambda md: md.TIME, '__model__')
+
+    # a variable can show the values of all its treatments as a dict
+    Step.all()
+
+Models:
+    # create a model with no variables and no treatments
+    m = model()
+
+    # a model can define some treatments
+    m = model(treatments=['As is', 'To be'])
+
+    # treatments can have explanations
+    m = model(treatments=[('As is', 'The current situation'), 'To be'])
+
+    # a model can be initialized with variables
+    m = model([DischargeBegins, DischargeEnds])
+
+    # the variables can be defined when the model is created
+    m = model([
+        variable('Revenue', np.array([30.1, 15, 20])),
+        variable('Cost', np.array([10, 10, 10])),
+        variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    ])
+
+    # a model is a context, supporting natural variable addition
+    with model() as m:
+        variable('Revenue', np.array([30.1, 15, 20]))
+        variable('Cost', np.array([10, 10, 10]))
+        variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+
+    # A variable can be accessed by name from a model
+    m['Earnings']
+
+Treatments:
+    # a treatment can be found by name
+    as_is = m.treatment('As is')
+
+    # a treatment knows about its name and description
+    as_is.name
+    as_is.description
+
+    # all the treatments can be found as a list
+    m.treatments()
+
+    # a model created without an explicit treatment has a null treatment---a
+    # single treatment with an empty string name
+    m = model()
+    m.treatment('')
+
+Variable values:
+    # a variable value can be accessed, by treatment name
+    DischargeBegins = variable('DischargeBegins', 12)
+    m = model([DischargeBegins])
+    DischargeBegins['']
+    #    --> 12
+
+    # a variable has a value in each treatment of the model
+    DischargeEnds = variable('DischargeEnds',
+        PerTreatment{'As is': 20, 'To be': 18}))
+    m = model([DischargeEnds], treatments=['As is', 'To be'])
+    DischargeEnds['As is']
+    #    --> 20
+    DischargeEnds['To be']
+    #    -- 18
+
+    # a variable value can be set, overriding any other value
+    DischargeBegins[''] = 22
+
+    Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    Earnings[''] == 1_000_000
+
+    # a variable value can be set in all treatments at once
+    DischargeBegins = variable('DischargeBegins',
+            PerTreatment({'As is': 10, 'To be': 8, 'Might be': 6}))
+    DischargeBegins['__all__'] = 9
+
+Stocks and accums:
+    # a stock can be defined
+    Year = stock('Year', 1, 2017)
+
+    # the initial value defaults to zero
+    Age = stock('Age', 0)
+
+    # a stock can have a docstring
+    Year = stock('Year', '''the current year''', 1, 2017)
+
+    # the initial value can vary by treatment ...
+    S = stock('S', 1, PerTreatment({'As is': 22, 'To be': 23}))
+
+    # ... as can the increment
+    S = stock('S', PerTreatment({'As is': 1, 'To be': 0.5}))
+
+    # the increment can be a callable ...
+    S = stock('S', lambda: 1, (), 22)
+
+    # .. as can the initial value
+    S = stock('S', lambda: 1, (), lambda: 22, ())
+
+    # the callables can use other variables
+    X = variable('X', 1)
+    Y = variable('Y', 22)
+    S = stock('S', lambda x: x, ('X',), lambda x: x, ('Y',))
+
+    # feedback is supported
+    Savings = stock('Savings', lambda interest: interest, ('Interest',), 1000)
+    Rate = variable('Rate', 0.05)
+    Interest = variable('Interest',
+        lambda savings, rate: savings * rate, 'Savings', 'Rate')
+
+    # arrays can be used in stocks
+    m = model([
+        stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0])),
+        variable('Cost', np.array([10, 10, 10])),
+        variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    ])
+
+    # an accum can be defined, much like a stock
+    AccumRevenue = accum('AccumRevenue', lambda r: r, ('Revenue'), 0)
+
+
+Model behavior:
+    # a model can step
+    m = model([stock('Year', 1, 2017)])
+    m.step()
+    m['Year']['']
+    #   --> 2018
+
+    # a model can step several steps
+    m = model([stock('Year', 1, 2017)])
+    m.step(10)
+    m['Year']['']
+    #   --> 2027
+
+    # a model can be reset
+    m = model([stock('Year', 1, 2017)])
+    m.step(10)
+    m.reset()
+    m['Year']['']
+    #   --> 2017
+
+    # resetting resets any overridden variables
+    DischargeProgress = variable('DischargeProgress', lambda: 0.5)
+    m = model([DischargeProgress])
+    DischargeProgress[''] = 0.75
+    DischargeProgress['']
+    #   --> 0.75
+    m.reset()
+    DischargeProgress['']
+    #   --> 0.5
+
+    # resetting resets any overridden variables
+    DischargeProgress = variable('DischargeProgress', lambda: 0.5)
+    m = model([DischargeProgress])
+    DischargeProgress[''] = 0.75
+    DischargeProgress['']
+    #   --> 0.75
+    m.reset(reset_external_vars=False)
+    DischargeProgress['']
+    #   --> 0.75
+
+    # setting a variable's values can create a need for explicit recalculation
+    Foo = variable('Foo', 9)
+    Bar = variable('Bar', lambda f: f, 'Foo')
+    m = model([Foo, Bar])
+    Foo[''] = 2.4
+    Bar['']
+    #   --> 9
+    m.recalculate()
+    Bar['']
+    #   --> 2.4
+
+"""
+
+
+class Model:
+    """A collection of variables and models, that can be simulated."""
+
+    # is a model being defined in a context manager? which one?
+    _model_context = None
+
+    def __init__(self, treatments, timestep=1, start_time=0, end_time=None):
+        """Initialize the model, with treatments and optional timestep."""
+        self._treatments = {t.name: t for t in treatments}
+        # prior to m.initialize(), this is a regular dict. It is
+        # converted to an OrderedDict on initialization, ordered with
+        # dependent variables prior to independent variables
+        self._variables = ModelVariables()
+        self._pseudo_variable = ModelPseudoVariable(self)
+        self._timestep = timestep
+        self._start_time = start_time 
+        self._end_time = end_time
+
+    def __getitem__(self, variable_name):
+        """Return the named variable, supporting [] notation."""
+        return self._variables.variable(variable_name)
+
+    def __enter__(self):
+        """Enter the model context; accumulate variables to add to model."""
+        self._variables_not_yet_added = []
+        Model._model_context = self
+        self._uninitialize()
+        return self
+
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        """Exit the model context; add variables to model."""
+        logging.info('enter')
+        if exception_type is None:
+            self._add_variables_and_initialize(*self._variables_not_yet_added)
+        self._variables_not_yet_added = []
+        Model._model_context = None
+        logging.info('exit')
+
+    def treatments(self):
+        """Return an iterators of the treatments.
+
+        rtype: collections.Iterable[Treatment]
+        """
+        return self._treatments.values()
+
+    def treatment(self, treatment_name):
+        """Return the treatment with treatment_name, if it exists.
+
+        :param str treatment_name: name of the treatment to be returned
+        :return: the treatment named
+        :rtype: Treatment
+        :raises MinnetonkaError: if the model has no treatment of that name
+        """
+        try:
+            return self._treatments[treatment_name]
+        except KeyError:
+            raise MinnetonkaError('Model has no treatment {}'.format(
+                treatment_name))
+
+    def variable(self, variable_name):
+        """Return the variable with variable_name.
+
+        :param str variable_name: name of the variable
+        :return: the named variable
+        :rtype: Variable
+        :raises MinnetonkaError: if the model has no variable of that name
+        """
+        return self._variables.variable(variable_name)
+
+    def add_variables(self, *variables):
+        """Add the variables and everything they depend on.
+        """
+        logging.info('enter on variables {}'.format(variables))
+        self._variables.add_variables(self, *variables)
+
+    @classmethod
+    def add_variable_to_current_context(cls, var_object):
+        """If a context is currently open, add this variable object to it.
+
+        :param Variable var_object: the variable object being added to the context
+        """
+        if cls._model_context is not None:
+            cls._model_context._variables_not_yet_added.append(var_object)
+
+    def _add_variables_and_initialize(self, *variables):
+        """Add variables and initialize. The model may already be inited."""
+        logging.info('enter on variables {}'.format(variables))
+        self.add_variables(*variables)
+        self.initialize()
+
+    def _uninitialize(self):
+        """Remove the effects of initializtion."""
+        self._variables.uninitialize()
+        self._initialize_time()
+
+    def _initialize_time(self):
+        """Set time variables to the beginning."""
+        self.TIME = self._start_time
+        self.STEP = 0
+
+
+
+    def initialize(self):
+        """Initialize simulation."""
+        logging.info('enter')
+        self._initialize_time()
+        self._variables.initialize(self)
+
+    def reset(self, reset_external_vars=True):
+        """Reset simulation."""
+        self._initialize_time()
+        self._variables.reset(reset_external_vars)
+
+    def step(self, n=1, to_end=False):
+        """Advance the simulation n steps."""
+        if self._end_time is None or self.TIME < self._end_time:
+            if to_end:
+                n = int((self._end_time - self.TIME) / self._timestep)
+            for i in range(n):
+                self._step_one()
+        else:
+            raise MinnetonkaError(
+                'Attempted to simulation beyond end_time: {}'.format(
+                    self._end_time))
+
+    def _step_one(self):
+        """Advance the simulation a single step."""
+        self._increment_time()
+        self._variables.step(self._timestep)
+
+    def _increment_time(self):
+        """Advance time variables one time step."""
+        self.TIME = self.TIME + self._timestep
+        self.STEP = self.STEP + 1
+
+    def previous_step(self):
+        """Return the prior value of STEP."""
+        return self.STEP - 1
+
+    def recalculate(self):
+        """Recalculate all variables, without changing the step."""
+        self._variables.recalculate()
+
+    def variable_instance(self, variable_name, treatment_name):
+        """Find or create right instance for this variable and treatment."""
+        # A more pythonic approach than checking for this known string?
+        if variable_name == '__model__':
+            return self._pseudo_variable
+        else:
+            return self.variable(variable_name).by_treatment(treatment_name)
+
+
+def model(variables=[], treatments=[''], initialize=True, timestep=1, 
+          start_time=0, end_time=None):
+    """Create and initialize a model.
+
+    Sets a context, so variables can be defined for the newly created model,
+    like this:
+
+    with model() as m:
+        Foo = variable('Foo', 12)
+        Bar = stock('Bar', Foo)
+
+
+
+    Valid treatment specs: 'As is', ('As is', 'Current situation')
+    """
+    def _create_treatment_from_spec(spec):
+        """Create treatment.
+
+        Spec is either a name or a tuple of name and description.
+        """
+        try:
+            name, description = spec
+            return Treatment(name, description)
+        except ValueError:
+            return Treatment(spec)
+
+    if end_time is not None and end_time < start_time:
+        raise MinnetonkaError('End time {} is before start time {}'.format(
+            end_time, start_time))
+    m = Model(
+        [_create_treatment_from_spec(spec) for spec in treatments], timestep,
+        start_time, end_time)
+    m.add_variables(*variables)
+    if initialize and variables:
+        m.initialize()
+    return m
+
+
+class ModelVariables:
+    """Manage the ordered list of variables of a model."""
+
+    def __init__(self):
+        """Initialize the model variables."""
+        self._variables = {}
+        self._is_ordered = False
+
+    def add_variables(self, model, *variables):
+        """Add the list of variables."""
+        logging.info('enter with variables {}'.format(variables))
+        assert not self._is_ordered, (
+            'Cannot add variables {} after the variables are ordered').format(
+                variables)
+        for var in variables:
+            self._add_single_variable(model, var)
+
+    def _add_single_variable(self, model, var):
+        """Add a variable to the model variables."""
+        logging.info('enter with variable {}'.format(var))
+        if var.name() in self._variables:
+            warnings.warn(
+                'Variable {} redefined'.format(var.name()), MinnetonkaWarning)
+        self._variables[var.name()] = var
+        var.note_model(model)
+
+    def variable(self, variable_name):
+        """Return the variable with variable_name, if it exists."""
+        try:
+            return self._variables[variable_name]
+        except AttributeError:
+            try:
+                return self._variables_ordered_for_init[variable_name]
+            except KeyError:
+                raise MinnetonkaError(
+                    'Unknown variable {}'.format(variable_name))
+        except KeyError:
+            raise MinnetonkaError('Unknown variable {}'.format(variable_name))
+
+    def variable_names(self):
+        """Return the names of all the variables, as a list of strings."""
+        return self._variables.keys()
+
+    def initialize(self, model):
+        """Initialize the variables of the simulation."""
+        logging.info('enter')
+        self._check_for_cycles(model) 
+        self._create_all_variable_instances()
+        self._wire_variable_instances(model)
+        self._sort_variables()
+        self._set_initial_amounts()
+        logging.info('exit')
+        
+    def _check_for_cycles(self, model):
+        """Check for any cycle among variables, raising error if necessary."""
+        logging.info('enter')
+        variables_seen = []
+        for vname in self.variable_names():
+            variable = self.variable(vname)
+            if variable not in variables_seen:
+                variable.check_for_cycle(variables_seen)
+
+    def _create_all_variable_instances(self):
+        """Create all variable instances."""
+        logging.info('enter')
+        for variable_name in self.variable_names():
+            self.variable(variable_name).create_variable_instances()
+
+    def _wire_variable_instances(self, model):
+        """Provide each of the var instances with its antecedent instances."""
+        logging.info('enter')
+        for variable_name in self.variable_names():
+            variable = self.variable(variable_name)
+            variable.wire_instances()
+
+    def _sort_variables(self):
+        """Sort the variables from dependent to independent, twice.
+
+        Create two sorted lists, one for init and the other for step.
+        They are identical, except for the effect of accums and stock and
+        previous.
+        """
+        logging.info('enter')
+        self._variables_ordered_for_init = self._sort_variables_for(
+            for_init=True)
+        self._variables_ordered_for_step = self._sort_variables_for(
+            for_init=False)
+        self._is_ordered = True
+
+    def _sort_variables_for(self, for_init=False):
+        """Sort the variables from dependent to independent."""
+        ordered_variables = collections.OrderedDict()
+
+        def _maybe_insert_variable_and_antes(variable_name, already_seen):
+            """Insert the variable and its antecedents if they do exist."""
+            if variable_name in already_seen:
+                pass
+            elif (variable_name not in ordered_variables):
+                var = self.variable(variable_name)
+                for ante in var.depends_on(
+                        for_init=for_init, for_sort=True, ignore_pseudo=True):
+                    _maybe_insert_variable_and_antes(
+                        ante, [variable_name] + already_seen)
+                ordered_variables[variable_name] = var
+
+        for variable_name in self.variable_names():
+            _maybe_insert_variable_and_antes(variable_name, list())
+        return ordered_variables
+
+    def _set_initial_amounts(self):
+        """Set initial amounts for all the variables."""
+        logging.info('enter')
+        for var in self._variables_ordered_for_init.values():
+            var.set_all_initial_amounts()
+        logging.info('exit')
+
+    def uninitialize(self):
+        """Undo the initialization, typically to add more variables."""
+        self._is_ordered = False
+        self._delete_existing_variable_instances()
+
+    def _delete_existing_variable_instances(self):
+        """Delete any variable instances that were previouslsy created."""
+        for variable in self._variables.values():
+            variable.delete_all_variable_instances()
+
+    def reset(self, reset_external_vars):
+        """Reset variables.
+
+        If reset_external_vars is false, don't reset the external variables,
+        those whose value has been set outside the model itself.
+        """
+        for var in self._variables_ordered_for_init.values():
+            var.reset_all(reset_external_vars)
+
+    def step(self, timestep):
+        """Advance all the variables one step in the simulation."""
+        for var in self._variables_ordered_for_step.values():
+            var.calculate_all_increments(timestep)
+        for var in self._variables_ordered_for_step.values():
+            var.step_all()
+
+    def recalculate(self):
+        """Recalculate all the variables without advancing step."""
+        for var in self._variables_ordered_for_step.values():
+            var.recalculate_all()
+
+
+class Treatment:
+    """A treatment applied to a model."""
+
+    def __init__(self, name, description=None):
+        """Initialize this treatment."""
+        self.name = name
+        self.description = description
+        self._variables = {}
+
+    def __repr__(self):
+        """Print text representation of this treatment."""
+        if self.description is None:
+            return "Treatment('{}')".format(self.name)
+        else:
+            return "Treatment('{}', '{}')".format(self.name, self.description)
+
+    def addVariable(self, newvar):
+        """Add the variable to this list of variables."""
+        self._variables[newvar.name()] = newvar
+
+    def remove_variable(self, var_to_remove):
+        """Remove this variable."""
+        del self._variables[var_to_remove.name()]
+
+    def __getitem__(self, key):
+        """Return the variable with name of key."""
+        try:
+            return self._variables[key]
+        except KeyError as ke:
+            raise MinnetonkaError('{} has no variable {}'.format(self, key))
+
+
+def treatment(spec):
+    """Create a new treatment, with the specification."""
+    return Treatment(spec)
+
+
+def treatments(*treatment_names):
+    """Create a bunch of treatments, and return them as a tuple."""
+    return tuple(
+        Treatment(treatment_name) for treatment_name in treatment_names)
+
+#
+# Variable classes
+#
+
+
+class MetaVariableClass(type):
+    """Implement the [] syntax for variable."""
+
+    def __getitem__(cls, treatment_name):
+        """Get [] for this variable."""
+        return cls.by_treatment(treatment_name).amount()
+
+    def __setitem__(cls, treatment_name, amount):
+        """Set [] for this variable."""
+        if treatment_name == '__all__':
+            return cls.set_amount_all(amount)
+        else:
+            return cls.by_treatment(treatment_name).set_amount(amount)
+
+
+class Variable(object, metaclass=MetaVariableClass):
+    """Any of the variety of variable types."""
+
+    def __init__(self, treatment=None):
+        """Initialize this variable."""
+        self._extra_model_amount = None
+        self._clear_history()
+        if treatment is not None:
+            self._initialize_treatment(treatment)
+
+    def _initialize_treatment(self, treatment):
+        """Do all initialization regarding the treatment."""
+        self._treatment = treatment
+        treatment.addVariable(self)
+        if hasattr(type(self), '_by_treatment'):
+            type(self)._by_treatment[treatment.name] = self
+        else:
+            type(self)._by_treatment = {treatment.name: self}
+
+    @classmethod
+    def create_variable_instances(cls):
+        """Create variable instances for this variable."""
+        if cls.is_unitary():
+            v = cls()
+            for treatment in cls._model.treatments():
+                v._initialize_treatment(treatment)
+        else:
+            for treatment in cls._model.treatments():
+                cls(treatment)
+
+    @classmethod
+    def is_unitary(cls, currently_checking=[]):
+        """Returns whether variable is unitary: same across all treatments.
+
+        Some variables always take the same value across all treatments.
+        Is this variable one of those unitary variables?
+
+        :param currently_checking: list of variables being checked recursively 
+        :type currently_checking: list of variable classes
+        :return: whether the variable is unitary
+        :rtype: boolean
+        """
+        try: 
+            return cls._is_unitary
+        except AttributeError:
+            cls._is_unitary = cls._determine_whether_unitary(currently_checking)
+            return cls._is_unitary
+
+    @classmethod
+    def _determine_whether_unitary(cls, currently_checking):
+        """Mark whether this variable is unitary."""
+        return (cls._has_unitary_definition() and 
+                cls._has_unitary_antecedents(currently_checking))
+
+    @classmethod
+    def _has_unitary_antecedents(cls, currently_checking):
+        """Returns whether all the antecedents are unitary."""
+        currently_checking = currently_checking + [cls]
+        return all([d.is_unitary(currently_checking) 
+                    for d in cls._all_dependencies(ignore_pseudo=True) or []
+                    if d not in currently_checking])
+
+    @classmethod
+    def note_model(cls, model):
+        """Keep track of the model, for future reference."""
+        cls._model = model
+
+    def amount(self):
+        """Return the current value of amount."""
+        if self._extra_model_amount is None:
+            return self._amount
+        else:
+            return self._extra_model_amount
+
+    @classmethod
+    def name(cls):
+        """Return the name of the variable."""
+        return cls.__name__
+
+    @classmethod
+    def by_treatment(cls, treatment_name):
+        """Return the variable instance associated with this treatment."""
+        try:
+            return cls._by_treatment[treatment_name]
+        except (KeyError, AttributeError):
+            raise MinnetonkaError(
+                'Variable {} not initialized with treatment {}'.format(
+                    cls.name(), treatment_name))
+
+    @classmethod
+    def all_instances(cls):
+        """Return all the instances of this variable."""
+        if cls.is_unitary():
+            return itertools.islice(cls._by_treatment.values(), 0, 1) 
+        else:
+            return cls._by_treatment.values()
+
+    def treatment(self):
+        """Return the treatment of the variable instance."""
+        return self._treatment
+
+    @classmethod
+    def set_all_initial_amounts(cls):
+        """Set the initial amounts of all the variable instances."""
+        if cls.is_unitary():
+            treatment_name, var = list(cls._by_treatment.items())[0]
+            var._set_initial_amount(treatment_name)
+        else:
+            for treatment_name, var in cls._by_treatment.items():
+                var._set_initial_amount(treatment_name)
+
+    @classmethod
+    def reset_all(cls, reset_external_vars):
+        """Reset this variable to its initial amount.
+
+        Reset all variable instances of this variable class to their initial
+        amounts. But maybe don't reset the variables set externally, depending
+        on the value of reset_external_vars
+        """
+        for var in cls.all_instances():
+            var._clear_history()
+            var._reset(reset_external_vars)
+
+    def _clear_history(self):
+        """Clear the stepwise history of amounts from the variable."""
+        self._old_amounts = []
+
+    @classmethod
+    def step_all(cls):
+        """Advance all the variable instances one step."""
+        for var in cls.all_instances():
+            var._record_current_amount()
+            var._step()
+
+    def _record_current_amount(self):
+        """Record the current amount of the variable, prior to a step."""
+        self._old_amounts.append(self._amount)
+
+    @classmethod
+    def recalculate_all(cls):
+        """Recalculate all the variable instances, without changing step."""
+        for var in cls._by_treatment.values():
+            var._recalculate()
+
+    @classmethod
+    def calculate_all_increments(cls, ignore):
+        """Ignore this in general. Only meaningful for stocks."""
+        pass
+
+    @classmethod
+    def set_amount_all(cls, amount):
+        """Set the amount for all treatments."""
+        for var in cls.all_instances():
+            var.set_amount(amount)
+
+    @classmethod
+    def delete_all_variable_instances(cls):
+        """Delete all variables instances."""
+        for v in cls.all_instances():
+            v._treatment.remove_variable(v)
+        cls._by_treatment = {}
+
+    @classmethod
+    def history(cls, treatment_name, step):
+        """Return the amount at a particular timestep."""
+        return cls.by_treatment(treatment_name)._history(step)
+
+    def _history(self, step):
+        """Return the amount at timestep step."""
+        if step == len(self._old_amounts):
+            return self.amount()
+        elif step == -1:
+            return None
+        try:
+            return self._old_amounts[step]
+        except IndexError:
+            raise MinnetonkaError("{}['{}'] has no value for step {}".format(
+                self.name(), self.treatment().name, step))
+
+    def previous_amount(self):
+        """Return the amount in the previous step."""
+        previous = self._model.previous_step()
+        try:
+            return self._history(previous)
+        except:
+            return None
+
+    @classmethod
+    def wire_instances(cls):
+        """For each instance of this variable, set the vars it depends on."""
+        for treatment in cls._model.treatments():
+            cls.by_treatment(treatment.name).wire_instance(
+                cls._model, treatment.name)
+
+    @classmethod
+    def check_for_cycle(cls, checked_already, dependents=None):
+        """Check for cycles involving this variable."""
+        if cls in checked_already:
+            return
+        elif dependents is None:
+            dependents = []
+        elif cls in dependents:
+            varnames = [d.name() for d in dependents] + [cls.name()]
+            raise MinnetonkaError('Circularity among variables: {}'.format(
+                ' <- '.join(varnames)))
+
+        dependents = dependents + [cls]
+        cls._check_for_cycle_in_depends_on(checked_already, dependents)
+        checked_already.append(cls)
+
+    @classmethod
+    def all(cls):
+        """Return a dict of all amounts, one for each treatment."""
+        return {tmt: inst.amount() for tmt, inst in cls._by_treatment.items()}
+
+    @classmethod
+    def show(cls):
+        """Show everything important about the variable."""
+        cls._show_name()
+        cls._show_doc()
+        cls._show_amounts()
+        cls._show_definition_and_dependencies()
+        return cls._all_dependencies()
+
+    @classmethod
+    def _show_name(cls):
+        """Print the variable type and name."""
+        bold = '\033[1m'; endbold = '\033[0m'
+        print('{}{}: {}{}\n'.format(bold, cls._kind(), cls.name(), endbold))
+
+    @classmethod
+    def _show_doc(cls):
+        """Show the documentation of the variable, if any."""
+        try:
+            if cls.__doc__:
+                print(cls.__doc__)
+                print()
+        except:
+            pass
+
+    @classmethod
+    def _show_amounts(cls):
+        """Show the amounts for all the instances of the variable."""
+        print('Amounts: {}\n'.format(cls.all()))
+
+
+class SimpleVariable(Variable):
+    """A variable that is not an incrementer."""
+
+    def _reset(self, reset_external_vars):
+        """Reset to beginning of simulation."""
+        if reset_external_vars or self._extra_model_amount is None:
+            self._set_initial_amount()
+
+    def _step(self):
+        """Advance this simple variable one time step."""
+        self._amount = self._calculate_amount()
+
+    def _recalculate(self):
+        """Recalculate this simple variagble."""
+        self._amount = self._calculate_amount()
+
+    def _set_initial_amount(self, treatment=None):
+        """Set the step 0 amount for this simple variable."""
+        logging.info('setting initial amount for simple variable {}'.format(
+            self))
+        self._amount = self._calculate_amount()
+        self._extra_model_amount = None
+
+    def set_amount(self, amount):
+        """Set an amount for the variable, outside the logic of the model."""
+        self._extra_model_amount = amount
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return variable names this one depends on.
+
+        :param for_init: return only the variables used in initialization
+        :param for_sort: return only the variables relevant for sorting vars
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this variable depends on
+        """
+        # ignore for_init and for_sort since behavior is the same for plain
+        # variables
+        return cls._calculator.depends_on(ignore_pseudo)
+
+
+class PlainVariable(SimpleVariable):
+    """A variable that is calculated from the current value of others."""
+
+    def _calculate_amount(self):
+        """Calculate the current amount of this plain variable."""
+        try:
+            calculator = self._calculator
+        except AttributeError:
+            raise MinnetonkaError(
+                'Variable {} needs to define how to calculate'.format(
+                    type(self).name()))
+        try:
+            treatment = self._treatment
+        except AttributeError:
+            raise MinnetonkaError(
+                'Variable {} needs to define its treatment'.format(
+                    type(self).name()))
+        try:
+            depends_on = self._depends_on_instances
+        except AttributeError:
+            raise MinnetonkaError(
+                'Variable {} needs to define what it depends on'.format(
+                    type(self).name()))
+        try:
+            return calculator.calculate(
+                treatment.name, [v.amount() for v in depends_on])
+        except KeyError:
+            raise MinnetonkaError('Treatment {} not defined for {}'.format(
+                self._treatment.name, type(self).name()))
+        except:
+            print('Error in calculating amount of {}'.format(self))
+            raise
+
+    def wire_instance(self, model, treatment_name):
+        """Set the variables this instance depends on."""
+        self._depends_on_instances = [
+            model.variable_instance(v, treatment_name)
+            for v in self.depends_on()]
+
+    @classmethod
+    def _check_for_cycle_in_depends_on(cls, checked_already, dependents):
+        """Check for cycles among the depends on for this plain variable."""
+        for dname in cls.depends_on(ignore_pseudo=True):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    @classmethod
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Variable'
+
+    @classmethod
+    def _show_definition_and_dependencies(cls):
+        """Print the definition and the variables it depends on."""
+        print('Definition: {}'.format(cls._calculator.serialize_definition()))
+        print('Depends on: {}'.format(cls.depends_on()))
+
+    @classmethod
+    def _all_dependencies(cls, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        m = cls._model
+        return [m[v] for v in cls.depends_on(ignore_pseudo=ignore_pseudo)]
+
+    @classmethod
+    def _has_unitary_definition(cls):
+        """Returns whether the variable has a unitary definition."""
+        return cls._calculator.has_unitary_definition()
+
+
+class Calculator:
+    """Calculate amounts based on either lambdas or treatments or constants."""
+
+    def __init__(self, definition, depends_on_var_names):
+        """Initialize calculator."""
+        self._definition = definition
+        self._depends_on_var_names = depends_on_var_names
+
+    def calculate(self, treatment_name, depends_on_amounts):
+        """Calculate amount of thing."""
+        # could optimize by doing this all only once
+        try:
+            defn = self._definition.by_treatment(treatment_name)
+        except (KeyError, TypeError, AttributeError):
+            defn = self._definition
+
+        # must use callable() because foo() raises a TypeError exception
+        # under two circumstances: both if foo is called with the wrong
+        # number of arguments and if foo is not a callable
+        if callable(defn):
+            return defn(*depends_on_amounts)
+        else:
+            return defn
+
+    def depends_on(self, ignore_pseudo=False):
+        """Return variables this calculator depends on.
+
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this calculator depends on
+        """
+        return [v for v in self._depends_on_var_names 
+                if v != '__model__' or ignore_pseudo is False ]
+
+    def serialize_definition(self):
+        """Return the serialization of the the definition of this calculator"""
+        try:
+            return self._definition.serialize_definition()
+        except:
+            try:
+                return self.source()
+            except:
+                return self._definition 
+
+    def source(self):
+        """Return source of how this is calculated."""
+        src = inspect.getsource(self._definition)
+        src = src.strip()
+        return self._remove_trailing_comma(src)
+
+    def _remove_trailing_comma(self, src):
+        """Remove trailing comma, if present"""
+        return re.sub(',\s*\Z', '', src)
+        # src = re.sub("\A'.*',\s*lambda", 'lambda', src, count=1)
+        # src = re.sub('\A".*",\s*lambda', 'lambda', src, count=1)
+        return src 
+
+    def has_unitary_definition(self):
+        """Is the definition of this calculator unitary?"""
+        try:
+            self._definition.treatments_and_values()
+            return False
+        except AttributeError:
+            return True 
+
+
+class ModelPseudoVariable():
+    """Special variable for capturing the model."""
+
+    def __init__(self, m):
+        """Initialize pseudo-variable."""
+        self._model = m
+
+    def amount(self):
+        """Return current amount of the pseudo-variable."""
+        return self._model
+
+    @classmethod
+    def check_for_cycle(cls, checked_already, dependents=None):
+        """Check for cycles involving this variable."""
+        pass
+
+
+#
+# Defining variables
+#
+
+
+def variable(variable_name, *args):
+    """Create a new variable.
+
+    Usage 1: Foo = variable('Foo', lambda x, y: ..., 'Bar', 'Baz')
+    Usage 2: Foo = variable('Foo', PerTreatment({'As is': 12, 'To be': 4}))
+    Usage 3: Foo = variable('Foo', 12)
+    Usage 4: Foo = variable('Foo', '''a foo variable''', 12)
+    Usage 5: Foo = variable('Foo',
+        PerTreatment({'As is': lambda x: x + 1, 'To be': lambda x: x - 1}),
+        'Bar')
+    """
+    logging.info('Creating variable %s', variable_name)
+    return _parse_and_create(variable_name, PlainVariable, 'Variable', args)
+
+
+def _parse_and_create(name, variable_class, create_what, args):
+    """Parse args and create variable."""
+    if len(args) == 0:
+        raise MinnetonkaError('{} {} has no definition'.format(
+            create_what, name))
+    if len(args) == 1:
+        return _create_variable(name, variable_class, args[0])
+    elif isinstance(args[0], str):
+        docstring, definition, *depends_on_variables = args
+        return _create_variable(
+            name, variable_class, definition, docstring=docstring,
+            depends_on_variables=depends_on_variables)
+    else:
+        definition, *depends_on_variables = args
+        return _create_variable(name, variable_class, definition,
+                                depends_on_variables=depends_on_variables)
+
+
+def _create_variable(
+        variable_name, variable_class, definition, docstring='',
+        depends_on_variables=()):
+    """Create a new variable of this name and with this definition."""
+    calc = create_calculator(definition, depends_on_variables)
+    newvar = type(variable_name, (variable_class,),
+                  {'__doc__': docstring, '_calculator': calc})
+    Model.add_variable_to_current_context(newvar)
+    return newvar
+
+
+def create_calculator(definition, variables):
+    """Create a new calculator from this definition and variables.
+
+    definition = either a constant or a callable or constants that
+                 vary by treatment or callables that vary by treatment
+    variables = list of strings, each one a variable name
+    """
+    if variables is None:
+        variables = []
+    assert is_list_of_strings(variables), \
+        ('Attempted to create calculator with something other than a' +
+         ' list of strings: {}'.format(variables))
+    return Calculator(definition, variables)
+
+
+def is_list_of_strings(arg):
+    """Return whethr arg is list of tuple of strings."""
+    return is_sequence(arg) and is_all_strings(arg)
+
+
+def is_sequence(arg):
+    """Return whether arg is list or tuple or some other sequence."""
+    return (not hasattr(arg, "strip") and
+            hasattr(arg, "__getitem__") or
+            hasattr(arg, "__iter__"))
+
+
+def is_all_strings(arg):
+    """Return whether arg is iterable, are all the elements strings."""
+    # unpythonic
+    return all(isinstance(elt, str) for elt in arg)
+
+
+class PerTreatment:
+    """Indicate different values in each treatment.
+
+    Initialized with dict of treatments and values, e.g.
+    PerTreatment({'As is': 12, 'To be': 9})
+    """
+
+    def __init__(self, treatments_and_values):
+        """Initialize PerTreatment."""
+        self._treatments_and_values = treatments_and_values
+
+    def treatments_and_values(self):
+        """Return all treatments and values, as a dict."""
+        return self._treatments_and_values
+
+    def by_treatment(self, treatment_name):
+        """Return definition associate with treatment name."""
+        try:
+            return self._treatments_and_values[treatment_name]
+        except KeyError:
+            raise MinnetonkaError("Treatment '{}' not defined".format(
+                treatment_name))
+
+    def serialize_definition(self):
+        """Return the serialization of the definition of this calculator."""
+        return 'PerTreatment({{{}}})'.format(', '.join(map(
+            lambda k, v: self._serialize_treatment(k, v), 
+            self._treatments_and_values.keys(), 
+            self._treatments_and_values.values())))
+
+    def _serialize_treatment(self, k, v):
+        """Serialize the key snd value so it can be an item in a larger dict."""
+        try:
+            return '"{}": {}'.format(k, v.serialize_definition())
+        except:
+            return '"{}": {}'.format(k, v)
+
+
+#
+# Defining constants
+#
+
+
+def constant(constant_name, *args):
+    """Create a new constant. Same usages as variable()."""
+    logging.info('Creating constant %s', constant_name)
+    return _parse_and_create(constant_name, Constant, 'Constant', args)
+
+
+class Constant(PlainVariable):
+    """A variable that does not change on step."""
+
+    def _step(self):
+        pass
+
+    def _recalculate(self):
+        pass
+
+    def _history(self, _):
+        """No history for a constant. Everything is the current value."""
+        return self.amount()
+
+    def _clear_history(self):
+        """No history for a constant. Everything is the current value."""
+        pass
+
+    def _record_current_amount(self):
+        """No history for a constant. Everything is the current value."""
+        pass
+
+    def previous_amount(self):
+        """No history for a constant. Everything is the current value."""
+        return self.amount()
+
+    @classmethod
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Constant'
+
+
+#
+# Stock classes
+#
+
+class Incrementer(Variable):
+    """A variable with internal state, that increments every step."""
+
+    def _reset(self, external_vars):
+        """Reset to beginning of simulation."""
+        self._set_initial_amount(self._treatment.name)
+
+    def _set_initial_amount(self, treatment_name):
+        """Set the initial amount of the incrementer."""
+        msg = 'setting initial amount for incrementer {}, treatment {}'.format(
+                self, treatment_name)
+        logging.info(msg)
+        try:
+            self._amount = copy.deepcopy(self._initial.calculate(
+                treatment_name,
+                [v.amount() for v in self._initial_depends_on_instances]))
+        except:
+            print('Error while {}'.format(msg))
+            raise
+
+    def set_amount(self, new_amount):
+        """Set a new amount, outside the logic of the model."""
+        self._amount = new_amount
+
+    def _recalculate(self):
+        """Recalculate without advancing a step."""
+        # For incrementer recalcs only happen on increment time
+        pass
+
+    def wire_instance(self, model, treatment_name):
+        """Set the variables this instance depends on."""
+        self._initial_depends_on_instances = [
+            model.variable_instance(v, treatment_name)
+            for v in self.depends_on(for_init=True)]
+        self._increment_depends_on_instances = [
+            model.variable_instance(v, treatment_name)
+            for v in self._incremental.depends_on()]
+
+    @classmethod
+    def _show_definition_and_dependencies(cls):
+        """Print the definitions and variables it depends on."""
+        print('Initial definition: {}'.format(
+            cls._initial.serialize_definition()))
+        print('Initial depends on: {}\n'.format(cls._initial.depends_on()))
+        print('Incremental definition: {}'.format(
+            cls._incremental.serialize_definition()))
+        print('Incremental depends on: {}'.format(
+            cls._incremental.depends_on()))
+
+    @classmethod
+    def _all_dependencies(cls, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        all_depends = list(dict.fromkeys(
+            list(cls._initial.depends_on(ignore_pseudo=ignore_pseudo)) + 
+            list(cls._incremental.depends_on(ignore_pseudo=ignore_pseudo))))
+        return [cls._model[v] for v in all_depends]
+
+    @classmethod
+    def _has_unitary_definition(cls):
+        """Returns whether the variable has a unitary definition."""
+        return (cls._initial.has_unitary_definition() and
+                cls._incremental.has_unitary_definition())
+
+
+class Stock(Incrementer):
+    """A system dynamics stock."""
+
+    @classmethod
+    def calculate_all_increments(cls, timestep):
+        """Compute the increment for all stock variable instances."""
+        for var in cls.all_instances():
+            var._calculate_increment(timestep)
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return the variables this stock depends on.
+
+        :param for_init: return only the variables used in initialization
+        :param for_sort: return only the variables relevant for sorting vars
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this variable depends on
+        """
+        if for_init:
+            return cls._initial.depends_on(ignore_pseudo)
+        elif for_sort:
+            return []
+        else:
+            return cls._incremental.depends_on(ignore_pseudo)
+
+    def _calculate_increment(self, timestep):
+        """Compute the increment."""
+        full_step_incr = self._incremental.calculate(
+            self._treatment.name,
+            [v.amount() for v in self._increment_depends_on_instances])
+        self._increment_amount = full_step_incr * timestep
+
+    def _step(self):
+        """Advance the stock by one step."""
+        self._amount = self._amount + self._increment_amount
+
+    @classmethod
+    def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
+        """Check for cycles involving this stock."""
+        # Note stocks are fine with cycles involving the incr calculator"""
+        for dname in cls.depends_on(for_init=True):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    @classmethod
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Stock'
+
+
+#
+# Defining stocks
+#
+
+
+def stock(stock_name, *args):
+    """Create a new stock.
+
+    Usage 1: Bathtub = stock('Bathtub', 5)
+    Usage 2: Bathtub = stock('Bathtub', 5, 1)
+    Usage 3: Bathtub = stock('Bathtub', {'As is': 5, 'To be': 3}, 0)
+    Usage 4: Bathtub = stock(
+                'Bathtub',
+                lambda in, out: in - out, (Inflow, Outflow),
+                0)
+    Usage 5: Bathtub = stock(
+                'Bathtub',
+                lambda in, out: in - out, (Inflow, Outflow),
+                lambda init: init, (Initial)
+    In all usages, an optional docstring can be supplied.
+    """
+    logging.info('Creating stock %s', stock_name)
+    incr_def, incr_vars, init_def, init_vars, docstring = _parse_stock(
+        stock_name, args)
+    return _create_stock(
+        stock_name, docstring, incr_def, incr_vars, init_def, init_vars)
+
+
+def _parse_stock(name, args):
+    """Parse the arguments in stock_args, and return them properly sorted."""
+    assert len(args) > 0, '{} has no definition'.format(name)
+    if isinstance(args[0], str):
+        docstring, regular_def, *args = args
+    else:
+        regular_def, *args = args
+        docstring = ''
+
+    if not args:
+        return regular_def, None, 0, None, docstring
+    elif len(args) == 1:
+        return regular_def, None, args[0], None, docstring
+    elif len(args) == 2:
+        return regular_def, args[0], args[1], None, docstring
+    else:
+        return regular_def, args[0], args[1], args[2], docstring
+
+
+def _create_stock(stock_name, docstring,
+                  increment_definition, increment_variables,
+                  initial_definition, initial_variables):
+    """Create a new stock."""
+    initial = create_calculator(initial_definition, initial_variables)
+    incr = create_calculator(increment_definition, increment_variables)
+    newstock = type(stock_name, (Stock,),
+                    {'__doc__': docstring, '_initial': initial,
+                     '_incremental': incr})
+    Model.add_variable_to_current_context(newstock)
+    return newstock
+
+
+#
+# Accum class
+#
+
+
+class Accum(Incrementer):
+    """Like ACCUM in SimLang."""
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return the variables this accum depends on.
+
+        :param for_init: return only the variables used in initialization
+        :param for_sort: return only the variables relevant for sorting vars
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this variable depends on
+        """
+        if for_init:
+            return cls._initial.depends_on(ignore_pseudo)
+        else:
+            return cls._incremental.depends_on(ignore_pseudo)
+
+    def _step(self):
+        """Advance the accum by one step."""
+        increment = self._incremental.calculate(
+            self._treatment.name,
+            [v.amount() for v in self._increment_depends_on_instances]
+            )
+        self._amount += increment
+
+    @classmethod
+    def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
+        """Check for cycles involving this accum."""
+        for dname in cls.depends_on(for_init=True):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+        for dname in cls.depends_on(for_init=False):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    @classmethod
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Accum'
+
+
+def accum(accum_name, *args):
+    """Create a new accum."""
+    logging.info('Creating accume %s', accum_name)
+    incr_def, incr_vars, init_def, init_vars, docstring = _parse_stock(
+        accum_name, args)
+    return _create_accum(
+        accum_name, docstring, incr_def, incr_vars, init_def, init_vars)
+
+
+def _create_accum(accum_name, docstring,
+                  increment_definition=0, increment_variables=None,
+                  initial_definition=0, initial_variables=None):
+    """Create a new accum."""
+    initial = create_calculator(initial_definition, initial_variables)
+    increment = create_calculator(increment_definition, increment_variables)
+    new_accum = type(accum_name, (Accum,),
+                     {'__doc__': docstring, '_initial': initial,
+                      '_incremental': increment})
+    Model.add_variable_to_current_context(new_accum)
+    return new_accum
+
+
+#
+# previous: a variable that accesses previous value of another variable
+#
+
+
+class PreviousVariable(SimpleVariable):
+    """A variable that takes the previous amount of another variable."""
+
+    def wire_instance(self, model, treatment_name):
+        """Set the variable this instance depends on."""
+        self._previous_instance = model.variable_instance(
+            self._earlier, treatment_name)
+
+    def _calculate_amount(self):
+        """Calculate the current amount of this previous."""
+        previous_amount = self._previous_instance.previous_amount()
+        if previous_amount is not None:
+            return previous_amount
+        elif self._init_amount == '_prior_var':
+            # no previous olds, use current value
+            current_amount = self._previous_instance.amount()
+            return current_amount
+        else:
+            return self._init_amount
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return the variables this variable depends on.
+
+        :param for_init: return only the variables used in initialization
+        :param for_sort: return only the variables relevant for sorting vars
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this variable depends on
+        """
+        if ignore_pseudo and cls._earlier == '__model__':
+            return []
+        if not for_sort:
+            return [cls._earlier]
+        elif for_init and cls._init_amount == '_prior_var':
+            return [cls._earlier]
+        else:
+            return []
+
+    @classmethod
+    def _check_for_cycle_in_depends_on(cls, checked_already, dependents):
+        """Check for cycles among the depends on for this simpler variable."""
+        pass
+
+    @classmethod
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Previous'
+
+    @classmethod
+    def _show_definition_and_dependencies(cls):
+        """Print the definition and variables it depends on."""
+        print('Previous variable: {}'.format(cls._earlier))
+
+    @classmethod
+    def _all_dependencies(cls, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        if ignore_pseudo and cls._earlier == '__model__':
+            return []
+        else:
+            return [cls._model[cls._earlier]]
+
+    @classmethod
+    def _has_unitary_definition(cls):
+        """Returns whether the previous has a unitary definition."""
+        return True
+
+
+def previous(variable_name, *args):
+    """Create a new previous, a varaible that is the prior value of another.
+
+    Usage 1: Foo = previous('Foo', 'Bar')
+    Usage 2: Foo = '''a foo variable''', 'Bar')
+    """
+    if len(args) == 1:
+        earlier = args[0]
+        docstring = ''
+        init_amount = '_prior_var'
+    elif len(args) == 2 and isinstance(args[1], str):
+        docstring, earlier = args
+        init_amount = '_prior_var'
+    elif len(args) == 2:
+        earlier, init_amount = args
+        docstring = ''
+    elif len(args) == 3:
+        docstring, earlier, init_amount = args
+    elif len(args) == 0:
+        raise MinnetonkaError(
+            'Previous {} names no variable for prior value'.format(
+                variable_name))
+    else:
+        raise MinnetonkaError('Too many arguments for previous {}: {}'.format(
+            variable_name, args))
+
+    return _create_previous(variable_name, docstring, earlier, init_amount)
+
+
+def _create_previous(
+        latter_var_name, docstring, earlier_var_name,
+        init_amount='_prior_var'):
+    """Create a new previous.
+
+    Create a new previous, a variable that accesses previous value of another
+    variable.
+    """
+    newvar = type(latter_var_name, (PreviousVariable,),
+                  {'__doc__': docstring, '_earlier': earlier_var_name,
+                   '_init_amount': init_amount})
+    Model.add_variable_to_current_context(newvar)
+    return newvar
+
+
+#
+# foreach: for iterating across a dict within a variable
+#
+
+
+def foreach(by_item_callable):
+    """Return a new callable that will iterate across dict or tuple.
+
+    The new callable---when provided with a dict or tuple---will iterate
+    across it, calling the original callable, and creating a new dict or tuple.
+    If multiple dicts or tuples are provided, the original callable is called
+    on each set of them, in turn.
+    """
+    def _across(item1, *rest_items):
+        return _foreach_fn(item1)(item1, *rest_items)
+
+    def _foreach_fn(item):
+        """Return the appropriate foreach function for the argument."""
+        if isinstance(item, dict):
+            return _across_dicts
+        elif isinstance(item, MinnetonkaNamedTuple):
+            return _across_namedtuples
+        elif isinstance(item, tuple):
+            return _across_tuples
+        else:
+            raise MinnetonkaError(
+                'First arg of foreach {} must be dictionary or tuple'.format(
+                    item))
+
+    def _across_dicts(dict1, *rest_dicts):
+        """Execute by_item_callable on every item across dict."""
+        try:
+            return {k: by_item_callable(dict1[k], *[_maybe_element(r, k)
+                                                    for r in rest_dicts])
+                    for k in dict1.keys()}
+        except KeyError:
+            raise MinnetonkaError('Foreach encountered mismatched dicts')
+
+    def _maybe_element(maybe_dict, k):
+        """Return maybe_dict[k], or just maybe_dict, if not a dict."""
+        # It's kind of stupid that it tries maybe_dict[k] repeatedly
+        try:
+            return maybe_dict[k]
+        except TypeError:
+            return maybe_dict
+
+    def _across_namedtuples(*tuples):
+        """Execute by_item_callable across tuples and scalars."""
+        if _is_all_same_type_or_nontuple(*tuples):
+            tuples = [_repeat_if_necessary(elt) for elt in tuples]
+            return type(tuples[0])(*(by_item_callable(*tupes)
+                                     for tupes in zip(*tuples)))
+        else:
+            raise MinnetonkaError('Foreach encountered mismatched namedtuples')
+
+    def _is_all_same_type_or_nontuple(first_thing, *rest_things):
+        """Return whether everything is either the same type, or a scalar."""
+        first_type = type(first_thing)
+        return all(type(thing) == first_type or not isinstance(thing, tuple)
+                   for thing in rest_things)
+
+    def _across_tuples(*tuples):
+        """Execute by_item_callable across tuples."""
+        tuples = (_repeat_if_necessary(elt) for elt in tuples)
+        return tuple(by_item_callable(*tupes) for tupes in zip(*tuples))
+
+    def _repeat_if_necessary(elt):
+        """Make an infinite iter from a scalar."""
+        return elt if isinstance(elt, tuple) else itertools.repeat(elt)
+
+    return _across
+
+#
+# mn_namedtuple: a variant of namedtuple in which the named tuples support
+# some basic operations
+#
+# Add new operations as needed
+#
+
+
+class MinnetonkaNamedTuple():
+    """A mixin class for std namedtuple, so operators can be overridden."""
+
+    def __add__(self, other):
+        """Add something to a mn_named tuple.
+
+        Either add another mn_namedtuple to this one, element by element, or
+        add a scalar to each element.
+        """
+        if isinstance(other, tuple):
+            try:
+                return type(self)(*(x + y for x, y in zip(self, other)))
+            except:
+                return NotImplemented
+        else:
+            try:
+                return type(self)(*(x + other for x in self))
+            except:
+                return NotImplemented
+
+    def __radd__(self, other):
+        """Add a mn_named tuple to a scalar.
+
+        Add every element of a mn_namedtuple to a scalar.
+        """
+        if isinstance(other, tuple):
+            return NotImplemented
+        else:
+            try:
+                return type(self)(*(x + other for x in self))
+            except:
+                return NotImplemented
+
+    def __sub__(self, other):
+        """Subtract something from the mn_namedtuple.
+
+        Either subtract another mn_namedtuple from it, element by element,
+        or subtract a scalar from each element.
+        """
+        if isinstance(other, tuple):
+            try:
+                return type(self)(*(x - y for x, y in zip(self, other)))
+            except:
+                return NotImplemented
+        else:
+            try:
+                return type(self)(*(x - other for x in self))
+            except:
+                return NotImplemented
+
+    def __rsub__(self, other):
+        """Subtract a mn_namedtuple from a scalar.
+
+        Subtract every element of a mn_namedtuple from a scalar.
+        """
+        if isinstance(other, tuple):
+            return NotImplemented
+        else:
+            try:
+                return type(self)(*(other - x for x in self))
+            except:
+                NotImplemented
+
+    def __mul__(self, other):
+        """Multiply every element in the mn_namedtuple.
+
+        Either multiply it by another mn_namedtuple, element by element,
+        or multiple every element by a scalar.
+        """
+        if isinstance(other, tuple):
+            try:
+                return type(self)(*(x * y for x, y in zip(self, other)))
+            except:
+                return NotImplemented
+        else:
+            try:
+                return type(self)(*(x * other for x in self))
+            except:
+                return NotImplemented
+
+    @classmethod
+    def _create(cls, val):
+        """Create a new namedtuple with a value of val for every field."""
+        return cls._make([val for _ in range(len(cls._fields))])
+
+
+def mn_namedtuple(typename, *args, **kwargs):
+    """Create a namedtuple class that supports operator overriding."""
+    assert type(typename) == str, "Namedtuple name must be a string"
+    inner_typename = '_' + typename
+    inner_type = collections.namedtuple(inner_typename, *args, **kwargs)
+    return type(typename, (MinnetonkaNamedTuple, inner_type,), {})
+
+
+#
+# Utility functions
+#
+
+
+def safe_div(dividend, divisor, divide_by_zero_value=0):
+    """Return the result of division, allowing the divisor to be zero."""
+    return dividend / divisor if divisor != 0 else divide_by_zero_value
+
+
+def norm_cdf(x, mu, sigma):
+    """Find the normal CDF of x given mean and standard deviation."""
+    return norm(loc=mu, scale=sigma).cdf(x)
+
+
+def array_graph_xy(x, XYs):
+    """Find linear interpolation of f(x) given a tuple of Xs and Ys.
+
+    Like ARRAYGRAPHXY in SimLang.
+    """
+    Xs, Ys = map(list, zip(*XYs))
+    return _inner_array_graph(x, Xs, Ys)
+
+
+def _inner_array_graph(x, Xs, Ys):
+    if np.all(np.diff(Xs) > 0):
+        return np.interp(x, Xs, Ys)
+    elif np.all(np.diff(Xs[::-1]) > 0):
+        return np.interp(x, Xs[::-1], Ys[::-1])
+    else:
+        raise MinnetonkaError(
+            'Xs {} are neither increasing nor descreasing', Xs)
+
+
+def array_graph_yx(y, XYs):
+    """Find x such that f(x) is approproximately y via linear interpolation.
+
+    Like ARRAYGRAPHYX in SimLang.
+    """
+    Xs, Ys = map(list, zip(*XYs))
+    return _inner_array_graph(y, Ys, Xs)
+
+#
+# Errors and warnings
+#
+
+
+class MinnetonkaError(Exception):
+    """An error for some problem in Minnetonka."""
+
+    def __init__(self, message):
+        """Initialize the MinnetonkaError."""
+        self.message = message
+
+
+class MinnetonkaWarning(Warning):
+    """A warning for some problem in Minnetonka."""
+
+    def __init__(self, message):
+        """Initialize the MinnetonkaWarning."""
+        self.message = message
+
+#
+# Logging
+#
+
+
+class JsonSafeFormatter(logging.Formatter):
+    """An alternative formatter, based on bit.ly/2ruBlL5."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the json formatter."""
+        super().__init__(*args, **kwargs)
+
+    def format(self, record):
+        """Format the record for json."""
+        record.msg = json.dumps(record.msg)[1:-1]
+        return super().format(record)
+
+
+def initialize_logging(logging_level, logfile):
+    """Initialize the logging system, both to file and to console for errs."""
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging_level)
+    initialize_logging_to_file(logging_level, logfile, root_logger)
+    initialize_logging_errors_to_console(root_logger)
+
+
+def initialize_logging_to_file(logging_level, logfile, logger):
+    """Initialize the logging system, using a json format for log files."""
+    jsonhandler = logging.FileHandler(logfile, mode='w')
+    jsonhandler.setLevel(logging_level)
+    formatter = JsonSafeFormatter("""{
+        "asctime": "%(asctime)s",
+        "levelname": "%(levelname)s",
+        "thread": "%(thread)d",
+        "filename": "%(filename)s",
+        "funcName": "%(funcName)s",
+        "message": "%(message)s"
+        }""")
+    formatter.converter = time.gmtime
+    jsonhandler.setFormatter(formatter)
+    logger.addHandler(jsonhandler)
+
+
+def initialize_logging_errors_to_console(logger):
+    """Log errors to the console, in a simple single-line format."""
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    ch.setFormatter(logging.Formatter('Error: %(asctime)s - %(message)s'))
+    logger.addHandler(ch)
