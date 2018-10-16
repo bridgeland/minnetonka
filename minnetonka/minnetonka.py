@@ -25,82 +25,16 @@ import numpy as np
 
 """
 Variables:
-    # create a variable with a constant value
-    DischargeBegins = variable('DischargeBegins', 12)
 
-    # the constant value can be any non-callable python object
-    Revenue = variable('Revenue', np.array([30.1, 15, 20]))
-    Cost = variable('Cost', {'drg001': 1000, 'drg003': 1005})
-
-    # a variable can have an optional docstring
-    Revenue = variable('Revenue',
-        '''The revenue for each business unit, as a 3 element array''',
-        np.array([30.1, 15, 20]))
-
-    # a variable can have a different constant in each treatment
-    DischargeEnds = variable('DischargeEnds',
-        PerTreatment({'As is': 20, 'To be': 18}))
-
-    # a variable can use an expression wrapped in a lambda ...
-    RandomValue = variable('RandomValue', lambda: random.random() + 1)
-
-    # ... or any Python callable
-    RandomValue = variable('RandomValue', random.random)
-
-    # the expression can depend on another variable ...
-    DischargeProgress = variable(
-        'DischargeProgress', lambda db: (current_step - db) / 4,
-        'DischargeBegins')
-
-    # ... or on multiple variables
-    Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-
-    # a variable can use different expressions in different treatments ...
-    DischargeEnds = variable('DischargeEnds',
-        PerTreatment(
-            {'As is': lambda db: db + 10, 'To be': lambda db: db + 5}),
-        'DischargeBegins')
-
-    # ... or an expression in one treatment and a constant in another
-    MortalityImprovement = variable('MortailityImprovement',
-        PerTreatment('
-            {'Value at risk': lambda x: x, 'Value expected': 0}),
-        'MortalityImprovementViaRRC')
 
     # a varaible can be defined to be the previous value of another
     OldFoo = previous('OldFoo', 'Foo', 1)
 
-    # an expression can use something in the model itself
-    Step = variable('Step', lambda md: md.TIME, '__model__')
 
     # a variable can show the values of all its treatments as a dict
     Step.all()
 
 Models:
-    # create a model with no variables and no treatments
-    m = model()
-
-    # a model can define some treatments
-    m = model(treatments=['As is', 'To be'])
-
-    # treatments can have explanations
-    m = model(treatments=[('As is', 'The current situation'), 'To be'])
-
-    # a model can be initialized with variables
-    m = model([DischargeBegins, DischargeEnds])
-
-    # the variables can be defined when the model is created
-    m = model([
-        variable('Revenue', np.array([30.1, 15, 20])),
-        variable('Cost', np.array([10, 10, 10])),
-        variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-    ])
-
-    # a model is a context, supporting natural variable addition
-    with model() as m:
-        variable('Revenue', np.array([30.1, 15, 20]))
-        variable('Cost', np.array([10, 10, 10]))
-        variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
     # A variable can be accessed by name from a model
     m['Earnings']
@@ -247,7 +181,22 @@ Model behavior:
 
 
 class Model:
-    """A collection of variables and models, that can be simulated."""
+    """A collection of variables, that can be simulated.
+
+    A model is a self-contained collection of variables and treatments. 
+    A model can be simulated, perhaps running multiple steps at once.
+
+    Typically a model is defined as a context. For example:
+
+    with model(treatments['As-is', 'To-be']) as m:
+
+        variable('Foo',
+            lambda a, b: a + b,
+            'Bar',
+            'Baz')
+
+
+    """
 
     # is a model being defined in a context manager? which one?
     _model_context = None
@@ -346,8 +295,6 @@ class Model:
         self.TIME = self._start_time
         self.STEP = 0
 
-
-
     def initialize(self):
         """Initialize simulation."""
         logging.info('enter')
@@ -400,18 +347,85 @@ class Model:
 
 def model(variables=[], treatments=[''], initialize=True, timestep=1, 
           start_time=0, end_time=None):
-    """Create and initialize a model.
+    """
+    Create and initialize a model, an instance of :class:`Model`
 
-    Sets a context, so variables can be defined for the newly created model,
-    like this:
+    A model is a collection of variables, with one or more treatments. A
+    model can be simulated, changing the value of variables with each simulated
+    step. 
 
-    with model() as m:
-        Foo = variable('Foo', 12)
-        Bar = stock('Bar', Foo)
+    A model can be created via :meth:`Model`, after treatment objects have 
+    been explicitly created. But typically this function
+    is used instead, as it is simpler.
 
+    A model sets a context, so variables can be defined for 
+    the newly created model, as in the example below.
 
+    Parameters
+    ----------
+    variables : list of :class:`Variable`, default []
+        List of variables that are part of the model. An alternative to 
+        creating the variables first, then the model, is to define the 
+        variables within the model context, as in the example below. 
+    treatments : list of str, or list of tuple of (str, str), default [''], means only a single null treatment
+        List of treatment specs. Each treatment specs is a simulation scenario,
+        simulated in parallel. Typical treatments might include 'As is', 
+        'To be', 'At risk', 'Currently', With minor intervention', 
+        etc. A treatment can be either a string---the name of the 
+        treatment---or a tuple of two strings---the name and a short 
+        description.
+    initialize : bool, default True
+        After the variables are added to the model, should all the variables
+        be given their initial values? If more variables need to be added to 
+        the model, wait to initialize.
+    timestep : int, default 1
+        How much simulated time should elapse between each step?
+    start_time : int, default 0
+        At what time should the simulated clock start?
+    end_time : int, optional
+        At what simulated time should the simulatation end?
 
-    Valid treatment specs: 'As is', ('As is', 'Current situation')
+    Returns
+    -------
+    Model
+        the newly created model
+
+    See Also
+    --------
+    :class:`Model` : a model, once created
+    
+    Examples
+    --------
+    Create a model with no variables and only the null treatment:
+
+    >>> m = model()
+
+    A model that defines two treatments:
+
+    >>> model(treatments=['As is', 'To be'])
+
+    One of the treatments has a description:
+
+    >>> model(treatments=[('As is', 'The current situation'), 'To be'])
+
+    A model with two variables:
+
+    >>> m = model([DischargeBegins, DischargeEnds])
+
+    Variables can be defined when the model is created:
+
+    >>> m = model([
+    ...         variable('Revenue', np.array([30.1, 15, 20])),
+    ...         variable('Cost', np.array([10, 10, 10])),
+    ...         variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    ...    ])
+
+    A model is a context, supporting variable addition:
+
+    >>> with model() as m:
+    ...  variable('Revenue', np.array([30.1, 15, 20]))
+    ...  variable('Cost', np.array([10, 10, 10]))
+    ...  variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
     """
     def _create_treatment_from_spec(spec):
         """Create treatment.
@@ -1090,15 +1104,103 @@ class ModelPseudoVariable():
 
 
 def variable(variable_name, *args):
-    """Create a new variable.
+    """
+    Create a plain variable.
 
-    Usage 1: Foo = variable('Foo', lambda x, y: ..., 'Bar', 'Baz')
-    Usage 2: Foo = variable('Foo', PerTreatment({'As is': 12, 'To be': 4}))
-    Usage 3: Foo = variable('Foo', 12)
-    Usage 4: Foo = variable('Foo', '''a foo variable''', 12)
-    Usage 5: Foo = variable('Foo',
-        PerTreatment({'As is': lambda x: x + 1, 'To be': lambda x: x - 1}),
-        'Bar')
+    A variable has a value---called an 'amount'---that changes over simulated 
+    time. A single
+    variable can take a different amount in each model treatment. The amount 
+    of a variable can be any Python object, except a string or a Python 
+    callable. A variable can be defined in terms of other variables, via a 
+    Python callable.
+
+    A simple variable differs form other variable-like objects (e.g.
+    stocks) in that it keeps no state. Its amount depends entirely on its 
+    definition, and the amounts of other variables used in the definition.
+
+    Parameters
+    ----------
+    variable_name : str
+        Name of the variable. The name is unique within a single model
+
+    args
+        Either a list of a callable and the names of variables, or a
+        Python object that is neither a string nor a callable. In either case,
+        the first element of args is an optional docstring-like description.
+
+    Returns
+    -------
+    PlainVariable
+        the newly-created variable
+
+    See Also
+    --------
+    constant : Create a plain variable whose value does not change
+
+    stock : Create a system dynamics stock
+
+    :class:`PlainVariable` : a simple variable, once created
+
+    :class:`PerTreatment`
+
+    Examples
+    --------
+    A variable with a constant amount. (An alternate, equivalent approach
+    is to define this with :func:`constant`.)
+
+    >>> variable('DischargeBegins', 12)
+
+    The amount can be any non-callable, non-string Python object.
+
+    >>> Revenue = variable('Revenue', np.array([30.1, 15, 20]))
+    >>> Cost = variable('Cost', {'drg001': 1000, 'drg003': 1005})
+
+    A variable can have an optional docstring-like description.
+
+    >>> Revenue = variable('Revenue',
+    ...     '''The revenue for each business unit, as a 3 element array''',
+    ...     np.array([30.1, 15, 20]))
+
+    A variable can have a different constant amount for each treatment.
+
+    >>> DischargeEnds = variable('DischargeEnds',
+    ...     PerTreatment({'As is': 20, 'To be': 18}))
+
+    A variable can take a different value every timestep, via an 
+    expression wrapped in a lambda ...
+
+    >>> RandomValue = variable('RandomValue', lambda: random.random() + 1)
+
+    ... or via any Python callable.
+
+    >>> RandomValue = variable('RandomValue', random.random)
+
+    The expression can depend on another variable in the model ...
+
+    >>> DischargeProgress = variable(
+    ...     'DischargeProgress', lambda db: (current_step - db) / 4,
+    ...     'DischargeBegins')
+
+    ... or depend on multiple variables.
+
+    >>> Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+
+    A variable can use different expressions in different treatments ...
+
+    >>> DischargeEnds = variable('DischargeEnds',
+    ...     PerTreatment(
+    ...         {'As is': lambda db: db + 10, 'To be': lambda db: db + 5}),
+    ...         'DischargeBegins')
+
+    ... or an expression in one treatment and a constant in another.
+
+    >>> MortalityImprovement = variable('MortailityImprovement',
+    ...     PerTreatment({'Value at risk': lambda x: x, 'Value expected': 0}),
+    ...     'MortalityImprovementViaRRC')
+
+    An expression can use something in the model itself.
+
+    >>> Step = variable('Step', lambda md: md.TIME, '__model__')
     """
     logging.info('Creating variable %s', variable_name)
     return _parse_and_create(variable_name, PlainVariable, 'Variable', args)
