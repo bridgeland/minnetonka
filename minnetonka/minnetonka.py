@@ -1121,7 +1121,7 @@ def variable(variable_name, *args):
     Parameters
     ----------
     variable_name : str
-        Name of the variable. The name is unique within a single model
+        Name of the variable. The name is unique within a single model.
 
     args
         Either a list of a callable and the names of variables, or a
@@ -1135,17 +1135,18 @@ def variable(variable_name, *args):
 
     See Also
     --------
-    constant : Create a plain variable whose value does not change
+    constant : Create a plain variable whose amount does not change
 
     stock : Create a system dynamics stock
 
     :class:`PlainVariable` : a simple variable, once created
 
-    :class:`PerTreatment`
+    :class:`PerTreatment` : for defining how a variable has a different amount
+        for each treatment
 
     Examples
     --------
-    A variable with a constant amount. (An alternate, equivalent approach
+    A variable with a constant amount. (An alternate approach
     is to define this with :func:`constant`.)
 
     >>> variable('DischargeBegins', 12)
@@ -1153,6 +1154,7 @@ def variable(variable_name, *args):
     The amount can be any non-callable, non-string Python object.
 
     >>> Revenue = variable('Revenue', np.array([30.1, 15, 20]))
+    
     >>> Cost = variable('Cost', {'drg001': 1000, 'drg003': 1005})
 
     A variable can have an optional docstring-like description.
@@ -1312,13 +1314,82 @@ class PerTreatment:
 
 
 def constant(constant_name, *args):
-    """Create a new constant. Same usages as variable()."""
+    """
+    Create a variable whose amount never changes, over the simulation.
+
+    A constant is a variable that does not vary. Its amount is set on
+    initialization, and then does not change over the course of the 
+    simulation. A single constant can take a different amount in each
+    model treatment.
+
+    As with other variables, the amount of a constant can be any Python
+    object, except a string or a Python callable. It can be defined in
+    terms of other variables, using a callable.
+
+    Parameters
+    ----------
+    constant_name : str
+        Name of the constant. The name is unique within a single model.
+
+    args 
+        Either a list of a single Python object (that is neither a string 
+        nor a callable),
+        or a list of a callable and the names of variables. In either case,
+        the first element of args is an optional docstring-like description.
+
+    Returns
+    -------
+    Constant
+        the newly-created constant
+
+    See Also
+    --------
+    variable : Create a plain variable whose amount changes
+
+    stock : Create a system dynamics stock
+
+    :class:`Constant` : a constant, once created
+
+    :class:`PerTreatment` : for defining how a constant takes different
+        (constant) amounts for each treatment 
+
+    Examples
+    --------
+    A constant without a description.
+
+    >>> constant('KitchenCloses', 22)
+
+    A constant with a description.
+
+    >>> constant('KitchenCloses', 
+    ...     '''What time is the kitchen scheduled to close?''',
+    ...     22.0)
+
+    A constant whose amount is a Python dictionary.
+
+    >>> constant('KitchenCloses', 
+    ...     {'Friday': 23.5, 'Saturday': 23.5, 'Sunday': 21.0, 
+    ...      'Monday': 22.0, 'Tuesday': 22.0, 'Wednesday': 22.0, 
+    ...      'Thursday': 22.5})
+
+    A constant whose amount differs by treatment.
+
+    >>> constant('KitchenCloses', 
+    ...     PerTreatment({'As is': 22.0, 'Late night alternative': 23.5}))
+
+    A constant whose (non-varying) amount is calculated from other variables.
+
+    >>> constant('KitchenDuration',
+    ...     '''How many hours is the kitchen open each day?''',
+    ...     lambda c, o: c - o, 'KitchenCloses', 'KitchenOpens')
+    
+    """
     logging.info('Creating constant %s', constant_name)
     return _parse_and_create(constant_name, Constant, 'Constant', args)
 
 
 class Constant(PlainVariable):
-    """A variable that does not change on step."""
+    """A variable that does not vary."""
 
     def _step(self):
         pass
