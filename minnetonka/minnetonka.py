@@ -83,14 +83,7 @@ Variable values:
     DischargeBegins['__all__'] = 9
 
 Stocks and accums:
-    # a stock can be defined
-    Year = stock('Year', 1, 2017)
 
-    # the initial value defaults to zero
-    Age = stock('Age', 0)
-
-    # a stock can have a docstring
-    Year = stock('Year', '''the current year''', 1, 2017)
 
     # the initial value can vary by treatment ...
     S = stock('S', 1, PerTreatment({'As is': 22, 'To be': 23}))
@@ -1127,6 +1120,7 @@ def variable(variable_name, *args):
         Either a list of a callable and the names of variables, or a
         Python object that is neither a string nor a callable. In either case,
         the first element of args is an optional docstring-like description.
+        See examples below.
 
     Returns
     -------
@@ -1307,6 +1301,9 @@ class PerTreatment:
         except:
             return '"{}": {}'.format(k, v)
 
+    def any_callable(self):
+        """Is the value callable in any treatment?"""
+
 
 #
 # Defining constants
@@ -1374,8 +1371,8 @@ def constant(constant_name, *args):
 
     A constant whose amount differs by treatment.
 
-    >>> constant('KitchenCloses', 
-    ...     PerTreatment({'As is': 22.0, 'Late night alternative': 23.5}))
+    >>> constant('KitchenOpens', 
+    ...     PerTreatment({'As is': 17.0, 'Open early': 15.5}))
 
     A constant whose (non-varying) amount is calculated from other variables.
 
@@ -1543,7 +1540,140 @@ class Stock(Incrementer):
 
 
 def stock(stock_name, *args):
-    """Create a new stock.
+    """
+    Create a system dynamics stock. The stock defines both an initial
+    amount and an increment. 
+
+    At any simulated period, the stock has an amount. The amount changes
+    over time, incrementing or decrementing at each period. The amount
+    can be a simple numeric like a Python integer or a Python float. 
+    Or it might be some more complex Python object, like a list,
+    a tuple, a numpy array, or an instance of a user-defined class. In 
+    any case, the stock's amount must support addition.
+
+    The stock may have several amounts, one for each treatment in the
+    model of which it lives. 
+
+    A stock definition has two parts: an initial amount and an increment.
+    The initial amount is defined by either a Python object, or by
+    a callable and a list of dependancy variables. If it is defined by a Python 
+    object, any Python object can be used, except for a string or a 
+    callable. 
+
+    If the initial amount is defined by a callable and list of variables,
+    that callable is called a single time, at stock initialization, with the 
+    initial values of each of the dependancy variables, to determine the 
+    initial amount.
+
+    The stock increment is also defined by either a Python object, or by
+    a callable and a list of dependancy variables. If defined by a Python
+    object, any Python object can be used, except for a string or a 
+    callable. 
+
+    If the increment is a callable, the callable is called once every
+    period, with the amounts of each of the variables. Each variable
+    can be a plain variable or a stock or a constant or any of the 
+    elements of a model. The callable is given the amounts of the 
+    variables at the previous period, not the current period, to 
+    determine the increment of the stock for this period. 
+
+    The increment is how much the stock's amount changes in each unit of
+    time. If the timestep of the model is 1.0, the stock's amount will
+    change by increment. If the timestep is not 1.0, the stock's amount
+    will change by a different quantity. For example, if the timestep 
+    is 0.5, the stock's amount will change by half the increment, at
+    every step.
+
+    The initial amount and the increment may vary by treatment, either
+    because one or more of the the dependancy variables vary by treatment,
+    or because of an explicit :class:`PerTreatment` expression. 
+
+    Parameters
+    ----------
+    stock_name : str
+        Name of the stock. The name is unique within a single model.
+
+    args
+        The args might include an optional docstring-like description, at
+        the beginning. The interpretation of the remaining args depends on
+        their count. 
+
+        If there is only a single argument (aside from the
+        optional description), it is the non-callable
+        definition of the increment. The stock is assumed to be initialized
+        at zero.
+
+        If there are only two arguments (aside from the description),
+        the first is the non-callable definition of the increment, and the
+        second is the non-callable definiton of the initialization.
+
+        If there are three argumenets (aside from description), the first
+        is interpreted as a callable definition of the increment, the second
+        is a tuple of model variables to be applied to the increment, and the
+        third is the non-callable definition of hte initialization. Note that
+        the tuple of variables may be empty, if the increment callable requires
+        no arguments.
+
+        If there are four arguments (sans descriptions), the first
+        is interpreted as a callable definition of the increment, the second
+        is a tuple of model variables to be applied to the increment, the
+        third is the callable defintion of the initialization, and the
+        fourth is a tuple of model variables to be applied at initialization. 
+        Either variable tuple may be empty, if the corresponding callable
+        requires no arguments.
+
+        See usage examples below.
+
+    Returns
+    -------
+    Stock
+        the newly-created stock
+
+    See Also
+    --------
+    variable : Create a non-stock plain variable
+
+    constant : Create a plain variable whose amount does not change
+
+    accum : Create an accum, much like a stock except that it uses the 
+        amounts of the variables in the current period, instead of the 
+        previous period.
+
+    :class:`PerTreatment` : for defining how a variable has a different amount
+        for each treatment
+
+    Examples
+    --------
+    A stock that starts with the amount 2018, and increments the amount
+    by 1 at each period.
+
+    >>> stock('Year', 1, 2019)
+
+    The initial amount defaults to zero.
+
+    >>> stock('Age', 1)
+
+    A stock can take a docstring-like description.
+
+    >>> stock('Year', '''the current year''', 1, 2019)
+
+    The initial amount can be different in each treatment.
+
+    >>> stock('MenuItemCount', 1, PerTreatment({'As is': 20, 'To be': 22}))
+
+    The increment can be different for each treatment.
+
+    >>> stock('MenuItemCount', PerTreatment({'As is': 1, 'To be': 2}), 20)
+
+    The increment can be a callable that uses no variables. Note the empty
+    tuple of variables.
+
+    >>> stock('MenuItemCount', lambda: random.randint(0,2), (), 20)
+
+    The initial amount can be a callable. If the initial amount is a 
+    callable, the increment must also be a callable. Note the empty tuples.
+
+    >>> stock('MenuItemCount', lambda: 1, () lambda: random.randint(20, 22), ()
 
     Usage 1: Bathtub = stock('Bathtub', 5)
     Usage 2: Bathtub = stock('Bathtub', 5, 1)
@@ -1569,19 +1699,19 @@ def _parse_stock(name, args):
     """Parse the arguments in stock_args, and return them properly sorted."""
     assert len(args) > 0, '{} has no definition'.format(name)
     if isinstance(args[0], str):
-        docstring, regular_def, *args = args
+        docstring, incr_def, *args = args
     else:
-        regular_def, *args = args
+        incr_def, *args = args
         docstring = ''
 
     if not args:
-        return regular_def, None, 0, None, docstring
+        return incr_def, None, 0, None, docstring
     elif len(args) == 1:
-        return regular_def, None, args[0], None, docstring
+        return incr_def, None, args[0], None, docstring
     elif len(args) == 2:
-        return regular_def, args[0], args[1], None, docstring
+        return incr_def, args[0], args[1], None, docstring
     else:
-        return regular_def, args[0], args[1], args[2], docstring
+        return incr_def, args[0], args[1], args[2], docstring
 
 
 def _create_stock(stock_name, docstring,
