@@ -139,7 +139,8 @@ Model behavior:
 
 
 class Model:
-    """A collection of variables, that can be simulated.
+    """
+    A collection of variables, that can be simulated.
 
     A model is a self-contained collection of variables and treatments. 
     A model can be simulated, perhaps running multiple steps at once.
@@ -2026,12 +2027,65 @@ class PreviousVariable(SimpleVariable):
 
 
 def previous(variable_name, *args):
-    """Create a new previous, a varaible that is the prior value of another.
+    """
+    Create a new previous, a variable whose amount is the amount of another
+    variable in the previous timestep.
 
+    Parameters
+    ----------
+    variable_name : str
+        Name of the previous. The name must be unique within a single model.
 
+    args 
+        The args might include an optional docstring-like description, at
+        the beginning. The interpretation of the remaining args depends on
+        their count.
 
-    Usage 1: Foo = previous('Foo', 'Bar')
-    Usage 2: Foo = '''a foo variable''', 'Bar')
+        If there is only a single argument (aside from the optional 
+        description), it is the name of the prior variable, as a string.
+        The prior the variable is the variable 
+        whose previous amount becomes the current amount of this preious. 
+        The initial amount of the newly defined previous is the initial 
+        amount of the prior variable.
+
+        If there are two arguments (aside from the optional description),
+        the first is the name of the prior variable, and the second is a
+        Python object that is the initial amount of the previous. Any 
+        Python object is allowed, except a string or a callable.
+
+        As with any other variable, a previous may take different amounts
+        in each treatment of the model.
+
+    Returns
+    -------
+    PreviousVariable
+        the newly created previous
+
+    See Also
+    --------
+    variable : Create a non-stock plain variable
+
+    constant : Create a plain variable whose amount does not change
+
+    Examples
+    --------
+    Finding yesterday's sales, when the timestep is one day.
+
+    >>> previous('YesterdaySales', 'Sales')
+
+    A previous might have a description.
+
+    >>> previous('YesterdaySales', 
+        '''Total sales in the prior day''', 
+        'Sales')
+
+    A previous might have an initial amount, if that amount needs to be 
+    different from the initial amount of the prior.
+
+    >>> previous('YesterdaySales', 
+        '''Total sales in the prior day''', 
+        'Sales',
+        3000)
     """
     if len(args) == 1:
         earlier = args[0]
