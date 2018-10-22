@@ -143,9 +143,27 @@ class Model:
     A collection of variables, that can be simulated.
 
     A model is a self-contained collection of variables and treatments. 
-    A model can be simulated, perhaps running multiple steps at once.
+    A model can be simulated, perhaps running one step at a time, perhaps
+    multiple steps. 
 
-    Typically a model is defined as a context. For example:
+    Typically a model is defined as a context, with variables and stocks
+    within the model context. See examples below.
+
+    Parameters
+    ----------
+    treatments : list of :class:`Treatment`
+        The treatments defined for the model. Each treatment is a different
+        simulated scenario, run in parallel.
+
+    timestep : int or float, optional
+        The simulated duration of each call to :meth:`step`. The default is
+        1.
+
+
+    Examples
+    --------
+
+    For example:
 
     with model(treatments['As-is', 'To-be']) as m:
 
