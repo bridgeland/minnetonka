@@ -71,6 +71,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# Omit prepended module names
+add_module_names = False
+
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -85,17 +85,6 @@ Variable values:
 
 
 Model behavior:
-    # a model can step
-    m = model([stock('Year', 1, 2017)])
-    m.step()
-    m['Year']['']
-    #   --> 2018
-
-    # a model can step several steps
-    m = model([stock('Year', 1, 2017)])
-    m.step(10)
-    m['Year']['']
-    #   --> 2027
 
     # a model can be reset
     m = model([stock('Year', 1, 2017)])
@@ -144,10 +133,10 @@ class Model:
 
     A model is a self-contained collection of variables and treatments. 
     A model can be simulated, perhaps running one step at a time, perhaps
-    multiple steps. 
+    multiple steps, perhaps until the end.
 
-    Typically a model is defined as a context, with variables and stocks
-    within the model context. See examples below.
+    Typically a model is defined as a context using :func:`model`, 
+    with variables and stocks within the model context. See example below.
 
     Parameters
     ----------
@@ -159,20 +148,28 @@ class Model:
         The simulated duration of each call to :meth:`step`. The default is
         1.
 
+    start_time : int or float, optional
+        The first time period, before the first call to :meth:`step`. Default: 
+        0
+
+    end_time : int or float, optional
+        The last time period, after a call to :meth:`step` 
+        with ``to_end=True``. Default: None, meaning never end
+
+    See Also
+    --------
+    :func:`model` : the typical way to create a model
 
     Examples
     --------
+    Create a model with two treatmeents and three variables:
 
-    For example:
-
-    with model(treatments['As-is', 'To-be']) as m:
-
-        variable('Foo',
-            lambda a, b: a + b,
-            'Bar',
-            'Baz')
-
-
+    >>> with model(treatments=['As is', 'To be']) as m:
+    ...  variable('Revenue', np.array([30.1, 15, 20]))
+    ...  variable('Cost', 
+    ...     PerTreatment({'As is': np.array([10, 10, 10]),
+    ...                  {'To be': np.array([5, 5, 20])})
+    ...  variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
     """
 
     # is a model being defined in a context manager? which one?
@@ -209,6 +206,89 @@ class Model:
         self._variables_not_yet_added = []
         Model._model_context = None
         logging.info('exit')
+
+    def step(self, n=1, to_end=False):
+        """
+        Simulate the model ``n`` steps.
+
+        Simulate the model, either one step (default), or ``n`` steps,
+        or until the model's end.
+
+        Parameters
+        ----------
+        n : int, default 1
+            Number of steps to advance. 
+        to_end : bool, default False
+            If ``True``, simulate the model until its end time
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        MinnetonkaError
+            If ``to_end`` is ``True`` but the model has no end time.
+
+        Examples
+        --------
+        A model can simulate one step at a time:
+
+        >>> m = model([stock('Year', 1, 2019)])
+        >>> m.step()
+        >>> m['Year']['']
+        2020
+        >>> m.step()
+        >>> m['Year']['']
+        2021
+
+        A model can simulate several steps at a time:
+
+        >>> m2 = model([stock('Year', 1, 2019)])
+        >>> m2.step(n=10)
+        >>> m2['Year']['']
+        2029
+
+        A model can simulate until the end:
+        
+        >>> m3 = model([stock('Year', 1, 2019)], end_time=20)
+        >>> m3.step(to_end=True)
+        >>> m3['Year']['']
+        2039
+
+        """
+        if self._end_time is None or self.TIME < self._end_time:
+            if to_end:
+                n = int((self._end_time - self.TIME) / self._timestep)
+            for i in range(n):
+                self._step_one()
+        else:
+            raise MinnetonkaError(
+                'Attempted to simulation beyond end_time: {}'.format(
+                    self._end_time))
+
+    def initialize(self):
+        """Initialize simulation."""
+        logging.info('enter')
+        self._initialize_time()
+        self._variables.initialize(self)
+
+    def reset(self, reset_external_vars=True):
+        """Reset simulation."""
+        self._initialize_time()
+        self._variables.reset(reset_external_vars)
+
+
+
+    def _step_one(self):
+        """Advance the simulation a single step."""
+        self._increment_time()
+        self._variables.step(self._timestep)
+
+    def _increment_time(self):
+        """Advance time variables one time step."""
+        self.TIME = self.TIME + self._timestep
+        self.STEP = self.STEP + 1
 
     def treatments(self):
         """Return an iterators of the treatments.
@@ -272,38 +352,7 @@ class Model:
         self.TIME = self._start_time
         self.STEP = 0
 
-    def initialize(self):
-        """Initialize simulation."""
-        logging.info('enter')
-        self._initialize_time()
-        self._variables.initialize(self)
-
-    def reset(self, reset_external_vars=True):
-        """Reset simulation."""
-        self._initialize_time()
-        self._variables.reset(reset_external_vars)
-
-    def step(self, n=1, to_end=False):
-        """Advance the simulation n steps."""
-        if self._end_time is None or self.TIME < self._end_time:
-            if to_end:
-                n = int((self._end_time - self.TIME) / self._timestep)
-            for i in range(n):
-                self._step_one()
-        else:
-            raise MinnetonkaError(
-                'Attempted to simulation beyond end_time: {}'.format(
-                    self._end_time))
-
-    def _step_one(self):
-        """Advance the simulation a single step."""
-        self._increment_time()
-        self._variables.step(self._timestep)
-
-    def _increment_time(self):
-        """Advance time variables one time step."""
-        self.TIME = self.TIME + self._timestep
-        self.STEP = self.STEP + 1
+    
 
     def previous_step(self):
         """Return the prior value of STEP."""
