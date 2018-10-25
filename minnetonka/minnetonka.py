@@ -162,7 +162,7 @@ class Model:
 
     Examples
     --------
-    Create a model with two treatmeents and three variables:
+    Create a model with two treatments and three variables:
 
     >>> with model(treatments=['As is', 'To be']) as m:
     ...  variable('Revenue', np.array([30.1, 15, 20]))
@@ -278,8 +278,6 @@ class Model:
         self._initialize_time()
         self._variables.reset(reset_external_vars)
 
-
-
     def _step_one(self):
         """Advance the simulation a single step."""
         self._increment_time()
@@ -298,7 +296,10 @@ class Model:
         return self._treatments.values()
 
     def treatment(self, treatment_name):
-        """Return the treatment with treatment_name, if it exists.
+        """
+        Return a particular treatment from the model.
+
+
 
         :param str treatment_name: name of the treatment to be returned
         :return: the treatment named
@@ -312,12 +313,60 @@ class Model:
                 treatment_name))
 
     def variable(self, variable_name):
-        """Return the variable with variable_name.
+        """
+        Return a single variable from the model, by name.
 
-        :param str variable_name: name of the variable
-        :return: the named variable
-        :rtype: Variable
-        :raises MinnetonkaError: if the model has no variable of that name
+        A variable is typically accessed from a model by subscription, like a 
+        dictionary value from a dictionary, e.g. ``modl['var']``. The
+        subscription syntax is syntactic sugar for :meth:`variable`.
+
+        Note that :meth:`variable` returns a variable object, not the current
+        amount of the variable. To find the variable's current amount
+        in a particular treatment, use a further subscription with the
+        treatment name, e.g. ``modl['var']['']``. See examples below.
+
+        Parameters
+        ----------
+        variable_name : str
+            The name of the variable. The variable might be a plain variable,
+            a stock, an accum, a constant, or any of the variable-like objects
+            known by the model.
+
+        Returns
+        -------
+        Variable : the variable with name ``variable_name``
+
+        Raises
+        ------
+        MinnetonkaError
+            If no variable named ``variable_name`` exists in the model
+
+        Examples
+        --------
+        Create a model **m** with three variables, and only the default
+        treatment.
+
+        >>> with model() as m:
+        ...     variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        ...     variable('Cost', 10)
+        ...     variable('Revenue', 12)
+
+        Find the variable **Cost** ...
+
+        >>> m.variable('Cost')
+        __main__.Earnings
+
+        ... or use subscription syntax to do the same thing
+
+        >>> m['Cost']
+        __main__.Earnings
+        >>> m.variable('Earnings') == m['Earnings']
+        True
+
+        Find the current amount of **Cost** in the default treatment.
+
+        >>> m['Cost']['']
+        10
         """
         return self._variables.variable(variable_name)
 

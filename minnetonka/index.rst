@@ -6,7 +6,7 @@ Welcome to Minnetonka's documentation!
 	:members: model, variable, stock, previous, accum
 
 .. autoclass:: Model
-	:members: step, variable, treatment, treatments, add_variables
+	:members: step, variable, treatment, treatments
 
 .. toctree::
    :maxdepth: 2
