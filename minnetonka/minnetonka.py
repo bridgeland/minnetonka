@@ -209,16 +209,16 @@ class Model:
 
     def step(self, n=1, to_end=False):
         """
-        Simulate the model ``n`` steps.
+        Simulate the model **n** steps.
 
         Simulate the model, either one step (default), or ``n`` steps,
         or until the model's end.
 
         Parameters
         ----------
-        n : int, default 1
-            Number of steps to advance. 
-        to_end : bool, default False
+        n : int, optional
+            Number of steps to advance. The default is 1, one step at a time.
+        to_end : bool, optional
             If ``True``, simulate the model until its end time
 
         Returns
@@ -255,7 +255,6 @@ class Model:
         >>> m3.step(to_end=True)
         >>> m3['Year']['']
         2039
-
         """
         if self._end_time is None or self.TIME < self._end_time:
             if to_end:
@@ -267,16 +266,76 @@ class Model:
                 'Attempted to simulation beyond end_time: {}'.format(
                     self._end_time))
 
+    def reset(self, reset_external_vars=True):
+        """
+        Reset simulation, back to the begining.
+
+        Reset simulation time back to the beginning time, and reset the
+        amounts of all variables back to their initial amounts. 
+
+        Parameters
+        ----------
+        reset_external_vars : bool, optional
+            Sometimes variables are set to amounts outside the model logic.
+            (See example below, and more examples with :class:`Variable`.) 
+            Should these
+            externally-defined variables be reset to their initial amounts
+            when the model as a whole is reset? Default: True, reset those
+            externally-defined variables.
+
+        Returns
+        -------
+            None
+
+        Examples
+        --------
+        Create a simple model.
+
+        >>> m = model([stock('Year', 1, 2019)])
+        >>> m['Year']['']
+        2019
+
+        Step the model.
+
+        >>> m.step()
+        >>> m['Year']['']
+        2020
+        >>> m.step()
+        >>> m['Year']['']
+        2021
+
+        Reset the model.
+
+        >>> m.reset()
+        >>> m['Year']['']
+        2019
+
+        Change the amount of year. **Year** is now externally defined.
+
+        >>> m['Year'][''] = 1955
+        >>> m['Year']['']
+        1955
+
+        Reset the model again.
+
+        >>> m.reset(reset_external_vars=False)
+        >>> m['Year']['']
+        1955
+
+        Reset one more time.
+
+        >>> m.reset()
+        >>> m['Year']['']
+        2019
+        """
+        self._initialize_time()
+        self._variables.reset(reset_external_vars)
+
     def initialize(self):
         """Initialize simulation."""
         logging.info('enter')
         self._initialize_time()
         self._variables.initialize(self)
-
-    def reset(self, reset_external_vars=True):
-        """Reset simulation."""
-        self._initialize_time()
-        self._variables.reset(reset_external_vars)
 
     def _step_one(self):
         """Advance the simulation a single step."""
@@ -354,13 +413,13 @@ class Model:
         Find the variable **Cost** ...
 
         >>> m.variable('Cost')
-        __main__.Earnings
+        __main__.Cost
 
         ... or use subscription syntax to do the same thing
 
         >>> m['Cost']
-        __main__.Earnings
-        >>> m.variable('Earnings') == m['Earnings']
+        __main__.Cost
+        >>> m.variable('Cost') == m['Cost']
         True
 
         Find the current amount of **Cost** in the default treatment.
@@ -438,27 +497,32 @@ def model(variables=[], treatments=[''], initialize=True, timestep=1,
 
     Parameters
     ----------
-    variables : list of :class:`Variable`, default []
-        List of variables that are part of the model. An alternative to 
+    variables : list of :class:`Variable`, optional
+        List of variables that are part of the model. If not specified,
+        the default is [], no variables. An alternative to 
         creating the variables first, then the model, is to define the 
         variables within the model context, as in the example below. 
-    treatments : list of str, or list of tuple of (str, str), default [''], means only a single null treatment
+    treatments : list of str, or list of tuple of (str, str), optional
         List of treatment specs. Each treatment specs is a simulation scenario,
         simulated in parallel. Typical treatments might include 'As is', 
         'To be', 'At risk', 'Currently', With minor intervention', 
         etc. A treatment can be either a string---the name of the 
         treatment---or a tuple of two strings---the name and a short 
-        description.
-    initialize : bool, default True
+        description. See examples below.
+        If not specified, the default is ``['']``, a single
+        treatment named by the empty string. 
+    initialize : bool, optional
         After the variables are added to the model, should all the variables
         be given their initial values? If more variables need to be added to 
-        the model, wait to initialize.
-    timestep : int, default 1
-        How much simulated time should elapse between each step?
-    start_time : int, default 0
-        At what time should the simulated clock start?
+        the model, wait to initialize. Default: True
+    timestep : int, optional
+        How much simulated time should elapse between each step? Default: 1 
+        time unit
+    start_time : int, optional
+        At what time should the simulated clock start? Default: start at 0
     end_time : int, optional
-        At what simulated time should the simulatation end?
+        At what simulated time should the simulatation end? Default: None, 
+        never end
 
     Returns
     -------
