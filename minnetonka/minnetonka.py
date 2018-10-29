@@ -800,7 +800,9 @@ class MetaVariableClass(type):
 
 
 class Variable(object, metaclass=MetaVariableClass):
-    """Any of the variety of variable types."""
+    """
+    Any of the variety of variable types.
+    """
 
     def __init__(self, treatment=None):
         """Initialize this variable."""
@@ -1532,7 +1534,116 @@ def constant(constant_name, *args):
 
 
 class Constant(PlainVariable):
-    """A variable that does not vary."""
+    """
+    A variable that does not vary.
+
+    A constant—--an instance of :class:`Constant`---is a variable whose
+    amount does not change over the course of a simulation. Its amount 
+    is set on initialization, and then does not change over the course of the
+    simulation. A single constant can take a different amount in each
+    model treatment.
+
+    The amount of a constant in a particular treatment can be found using
+    subscription brackets, e.g. **Interest['to be']**. See examples below.
+
+    The amount of a constant can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. See examples below.
+
+
+
+
+
+    , or at least
+    it does not change through the logic of the model. (The amount of a
+    constant can be changed explicitly, outside the model logic.)
+
+    A constant is typically created via :func:`constant`, rather than 
+
+    instances and classes
+
+    The amount of a constant can change 
+
+
+    See Also
+    --------
+    constant : Create a constant
+
+    Examples
+    --------
+    Create a model with one variable and two constants.
+
+    >>> import random
+    >>> with model() as m:
+    ...     C1 = constant('C1', lambda: random.randint(0, 9)
+    ...     V = variable('V', lambda: random.randint(0, 9))
+    ...     C2 = constant('C2', lambda v: v, 'V')
+
+    **C2** and **V** have the same amount, a random integer between 0 and 9.
+    **C1** has a different amount.
+
+    >>> V['']
+    2
+    >>> C2['']
+    2
+    >>> C1['']
+    0
+
+    The simulation is advanced by one step. **V** has a new amount, but both
+    **C1** and **C2** remain the same.
+
+    >>> m.step()
+    >>> V['']
+    7
+    >>> C2['']
+    2
+    >>> C1['']
+    0
+
+    The simulation is reset. Now **C2** and **V** have the same value, again.
+
+    >>> m.reset()
+    >>> V['']
+    6
+    >>> C2['']
+    6
+    >>> C1['']
+    8
+
+    The amount of **C2** is changed, outside of the model logic.
+
+    >>> C2[''] = 99
+    >>> C2[''] 
+    99
+
+    **C2** still stays constant, even after a step.
+
+    >>> m.step()
+    >>> C2['']
+    99
+
+    But on reset, **C2**'s amount is once again changed to **V**'s amount.
+
+    >>> m.reset()
+    >>> V['']
+    1
+    >>> C2['']
+    1
+
+    Create a new model, with two treatmetns, variables, and one constant, 
+    that takes a different amount for each treatment.
+
+    >>> with model(treatments=['normal', 'high interest']) as m2:
+    ...     InterestRate = constant('InterestRate', 
+    ...         PerTreatment({'normal': 0.04, 'high interest': 0.15}))
+    ...     Interest = variable('Interest', 
+                lambda s, ir: s * ir, 'Savings', 'InterestRate')
+    ...     Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
+
+
+
+
+    """
 
     def _step(self):
         pass
