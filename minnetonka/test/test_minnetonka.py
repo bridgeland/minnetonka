@@ -2813,7 +2813,7 @@ class OldValues(unittest.TestCase):
         
 
 class Unitary(unittest.TestCase):
-    """For testing variables that don't differ by treatment."""
+    """For testing variables that do not differ by treatment."""
 
     def assert_unitary(self, variable):
         """Assert that this variable is the same for 'As is' and 'To be'."""
@@ -2924,6 +2924,43 @@ class Unitary(unittest.TestCase):
 
         self.assert_unitary(UnitaryPrevious)
         self.assert_not_unitary(FragmentedPrevious)
+
+    def test_causal_loop_unitary(self):
+        """Test that a simple model with a causal loop is unitary."""
+        with model(treatments=['As is', 'To be']) as m2:
+            InterestRate = constant('InterestRate', 0.04)
+            Interest = variable('Interest', 
+                lambda s, ir: s * ir, 'Savings', 'InterestRate')
+            Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
+        self.assert_unitary(InterestRate)
+        self.assert_unitary(Interest)
+        self.assert_unitary(Savings)
+
+    def test_causal_loop_not_unitary(self):
+        """Test that a simple model with a causal loop is not unitary."""
+        with model(treatments=['As is', 'To be']) as m2:
+            InterestRate = constant('InterestRate', 
+                PerTreatment({'As is': 0.04, 'To be': 0.15}))
+            Interest = variable('Interest', 
+                lambda s, ir: s * ir, 'Savings', 'InterestRate')
+            Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
+        self.assert_not_unitary(InterestRate)
+        self.assert_not_unitary(Interest)
+        self.assert_not_unitary(Savings)
+
+    def test_unitary_set_warning(self):
+        """Test that setting a unitary var in one treatment issues warning."""
+        with model(treatments=['As is', 'To be']):
+            InterestRate = constant('InterestRate', 0.03)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            InterestRate['To be'] = 0.05
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[-1].category, MinnetonkaWarning)
+            self.assertEqual(str(w[-1].message), 
+                'Setting amount of unitary variable InterestRate '+
+                'in only one treatment')
 
 
 class SafeDiv(unittest.TestCase):

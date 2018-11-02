@@ -597,6 +597,14 @@ class ModelVariables:
         self._variables = {}
         self._is_ordered = False
 
+    def _variable_iterator(self):
+        """Return an iterator over variables."""
+        return self._variables.values()
+
+    def _varirable_name_iterator(self):
+        """Return an iterator over variable names."""
+        return self._variables.keys()
+
     def add_variables(self, model, *variables):
         """Add the list of variables."""
         logging.info('enter with variables {}'.format(variables))
@@ -628,14 +636,11 @@ class ModelVariables:
         except KeyError:
             raise MinnetonkaError('Unknown variable {}'.format(variable_name))
 
-    def variable_names(self):
-        """Return the names of all the variables, as a list of strings."""
-        return self._variables.keys()
-
     def initialize(self, model):
         """Initialize the variables of the simulation."""
         logging.info('enter')
-        self._check_for_cycles(model) 
+        self._check_for_cycles(model)
+        self._label_taries() 
         self._create_all_variable_instances()
         self._wire_variable_instances(model)
         self._sort_variables()
@@ -646,22 +651,65 @@ class ModelVariables:
         """Check for any cycle among variables, raising error if necessary."""
         logging.info('enter')
         variables_seen = []
-        for vname in self.variable_names():
-            variable = self.variable(vname)
+        for variable in self._variable_iterator(): 
             if variable not in variables_seen:
                 variable.check_for_cycle(variables_seen)
+
+    def _label_taries(self):
+        """Label every model variable as either unitary or multitary."""
+        self._label_tary_initial()
+        self._label_multitary_succedents()
+        self._label_unknowns_unitary()
+
+    def _label_tary_initial(self):
+        """Label the tary of model variables, with some unknown."""
+        for var in self._variable_iterator():
+            if not var.has_unitary_definition():
+                var.set_tary('multitary')
+            elif var.antecedents(ignore_pseudo=True) == []:
+                var.set_tary('unitary')
+            else: 
+                var.set_tary('unknown')
+
+    def _label_multitary_succedents(self):
+        """Label all succedents of multitary variables as multitary."""
+        succedents = self._collect_succedents()
+        multitaries = [v for v in self._variable_iterator() 
+                       if v.tary() == 'multitary']
+        for var in multitaries:
+            self._label_all_succedents_multitary(var, succedents)
+
+    def _collect_succedents(self):
+        """Return dict of succedents of each variable."""
+        succedents = {v: set([]) for v in self._variable_iterator()}
+        for var in self._variable_iterator():
+            for ante in var.antecedents(ignore_pseudo=True):
+                succedents[ante].add(var)
+        return succedents
+
+    def _label_all_succedents_multitary(self, var, succedents):
+        """Label all succedents (and their succedents) or var as multitary."""
+        var.set_tary('multitary')
+        for succ in succedents[var]:
+            if succ.tary() == 'unknown':
+                self._label_all_succedents_multitary(succ, succedents)
+
+    def _label_unknowns_unitary(self):
+        """Label every unknown variable as unitary."""
+        for v in self._variable_iterator():
+            if v._tary == 'unknown':
+                v.set_tary('unitary')
 
     def _create_all_variable_instances(self):
         """Create all variable instances."""
         logging.info('enter')
-        for variable_name in self.variable_names():
-            self.variable(variable_name).create_variable_instances()
+        for variable in self._variable_iterator():
+            variable.create_variable_instances()
 
     def _wire_variable_instances(self, model):
         """Provide each of the var instances with its antecedent instances."""
-        logging.info('enter')
-        for variable_name in self.variable_names():
-            variable = self.variable(variable_name)
+        logging.info('enter') 
+        for variable in self._variable_iterator():
             variable.wire_instances()
 
     def _sort_variables(self):
@@ -694,8 +742,8 @@ class ModelVariables:
                         ante, [variable_name] + already_seen)
                 ordered_variables[variable_name] = var
 
-        for variable_name in self.variable_names():
-            _maybe_insert_variable_and_antes(variable_name, list())
+        for variable in self._variable_iterator():
+            _maybe_insert_variable_and_antes(variable.name(), list())
         return ordered_variables
 
     def _set_initial_amounts(self):
@@ -712,7 +760,7 @@ class ModelVariables:
 
     def _delete_existing_variable_instances(self):
         """Delete any variable instances that were previouslsy created."""
-        for variable in self._variables.values():
+        for variable in self._variable_iterator():
             variable.delete_all_variable_instances()
 
     def reset(self, reset_external_vars):
@@ -795,6 +843,12 @@ class MetaVariableClass(type):
         """Set [] for this variable."""
         if treatment_name == '__all__':
             return cls.set_amount_all(amount)
+        elif cls.is_unitary():
+            warnings.warn(
+                'Setting amount of unitary variable {} '.format(cls.name()) +
+                'in only one treatment',
+                MinnetonkaWarning)
+            cls.set_amount_all(amount)
         else:
             return cls.by_treatment(treatment_name).set_amount(amount)
 
@@ -831,37 +885,27 @@ class Variable(object, metaclass=MetaVariableClass):
             for treatment in cls._model.treatments():
                 cls(treatment)
 
+    # class properties sure would be nice here
+    
     @classmethod
-    def is_unitary(cls, currently_checking=[]):
+    def tary(cls):
+        return cls._tary 
+
+    @classmethod
+    def set_tary(cls, tary_value):
+        cls._tary = tary_value 
+
+    @classmethod
+    def is_unitary(cls):
         """Returns whether variable is unitary: same across all treatments.
 
         Some variables always take the same value across all treatments.
         Is this variable one of those unitary variables?
 
-        :param currently_checking: list of variables being checked recursively 
-        :type currently_checking: list of variable classes
         :return: whether the variable is unitary
         :rtype: boolean
         """
-        try: 
-            return cls._is_unitary
-        except AttributeError:
-            cls._is_unitary = cls._determine_whether_unitary(currently_checking)
-            return cls._is_unitary
-
-    @classmethod
-    def _determine_whether_unitary(cls, currently_checking):
-        """Mark whether this variable is unitary."""
-        return (cls._has_unitary_definition() and 
-                cls._has_unitary_antecedents(currently_checking))
-
-    @classmethod
-    def _has_unitary_antecedents(cls, currently_checking):
-        """Returns whether all the antecedents are unitary."""
-        currently_checking = currently_checking + [cls]
-        return all([d.is_unitary(currently_checking) 
-                    for d in cls._all_dependencies(ignore_pseudo=True) or []
-                    if d not in currently_checking])
+        return cls.tary() == 'unitary'
 
     @classmethod
     def note_model(cls, model):
@@ -1023,7 +1067,7 @@ class Variable(object, metaclass=MetaVariableClass):
         cls._show_doc()
         cls._show_amounts()
         cls._show_definition_and_dependencies()
-        return cls._all_dependencies()
+        return cls.antecedents()
 
     @classmethod
     def _show_name(cls):
@@ -1146,13 +1190,13 @@ class PlainVariable(SimpleVariable):
         print('Depends on: {}'.format(cls.depends_on()))
 
     @classmethod
-    def _all_dependencies(cls, ignore_pseudo=False):
+    def antecedents(cls, ignore_pseudo=False):
         """Return all the depends_on variables."""
         m = cls._model
         return [m[v] for v in cls.depends_on(ignore_pseudo=ignore_pseudo)]
 
     @classmethod
-    def _has_unitary_definition(cls):
+    def has_unitary_definition(cls):
         """Returns whether the variable has a unitary definition."""
         return cls._calculator.has_unitary_definition()
 
@@ -1727,7 +1771,7 @@ class Incrementer(Variable):
             cls._incremental.depends_on()))
 
     @classmethod
-    def _all_dependencies(cls, ignore_pseudo=False):
+    def antecedents(cls, ignore_pseudo=False):
         """Return all the depends_on variables."""
         all_depends = list(dict.fromkeys(
             list(cls._initial.depends_on(ignore_pseudo=ignore_pseudo)) + 
@@ -1735,7 +1779,7 @@ class Incrementer(Variable):
         return [cls._model[v] for v in all_depends]
 
     @classmethod
-    def _has_unitary_definition(cls):
+    def has_unitary_definition(cls):
         """Returns whether the variable has a unitary definition."""
         return (cls._initial.has_unitary_definition() and
                 cls._incremental.has_unitary_definition())
@@ -2304,7 +2348,7 @@ class PreviousVariable(SimpleVariable):
         print('Previous variable: {}'.format(cls._earlier))
 
     @classmethod
-    def _all_dependencies(cls, ignore_pseudo=False):
+    def antecedents(cls, ignore_pseudo=False):
         """Return all the depends_on variables."""
         if ignore_pseudo and cls._earlier == '__model__':
             return []
@@ -2312,7 +2356,7 @@ class PreviousVariable(SimpleVariable):
             return [cls._model[cls._earlier]]
 
     @classmethod
-    def _has_unitary_definition(cls):
+    def has_unitary_definition(cls):
         """Returns whether the previous has a unitary definition."""
         return True
 
