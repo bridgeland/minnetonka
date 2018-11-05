@@ -1321,7 +1321,7 @@ def variable(variable_name, *args):
 
     See Also
     --------
-    constant : Create a plain variable whose amount does not change
+    constant : Create a variable whose amount does not change
 
     stock : Create a system dynamics stock
 
@@ -1581,12 +1581,14 @@ class Constant(PlainVariable):
     """
     A variable that does not vary.
 
-    A constant—--an instance of :class:`Constant`---is a variable whose
-    amount does not change over the course of a simulation. Its amount 
+    A constant---an instance of :class:`Constant`---is a variable whose
+    amount does not change. Its amount 
     is set on initialization, and then does not change over the course of the
-    simulation. A single constant can take a different amount in each
-    model treatment.
+    simulation. When the simulation is reset, the constant can be given
+    a new amount.
 
+    A single constant can take a different amount in each
+    model treatment.
     The amount of a constant in a particular treatment can be found using
     subscription brackets, e.g. **Interest['to be']**. See examples below.
 
@@ -1594,24 +1596,18 @@ class Constant(PlainVariable):
     a Python callable. It can be defined in terms of other variables, 
     using a callable in the definition. See examples below.
 
+    The amount of a constant can be changed explicitly, outside the model
+    logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
+    the constant remains the same, at least until the simulation is reset
+    or the amount is again changed explicitly. See examples below.
 
-
-
-
-    , or at least
-    it does not change through the logic of the model. (The amount of a
-    constant can be changed explicitly, outside the model logic.)
-
-    A constant is typically created via :func:`constant`, rather than 
-
-    instances and classes
-
-    The amount of a constant can change 
-
+    A constant is typically created via :func:`constant`. 
 
     See Also
     --------
     constant : Create a constant
+
+    :class:`PlainVariable`: a variable that can vary
 
     Examples
     --------
@@ -1633,8 +1629,8 @@ class Constant(PlainVariable):
     >>> C1['']
     0
 
-    The simulation is advanced by one step. **V** has a new amount, but both
-    **C1** and **C2** remain the same.
+    The simulation is advanced by one step. The variable **V** has a new 
+    amount, but the constants **C1** and **C2** remain the same.
 
     >>> m.step()
     >>> V['']
@@ -1673,20 +1669,6 @@ class Constant(PlainVariable):
     1
     >>> C2['']
     1
-
-    Create a new model, with two treatmetns, variables, and one constant, 
-    that takes a different amount for each treatment.
-
-    >>> with model(treatments=['normal', 'high interest']) as m2:
-    ...     InterestRate = constant('InterestRate', 
-    ...         PerTreatment({'normal': 0.04, 'high interest': 0.15}))
-    ...     Interest = variable('Interest', 
-                lambda s, ir: s * ir, 'Savings', 'InterestRate')
-    ...     Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
-
-
-
-
     """
 
     def _step(self):
