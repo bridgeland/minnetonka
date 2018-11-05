@@ -889,10 +889,12 @@ class Variable(object, metaclass=MetaVariableClass):
     
     @classmethod
     def tary(cls):
+        """Is the variable unitary or not (i.e. multitary)?"""
         return cls._tary 
 
     @classmethod
     def set_tary(cls, tary_value):
+        """Set the taryness of the variable."""
         cls._tary = tary_value 
 
     @classmethod
@@ -1133,7 +1135,12 @@ class SimpleVariable(Variable):
 
 
 class PlainVariable(SimpleVariable):
-    """A variable that is calculated from the current value of others."""
+    """
+    A variable whose amount is calculated from the amounts of other variables.
+
+    """
+
+
 
     def _calculate_amount(self):
         """Calculate the current amount of this plain variable."""
@@ -1504,16 +1511,26 @@ class PerTreatment:
 
 def constant(constant_name, *args):
     """
-    Create a variable whose amount never changes, over the simulation.
+    Create a variable whose amount does not vary.
 
     A constant is a variable that does not vary. Its amount is set on
     initialization, and then does not change over the course of the 
-    simulation. A single constant can take a different amount in each
-    model treatment.
+    simulation. When the simulation is reset, the constant can be given a
+    new amount. 
 
-    As with other variables, the amount of a constant can be any Python
-    object, except a string or a Python callable. It can be defined in
-    terms of other variables, using a callable.
+    A single constant can take a different amount in each
+    model treatment. The amount of a constant in a particular treatment
+    can be found using the subscription brackets, e.g. **Interest['to be']**.
+    See examples below.
+
+    The amount of a constant can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. See examples below.
+
+    The amount of a constant can be changed explicitly, outside the model
+    logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
+    the constant remains the same, at least until the simulation is reset
+    or the amount is again changed explicitly. See examples below.
 
     Parameters
     ----------
@@ -1537,80 +1554,40 @@ def constant(constant_name, *args):
 
     stock : Create a system dynamics stock
 
-    :class:`Constant` : a constant, once created
-
     :class:`PerTreatment` : for defining how a constant takes different
         (constant) amounts for each treatment 
 
     Examples
     --------
-    A constant without a description.
+    Create a constant without a description.
 
     >>> constant('KitchenCloses', 22)
 
-    A constant with a description.
+    Create constant with a description.
 
     >>> constant('KitchenCloses', 
     ...     '''What time is the kitchen scheduled to close?''',
     ...     22.0)
 
-    A constant whose amount is a Python dictionary.
+    Create a constant whose amount is a Python dictionary.
 
     >>> constant('KitchenCloses', 
     ...     {'Friday': 23.5, 'Saturday': 23.5, 'Sunday': 21.0, 
     ...      'Monday': 22.0, 'Tuesday': 22.0, 'Wednesday': 22.0, 
     ...      'Thursday': 22.5})
 
-    A constant whose amount differs by treatment.
+    Create a constant whose amount differs by treatment.
 
     >>> constant('KitchenOpens', 
     ...     PerTreatment({'As is': 17.0, 'Open early': 15.5}))
 
-    A constant whose (non-varying) amount is calculated from other variables.
+    Create a constant whose (non-varying) amount is calculated from other 
+    variables.
 
     >>> constant('KitchenDuration',
     ...     '''How many hours is the kitchen open each day?''',
     ...     lambda c, o: c - o, 'KitchenCloses', 'KitchenOpens')
     
-    """
-    logging.info('Creating constant %s', constant_name)
-    return _parse_and_create(constant_name, Constant, 'Constant', args)
-
-
-class Constant(PlainVariable):
-    """
-    A variable that does not vary.
-
-    A constant---an instance of :class:`Constant`---is a variable whose
-    amount does not change. Its amount 
-    is set on initialization, and then does not change over the course of the
-    simulation. When the simulation is reset, the constant can be given
-    a new amount.
-
-    A single constant can take a different amount in each
-    model treatment.
-    The amount of a constant in a particular treatment can be found using
-    subscription brackets, e.g. **Interest['to be']**. See examples below.
-
-    The amount of a constant can be any Python object, except a string or
-    a Python callable. It can be defined in terms of other variables, 
-    using a callable in the definition. See examples below.
-
-    The amount of a constant can be changed explicitly, outside the model
-    logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
-    the constant remains the same, at least until the simulation is reset
-    or the amount is again changed explicitly. See examples below.
-
-    A constant is typically created via :func:`constant`. 
-
-    See Also
-    --------
-    constant : Create a constant
-
-    :class:`PlainVariable`: a variable that can vary
-
-    Examples
-    --------
     Create a model with one variable and two constants.
 
     >>> import random
@@ -1669,7 +1646,22 @@ class Constant(PlainVariable):
     1
     >>> C2['']
     1
+
+    Show the details of **C2**
+
+    >>> C2.show()
+    Constant: C1
+    Amounts: {'': 6}
+    Definition: C1 = constant('C1', lambda: random.randint(0, 9))
+    Depends on: []
+
     """
+    logging.info('Creating constant %s', constant_name)
+    return _parse_and_create(constant_name, Constant, 'Constant', args)
+
+
+class Constant(PlainVariable):
+    """A variable that does not vary."""
 
     def _step(self):
         pass

@@ -11,8 +11,6 @@ Welcome to Minnetonka's documentation!
 .. autoclass:: Variable
 	:members: amount
 
-.. autoclass:: Constant
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
