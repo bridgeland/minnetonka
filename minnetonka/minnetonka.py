@@ -11,7 +11,7 @@ __status__ = "Prototype"
 import warnings
 import copy
 import pdb
-import collections
+import collections 
 import itertools
 import logging
 import json
@@ -277,9 +277,9 @@ class Model:
         ----------
         reset_external_vars : bool, optional
             Sometimes variables are set to amounts outside the model logic.
-            (See example below, and more examples with :class:`Variable`.) 
-            Should these
-            externally-defined variables be reset to their initial amounts
+            (See example below, and more examples with :func:`constant`, 
+            :func:`variable`, and :func:`stock`.) 
+            Should these externally-defined variables be reset to their initial amounts
             when the model as a whole is reset? Default: True, reset those
             externally-defined variables.
 
@@ -832,7 +832,7 @@ def treatments(*treatment_names):
 #
 
 
-class MetaVariableClass(type):
+class Variable(type):
     """Implement the [] syntax for variable."""
 
     def __getitem__(cls, treatment_name):
@@ -853,7 +853,7 @@ class MetaVariableClass(type):
             return cls.by_treatment(treatment_name).set_amount(amount)
 
 
-class Variable(object, metaclass=MetaVariableClass):
+class VariableOfTreatment(object, metaclass=Variable):
     """
     Any of the variety of variable types.
     """
@@ -1093,7 +1093,7 @@ class Variable(object, metaclass=MetaVariableClass):
         print('Amounts: {}\n'.format(cls.all()))
 
 
-class SimpleVariable(Variable):
+class SimpleVariable(VariableOfTreatment):
     """A variable that is not an incrementer."""
 
     def _reset(self, reset_external_vars):
@@ -1323,7 +1323,7 @@ def variable(variable_name, *args):
 
     Returns
     -------
-    PlainVariable
+    Variable
         the newly-created variable
 
     See Also
@@ -1332,7 +1332,7 @@ def variable(variable_name, *args):
 
     stock : Create a system dynamics stock
 
-    :class:`PlainVariable` : a simple variable, once created
+    :class:`Variable` : a simple variable, once created
 
     :class:`PerTreatment` : for defining how a variable has a different amount
         for each treatment
@@ -1695,7 +1695,7 @@ class Constant(PlainVariable):
 # Stock classes
 #
 
-class Incrementer(Variable):
+class Incrementer(VariableOfTreatment):
     """A variable with internal state, that increments every step."""
 
     def _reset(self, external_vars):
