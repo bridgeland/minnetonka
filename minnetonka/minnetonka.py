@@ -1070,8 +1070,7 @@ class CommonVariableInstance(object, metaclass=CommonVariable):
             return None
 
 
-
-class SimpleVariable(CommonVariableInstance):
+class SimpleVariableInstance(CommonVariableInstance):
     """A variable that is not an incrementer."""
 
     def _reset(self, reset_external_vars):
@@ -1137,7 +1136,7 @@ class Variable(CommonVariable):
         return self._calculator.has_unitary_definition()
 
 
-class VariableInstance(SimpleVariable, metaclass=Variable):
+class VariableInstance(SimpleVariableInstance, metaclass=Variable):
     """
     A variable whose amount is calculated from the amounts of other variables.
 
@@ -2243,7 +2242,7 @@ def _create_accum(accum_name, docstring,
 #
 
 
-class PreviousVariable(SimpleVariable):
+class PreviousVariable(SimpleVariableInstance):
     """A variable that takes the previous amount of another variable."""
 
     def wire_instance(self, model, treatment_name):
