@@ -1110,13 +1110,37 @@ class SimpleVariable(CommonVariableOfTreatment):
         return cls._calculator.depends_on(ignore_pseudo)
 
 
-class PlainVariable(SimpleVariable):
+class Variable(CommonVariable):
+    def _check_for_cycle_in_depends_on(self, checked_already, dependents):
+        """Check for cycles among the depends on for this plain variable."""
+        for dname in self.depends_on(ignore_pseudo=True):
+            d = self._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    def _kind(self):
+        """Return what kind of variable this is."""
+        return 'Variable'
+
+    def _show_definition_and_dependencies(self):
+        """Print the definition and the variables it depends on."""
+        print('Definition: {}'.format(self._calculator.serialize_definition()))
+        print('Depends on: {}'.format(self.depends_on()))
+
+    def antecedents(self, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        m = self._model
+        return [m[v] for v in self.depends_on(ignore_pseudo=ignore_pseudo)]
+
+    def has_unitary_definition(self):
+        """Returns whether the variable has a unitary definition."""
+        return self._calculator.has_unitary_definition()
+
+
+class VariableOfTreatment(SimpleVariable, metaclass=Variable):
     """
     A variable whose amount is calculated from the amounts of other variables.
 
     """
-
-
 
     def _calculate_amount(self):
         """Calculate the current amount of this plain variable."""
@@ -1154,34 +1178,7 @@ class PlainVariable(SimpleVariable):
             model.variable_instance(v, treatment_name)
             for v in self.depends_on()]
 
-    @classmethod
-    def _check_for_cycle_in_depends_on(cls, checked_already, dependents):
-        """Check for cycles among the depends on for this plain variable."""
-        for dname in cls.depends_on(ignore_pseudo=True):
-            d = cls._model.variable(dname)
-            d.check_for_cycle(checked_already, dependents=dependents)
 
-    @classmethod
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Variable'
-
-    @classmethod
-    def _show_definition_and_dependencies(cls):
-        """Print the definition and the variables it depends on."""
-        print('Definition: {}'.format(cls._calculator.serialize_definition()))
-        print('Depends on: {}'.format(cls.depends_on()))
-
-    @classmethod
-    def antecedents(cls, ignore_pseudo=False):
-        """Return all the depends_on variables."""
-        m = cls._model
-        return [m[v] for v in cls.depends_on(ignore_pseudo=ignore_pseudo)]
-
-    @classmethod
-    def has_unitary_definition(cls):
-        """Returns whether the variable has a unitary definition."""
-        return cls._calculator.has_unitary_definition()
 
 
 class Calculator:
@@ -1374,7 +1371,7 @@ def variable(variable_name, *args):
     >>> Step = variable('Step', lambda md: md.TIME, '__model__')
     """
     logging.info('Creating variable %s', variable_name)
-    return _parse_and_create(variable_name, PlainVariable, 'Variable', args)
+    return _parse_and_create(variable_name, VariableOfTreatment, 'Variable', args)
 
 
 def _parse_and_create(name, variable_class, create_what, args):
@@ -1635,12 +1632,12 @@ def constant(constant_name, *args):
     logging.info('Creating constant %s', constant_name)
     return _parse_and_create(constant_name, ConstantOfTreatment, 'Constant', args)
 
-class Constant(CommonVariable):
+class Constant(Variable):
     def _kind(self):
         """Return what kind of variable this is."""
         return 'Constant'
 
-class ConstantOfTreatment(PlainVariable, metaclass=Constant):
+class ConstantOfTreatment(VariableOfTreatment, metaclass=Constant):
     """A variable that does not vary."""
 
     def _step(self):
