@@ -393,7 +393,7 @@ class Model:
 
         Returns
         -------
-        Variable : the variable with name ``variable_name``
+        Variable : newly-defined variable with name ``variable_name``
 
         Raises
         ------
@@ -1545,7 +1545,7 @@ def constant(constant_name, *args):
 
     Returns
     -------
-    Constant
+    Variable
         the newly-created constant
 
     See Also
