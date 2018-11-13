@@ -835,23 +835,174 @@ def treatments(*treatment_names):
 class Variable(type):
     """Implement the [] syntax for variable."""
 
-    def __getitem__(cls, treatment_name):
+    def __getitem__(self, treatment_name):
         """Get [] for this variable."""
-        return cls.by_treatment(treatment_name).amount()
+        return self.by_treatment(treatment_name).amount()
 
-    def __setitem__(cls, treatment_name, amount):
+    def __setitem__(self, treatment_name, amount):
         """Set [] for this variable."""
         if treatment_name == '__all__':
-            return cls.set_amount_all(amount)
-        elif cls.is_unitary():
+            return self.set_amount_all(amount)
+        elif self.is_unitary():
             warnings.warn(
-                'Setting amount of unitary variable {} '.format(cls.name()) +
+                'Setting amount of unitary variable {} '.format(self.name()) +
                 'in only one treatment',
                 MinnetonkaWarning)
-            cls.set_amount_all(amount)
+            self.set_amount_all(amount)
         else:
-            return cls.by_treatment(treatment_name).set_amount(amount)
+            return self.by_treatment(treatment_name).set_amount(amount)
 
+    def create_variable_instances(self):
+        """Create variable instances for this variable."""
+        if self.is_unitary():
+            v = self()
+            for treatment in self._model.treatments():
+                v._initialize_treatment(treatment)
+        else:
+            for treatment in self._model.treatments():
+                self(treatment)
+
+    # To do: use property
+    
+    def tary(self):
+        """Is the variable unitary or not (i.e. multitary)?"""
+        return self._tary 
+
+    def set_tary(self, tary_value):
+        """Set the taryness of the variable."""
+        self._tary = tary_value 
+
+    def is_unitary(self):
+        """Returns whether variable is unitary: same across all treatments.
+
+        Some variables always take the same value across all treatments.
+        Is this variable one of those unitary variables?
+
+        :return: whether the variable is unitary
+        :rtype: boolean
+        """
+        return self.tary() == 'unitary'
+
+    def note_model(self, model):
+        """Keep track of the model, for future reference."""
+        self._model = model
+
+    def by_treatment(self, treatment_name):
+        """Return the variable instance associated with this treatment."""
+        try:
+            return self._by_treatment[treatment_name]
+        except (KeyError, AttributeError):
+            raise MinnetonkaError(
+                'Variable {} not initialized with treatment {}'.format(
+                    self.name(), treatment_name))
+
+    def all_instances(self):
+        """Return all the instances of this variable."""
+        if self.is_unitary():
+            return itertools.islice(self._by_treatment.values(), 0, 1) 
+        else:
+            return self._by_treatment.values()
+
+    def set_all_initial_amounts(self):
+        """Set the initial amounts of all the variable instances."""
+        if self.is_unitary():
+            treatment_name, var = list(self._by_treatment.items())[0]
+            var._set_initial_amount(treatment_name)
+        else:
+            for treatment_name, var in self._by_treatment.items():
+                var._set_initial_amount(treatment_name)
+
+    def reset_all(self, reset_external_vars):
+        """Reset this variable to its initial amount.
+
+        Reset all variable instances of this variable class to their initial
+        amounts. But maybe don't reset the variables set externally, depending
+        on the value of reset_external_vars
+        """
+        for var in self.all_instances():
+            var._clear_history()
+            var._reset(reset_external_vars)
+
+    def step_all(self):
+        """Advance all the variable instances one step."""
+        for var in self.all_instances():
+            var._record_current_amount()
+            var._step()
+
+    def recalculate_all(self):
+        """Recalculate all the variable instances, without changing step."""
+        for var in self._by_treatment.values():
+            var._recalculate()
+
+    def calculate_all_increments(self, ignore):
+        """Ignore this in general. Only meaningful for stocks."""
+        pass
+
+    def set_amount_all(self, amount):
+        """Set the amount for all treatments."""
+        for var in self.all_instances():
+            var.set_amount(amount)
+
+    def delete_all_variable_instances(self):
+        """Delete all variables instances."""
+        for v in self.all_instances():
+            v._treatment.remove_variable(v)
+        self._by_treatment = {}
+
+    def history(self, treatment_name, step):
+        """Return the amount at a particular timestep."""
+        return self.by_treatment(treatment_name)._history(step)
+
+    def wire_instances(self):
+        """For each instance of this variable, set the vars it depends on."""
+        for treatment in self._model.treatments():
+            self.by_treatment(treatment.name).wire_instance(
+                self._model, treatment.name)
+
+    def check_for_cycle(self, checked_already, dependents=None):
+        """Check for cycles involving this variable."""
+        if self in checked_already:
+            return
+        elif dependents is None:
+            dependents = []
+        elif self in dependents:
+            varnames = [d.name() for d in dependents] + [self.name()]
+            raise MinnetonkaError('Circularity among variables: {}'.format(
+                ' <- '.join(varnames)))
+
+        dependents = dependents + [self]
+        self._check_for_cycle_in_depends_on(checked_already, dependents)
+        checked_already.append(self)
+
+    def all(self):
+        """Return a dict of all amounts, one for each treatment."""
+        return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()}
+
+    def show(self):
+        """Show everything important about the variable."""
+        self._show_name()
+        self._show_doc()
+        self._show_amounts()
+        self._show_definition_and_dependencies()
+        return self.antecedents()
+
+    def _show_name(self):
+        """Print the variable type and name."""
+        bold = '\033[1m'; endbold = '\033[0m'
+        print('{}{}: {}{}\n'.format(bold, self._kind(), self.name(), endbold))
+
+    def _show_doc(self):
+        """Show the documentation of the variable, if any."""
+        try:
+            if self.__doc__:
+                print(self.__doc__)
+                print()
+        except:
+            pass
+
+    def _show_amounts(self):
+        """Show the amounts for all the instances of the variable."""
+        print('Amounts: {}\n'.format(self.all()))
 
 class VariableOfTreatment(object, metaclass=Variable):
     """
@@ -875,44 +1026,9 @@ class VariableOfTreatment(object, metaclass=Variable):
             type(self)._by_treatment = {treatment.name: self}
 
     @classmethod
-    def create_variable_instances(cls):
-        """Create variable instances for this variable."""
-        if cls.is_unitary():
-            v = cls()
-            for treatment in cls._model.treatments():
-                v._initialize_treatment(treatment)
-        else:
-            for treatment in cls._model.treatments():
-                cls(treatment)
-
-    # class properties sure would be nice here
-    
-    @classmethod
-    def tary(cls):
-        """Is the variable unitary or not (i.e. multitary)?"""
-        return cls._tary 
-
-    @classmethod
-    def set_tary(cls, tary_value):
-        """Set the taryness of the variable."""
-        cls._tary = tary_value 
-
-    @classmethod
-    def is_unitary(cls):
-        """Returns whether variable is unitary: same across all treatments.
-
-        Some variables always take the same value across all treatments.
-        Is this variable one of those unitary variables?
-
-        :return: whether the variable is unitary
-        :rtype: boolean
-        """
-        return cls.tary() == 'unitary'
-
-    @classmethod
-    def note_model(cls, model):
-        """Keep track of the model, for future reference."""
-        cls._model = model
+    def name(cls):
+        """Return the name of the variable."""
+        return cls.__name__
 
     def amount(self):
         """Return the current value of amount."""
@@ -921,98 +1037,17 @@ class VariableOfTreatment(object, metaclass=Variable):
         else:
             return self._extra_model_amount
 
-    @classmethod
-    def name(cls):
-        """Return the name of the variable."""
-        return cls.__name__
-
-    @classmethod
-    def by_treatment(cls, treatment_name):
-        """Return the variable instance associated with this treatment."""
-        try:
-            return cls._by_treatment[treatment_name]
-        except (KeyError, AttributeError):
-            raise MinnetonkaError(
-                'Variable {} not initialized with treatment {}'.format(
-                    cls.name(), treatment_name))
-
-    @classmethod
-    def all_instances(cls):
-        """Return all the instances of this variable."""
-        if cls.is_unitary():
-            return itertools.islice(cls._by_treatment.values(), 0, 1) 
-        else:
-            return cls._by_treatment.values()
-
     def treatment(self):
         """Return the treatment of the variable instance."""
         return self._treatment
-
-    @classmethod
-    def set_all_initial_amounts(cls):
-        """Set the initial amounts of all the variable instances."""
-        if cls.is_unitary():
-            treatment_name, var = list(cls._by_treatment.items())[0]
-            var._set_initial_amount(treatment_name)
-        else:
-            for treatment_name, var in cls._by_treatment.items():
-                var._set_initial_amount(treatment_name)
-
-    @classmethod
-    def reset_all(cls, reset_external_vars):
-        """Reset this variable to its initial amount.
-
-        Reset all variable instances of this variable class to their initial
-        amounts. But maybe don't reset the variables set externally, depending
-        on the value of reset_external_vars
-        """
-        for var in cls.all_instances():
-            var._clear_history()
-            var._reset(reset_external_vars)
 
     def _clear_history(self):
         """Clear the stepwise history of amounts from the variable."""
         self._old_amounts = []
 
-    @classmethod
-    def step_all(cls):
-        """Advance all the variable instances one step."""
-        for var in cls.all_instances():
-            var._record_current_amount()
-            var._step()
-
     def _record_current_amount(self):
         """Record the current amount of the variable, prior to a step."""
         self._old_amounts.append(self._amount)
-
-    @classmethod
-    def recalculate_all(cls):
-        """Recalculate all the variable instances, without changing step."""
-        for var in cls._by_treatment.values():
-            var._recalculate()
-
-    @classmethod
-    def calculate_all_increments(cls, ignore):
-        """Ignore this in general. Only meaningful for stocks."""
-        pass
-
-    @classmethod
-    def set_amount_all(cls, amount):
-        """Set the amount for all treatments."""
-        for var in cls.all_instances():
-            var.set_amount(amount)
-
-    @classmethod
-    def delete_all_variable_instances(cls):
-        """Delete all variables instances."""
-        for v in cls.all_instances():
-            v._treatment.remove_variable(v)
-        cls._by_treatment = {}
-
-    @classmethod
-    def history(cls, treatment_name, step):
-        """Return the amount at a particular timestep."""
-        return cls.by_treatment(treatment_name)._history(step)
 
     def _history(self, step):
         """Return the amount at timestep step."""
@@ -1033,64 +1068,6 @@ class VariableOfTreatment(object, metaclass=Variable):
             return self._history(previous)
         except:
             return None
-
-    @classmethod
-    def wire_instances(cls):
-        """For each instance of this variable, set the vars it depends on."""
-        for treatment in cls._model.treatments():
-            cls.by_treatment(treatment.name).wire_instance(
-                cls._model, treatment.name)
-
-    @classmethod
-    def check_for_cycle(cls, checked_already, dependents=None):
-        """Check for cycles involving this variable."""
-        if cls in checked_already:
-            return
-        elif dependents is None:
-            dependents = []
-        elif cls in dependents:
-            varnames = [d.name() for d in dependents] + [cls.name()]
-            raise MinnetonkaError('Circularity among variables: {}'.format(
-                ' <- '.join(varnames)))
-
-        dependents = dependents + [cls]
-        cls._check_for_cycle_in_depends_on(checked_already, dependents)
-        checked_already.append(cls)
-
-    @classmethod
-    def all(cls):
-        """Return a dict of all amounts, one for each treatment."""
-        return {tmt: inst.amount() for tmt, inst in cls._by_treatment.items()}
-
-    @classmethod
-    def show(cls):
-        """Show everything important about the variable."""
-        cls._show_name()
-        cls._show_doc()
-        cls._show_amounts()
-        cls._show_definition_and_dependencies()
-        return cls.antecedents()
-
-    @classmethod
-    def _show_name(cls):
-        """Print the variable type and name."""
-        bold = '\033[1m'; endbold = '\033[0m'
-        print('{}{}: {}{}\n'.format(bold, cls._kind(), cls.name(), endbold))
-
-    @classmethod
-    def _show_doc(cls):
-        """Show the documentation of the variable, if any."""
-        try:
-            if cls.__doc__:
-                print(cls.__doc__)
-                print()
-        except:
-            pass
-
-    @classmethod
-    def _show_amounts(cls):
-        """Show the amounts for all the instances of the variable."""
-        print('Amounts: {}\n'.format(cls.all()))
 
 
 class SimpleVariable(VariableOfTreatment):
@@ -1129,8 +1106,7 @@ class SimpleVariable(VariableOfTreatment):
         :param ignore_pseudo: do not return names of pseudo-variables
         :return: list of all variable names this variable depends on
         """
-        # ignore for_init and for_sort since behavior is the same for plain
-        # variables
+        # ignore for_init and for_sort since behavior is the same for simple variable
         return cls._calculator.depends_on(ignore_pseudo)
 
 
