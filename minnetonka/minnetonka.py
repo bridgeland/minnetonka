@@ -832,7 +832,7 @@ def treatments(*treatment_names):
 #
 
 
-class Variable(type):
+class CommonVariable(type):
     """Implement the [] syntax for variable."""
 
     def __getitem__(self, treatment_name):
@@ -1004,7 +1004,7 @@ class Variable(type):
         """Show the amounts for all the instances of the variable."""
         print('Amounts: {}\n'.format(self.all()))
 
-class VariableOfTreatment(object, metaclass=Variable):
+class CommonVariableOfTreatment(object, metaclass=CommonVariable):
     """
     Any of the variety of variable types.
     """
@@ -1070,7 +1070,7 @@ class VariableOfTreatment(object, metaclass=Variable):
             return None
 
 
-class SimpleVariable(VariableOfTreatment):
+class SimpleVariable(CommonVariableOfTreatment):
     """A variable that is not an incrementer."""
 
     def _reset(self, reset_external_vars):
@@ -1633,10 +1633,14 @@ def constant(constant_name, *args):
 
     """
     logging.info('Creating constant %s', constant_name)
-    return _parse_and_create(constant_name, Constant, 'Constant', args)
+    return _parse_and_create(constant_name, ConstantOfTreatment, 'Constant', args)
 
+class Constant(CommonVariable):
+    def _kind(self):
+        """Return what kind of variable this is."""
+        return 'Constant'
 
-class Constant(PlainVariable):
+class ConstantOfTreatment(PlainVariable, metaclass=Constant):
     """A variable that does not vary."""
 
     def _step(self):
@@ -1661,17 +1665,14 @@ class Constant(PlainVariable):
         """No history for a constant. Everything is the current value."""
         return self.amount()
 
-    @classmethod
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Constant'
+
 
 
 #
 # Stock classes
 #
 
-class Incrementer(VariableOfTreatment):
+class Incrementer(CommonVariableOfTreatment):
     """A variable with internal state, that increments every step."""
 
     def _reset(self, external_vars):
