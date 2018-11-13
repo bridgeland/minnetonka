@@ -1004,7 +1004,7 @@ class CommonVariable(type):
         """Show the amounts for all the instances of the variable."""
         print('Amounts: {}\n'.format(self.all()))
 
-class CommonVariableOfTreatment(object, metaclass=CommonVariable):
+class CommonVariableInstance(object, metaclass=CommonVariable):
     """
     Any of the variety of variable types.
     """
@@ -1070,7 +1070,8 @@ class CommonVariableOfTreatment(object, metaclass=CommonVariable):
             return None
 
 
-class SimpleVariable(CommonVariableOfTreatment):
+
+class SimpleVariable(CommonVariableInstance):
     """A variable that is not an incrementer."""
 
     def _reset(self, reset_external_vars):
@@ -1136,7 +1137,7 @@ class Variable(CommonVariable):
         return self._calculator.has_unitary_definition()
 
 
-class VariableOfTreatment(SimpleVariable, metaclass=Variable):
+class VariableInstance(SimpleVariable, metaclass=Variable):
     """
     A variable whose amount is calculated from the amounts of other variables.
 
@@ -1371,7 +1372,7 @@ def variable(variable_name, *args):
     >>> Step = variable('Step', lambda md: md.TIME, '__model__')
     """
     logging.info('Creating variable %s', variable_name)
-    return _parse_and_create(variable_name, VariableOfTreatment, 'Variable', args)
+    return _parse_and_create(variable_name, VariableInstance, 'Variable', args)
 
 
 def _parse_and_create(name, variable_class, create_what, args):
@@ -1630,14 +1631,14 @@ def constant(constant_name, *args):
 
     """
     logging.info('Creating constant %s', constant_name)
-    return _parse_and_create(constant_name, ConstantOfTreatment, 'Constant', args)
+    return _parse_and_create(constant_name, ConstantInstance, 'Constant', args)
 
 class Constant(Variable):
     def _kind(self):
         """Return what kind of variable this is."""
         return 'Constant'
 
-class ConstantOfTreatment(VariableOfTreatment, metaclass=Constant):
+class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
 
     def _step(self):
@@ -1669,7 +1670,7 @@ class ConstantOfTreatment(VariableOfTreatment, metaclass=Constant):
 # Stock classes
 #
 
-class Incrementer(CommonVariableOfTreatment):
+class Incrementer(CommonVariableInstance):
     """A variable with internal state, that increments every step."""
 
     def _reset(self, external_vars):
