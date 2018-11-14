@@ -853,10 +853,14 @@ class CommonVariable(type):
             return self.by_treatment(treatment_name).set_amount(amount)
 
     def __repr__(self):
-        return "{}('{}')".format(type(self).__name__.lower(), self.name())
+        return "{}('{}')".format(self._kind().lower(), self.name())
 
     def __str__(self):
-        return "<{} {}>".format(type(self).__name__, self.name())
+        return "<{} {}>".format(self._kind(), self.name())
+
+    def _kind(self):
+        """'Variable' or 'Stock' or 'Accum' or whatever."""
+        return type(self).__name__
 
     def create_variable_instances(self):
         """Create variable instances for this variable."""
@@ -1124,10 +1128,6 @@ class Variable(CommonVariable):
         for dname in self.depends_on(ignore_pseudo=True):
             d = self._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
-
-    def _kind(self):
-        """Return what kind of variable this is."""
-        return 'Variable'
 
     def _show_definition_and_dependencies(self):
         """Print the definition and the variables it depends on."""
@@ -1641,9 +1641,7 @@ def constant(constant_name, *args):
     return _parse_and_create(constant_name, ConstantInstance, 'Constant', args)
 
 class Constant(Variable):
-    def _kind(self):
-        """Return what kind of variable this is."""
-        return 'Constant'
+    pass
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
@@ -1753,10 +1751,6 @@ class Stock(Incrementer):
         for dname in self.depends_on(for_init=True):
             d = self._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
-
-    def _kind(self):
-        """Return what kind of variable this is."""
-        return 'Stock'
 
 class StockInstance(IncrementerInstance, metaclass=Stock):
     """A instance of a system dynamics stock for a particular treatment."""
@@ -2022,9 +2016,6 @@ class Accum(Incrementer):
             d = cls._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
 
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Accum'
 
 class AccumInstance(IncrementerInstance, metaclass=Accum):
     """Like ACCUM in SimLang, for a particular treatment instance."""
@@ -2247,10 +2238,6 @@ def _create_accum(accum_name, docstring,
 #
 
 class Previous(CommonVariable):
-    def _kind(self):
-        """Return what kind of variable this is."""
-        return 'Previous'
-
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
         """Check for cycles among the depends on for this simpler variable."""
         pass
