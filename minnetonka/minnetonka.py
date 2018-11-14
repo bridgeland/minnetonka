@@ -2241,8 +2241,32 @@ def _create_accum(accum_name, docstring,
 # previous: a variable that accesses previous value of another variable
 #
 
+class Previous(CommonVariable):
+    def _kind(self):
+        """Return what kind of variable this is."""
+        return 'Previous'
 
-class PreviousVariable(SimpleVariableInstance):
+    def _check_for_cycle_in_depends_on(self, checked_already, dependents):
+        """Check for cycles among the depends on for this simpler variable."""
+        pass
+
+    def _show_definition_and_dependencies(self):
+        """Print the definition and variables it depends on."""
+        print('Previous variable: {}'.format(self._earlier))
+
+    def antecedents(self, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        if ignore_pseudo and self._earlier == '__model__':
+            return []
+        else:
+            return [self._model[self._earlier]]
+
+    def has_unitary_definition(self):
+        """Returns whether the previous has a unitary definition."""
+        return True
+
+
+class PreviousInstance(SimpleVariableInstance, metaclass=Previous):
     """A variable that takes the previous amount of another variable."""
 
     def wire_instance(self, model, treatment_name):
@@ -2280,33 +2304,7 @@ class PreviousVariable(SimpleVariableInstance):
         else:
             return []
 
-    @classmethod
-    def _check_for_cycle_in_depends_on(cls, checked_already, dependents):
-        """Check for cycles among the depends on for this simpler variable."""
-        pass
 
-    @classmethod
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Previous'
-
-    @classmethod
-    def _show_definition_and_dependencies(cls):
-        """Print the definition and variables it depends on."""
-        print('Previous variable: {}'.format(cls._earlier))
-
-    @classmethod
-    def antecedents(cls, ignore_pseudo=False):
-        """Return all the depends_on variables."""
-        if ignore_pseudo and cls._earlier == '__model__':
-            return []
-        else:
-            return [cls._model[cls._earlier]]
-
-    @classmethod
-    def has_unitary_definition(cls):
-        """Returns whether the previous has a unitary definition."""
-        return True
 
 
 def previous(variable_name, *args):
@@ -2341,7 +2339,7 @@ def previous(variable_name, *args):
 
     Returns
     -------
-    PreviousVariable
+    Previous
         the newly created previous
 
     See Also
@@ -2401,7 +2399,7 @@ def _create_previous(
     Create a new previous, a variable that accesses previous value of another
     variable.
     """
-    newvar = type(latter_var_name, (PreviousVariable,),
+    newvar = type(latter_var_name, (PreviousInstance,),
                   {'__doc__': docstring, '_earlier': earlier_var_name,
                    '_init_amount': init_amount})
     Model.add_variable_to_current_context(newvar)
