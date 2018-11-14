@@ -3057,6 +3057,46 @@ class AllAmounts(unittest.TestCase):
         self.assertAlmostEqual(AccumInterest.all()['As is'], 107.625)
         self.assertAlmostEqual(AccumInterest.all()['To be'], 131.016)
 
+class StrAndRepr(unittest.TestCase):
+    def test_str(self):
+        """Test str() for a variety of variables"""
+        with model(treatments=['As is', 'To be']) as m:
+            Savings = stock(
+                'Savings', lambda interest: interest, ('Interest',), 1000)
+            Rate = constant(
+                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = variable(
+                'Interest', lambda savings, rate: savings * rate, 
+                'Savings', 'Rate')
+            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = accum('AccumInterest', 
+                lambda i: i, ('Interest',), 0)
+
+        self.assertEqual(str(Savings), "<Stock Savings>")
+        self.assertEqual(str(Rate), "<Constant Rate>")
+        self.assertEqual(str(Interest), "<Variable Interest>")
+        self.assertEqual(str(PreviousInterest), "<Previous PreviousInterest>")
+        self.assertEqual(str(AccumInterest), "<Accum AccumInterest>")
+
+    def test_repr(self):
+        """Test repr() for a variety of variables"""
+        with model(treatments=['As is', 'To be']) as m:
+            Savings = stock(
+                'Savings', lambda interest: interest, ('Interest',), 1000)
+            Rate = constant(
+                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = variable(
+                'Interest', lambda savings, rate: savings * rate, 
+                'Savings', 'Rate')
+            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = accum('AccumInterest', 
+                lambda i: i, ('Interest',), 0)
+
+        self.assertEqual(repr(Savings), "stock('Savings')")
+        self.assertEqual(repr(Rate), "constant('Rate')")
+        self.assertEqual(repr(Interest), "variable('Interest')")
+        self.assertEqual(repr(PreviousInterest), "previous('PreviousInterest')")
+        self.assertEqual(repr(AccumInterest), "accum('AccumInterest')")
 
 def bolded(string):
     """Return the string in bold."""

@@ -833,7 +833,7 @@ def treatments(*treatment_names):
 
 
 class CommonVariable(type):
-    """Implement the [] syntax for variable."""
+    """The common superclass for all Minnetonka variables and variable-like things."""
 
     def __getitem__(self, treatment_name):
         """Get [] for this variable."""
@@ -851,6 +851,12 @@ class CommonVariable(type):
             self.set_amount_all(amount)
         else:
             return self.by_treatment(treatment_name).set_amount(amount)
+
+    def __repr__(self):
+        return "{}('{}')".format(type(self).__name__.lower(), self.name())
+
+    def __str__(self):
+        return "<{} {}>".format(type(self).__name__, self.name())
 
     def create_variable_instances(self):
         """Create variable instances for this variable."""
@@ -1111,6 +1117,8 @@ class SimpleVariableInstance(CommonVariableInstance):
 
 
 class Variable(CommonVariable):
+    """A variable whose amount is calculated from amounts of other variables."""
+
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
         """Check for cycles among the depends on for this plain variable."""
         for dname in self.depends_on(ignore_pseudo=True):
