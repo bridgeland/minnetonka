@@ -1669,8 +1669,32 @@ class ConstantInstance(VariableInstance, metaclass=Constant):
 # Stock classes
 #
 
-class Incrementer(CommonVariableInstance):
+class Incrementer(Variable):
     """A variable with internal state, that increments every step."""
+    def _show_definition_and_dependencies(self):
+        """Print the definitions and variables it depends on."""
+        print('Initial definition: {}'.format(
+            self._initial.serialize_definition()))
+        print('Initial depends on: {}\n'.format(self._initial.depends_on()))
+        print('Incremental definition: {}'.format(
+            self._incremental.serialize_definition()))
+        print('Incremental depends on: {}'.format(
+            self._incremental.depends_on()))
+
+    def antecedents(self, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        all_depends = list(dict.fromkeys(
+            list(self._initial.depends_on(ignore_pseudo=ignore_pseudo)) + 
+            list(self._incremental.depends_on(ignore_pseudo=ignore_pseudo))))
+        return [self._model[v] for v in all_depends]
+
+    def has_unitary_definition(self):
+        """Returns whether the variable has a unitary definition."""
+        return (self._initial.has_unitary_definition() and
+                self._incremental.has_unitary_definition())
+
+class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
+    """A variable instance with internal state, that increments every step."""
 
     def _reset(self, external_vars):
         """Reset to beginning of simulation."""
@@ -1707,40 +1731,38 @@ class Incrementer(CommonVariableInstance):
             model.variable_instance(v, treatment_name)
             for v in self._incremental.depends_on()]
 
-    @classmethod
-    def _show_definition_and_dependencies(cls):
-        """Print the definitions and variables it depends on."""
-        print('Initial definition: {}'.format(
-            cls._initial.serialize_definition()))
-        print('Initial depends on: {}\n'.format(cls._initial.depends_on()))
-        print('Incremental definition: {}'.format(
-            cls._incremental.serialize_definition()))
-        print('Incremental depends on: {}'.format(
-            cls._incremental.depends_on()))
-
-    @classmethod
-    def antecedents(cls, ignore_pseudo=False):
-        """Return all the depends_on variables."""
-        all_depends = list(dict.fromkeys(
-            list(cls._initial.depends_on(ignore_pseudo=ignore_pseudo)) + 
-            list(cls._incremental.depends_on(ignore_pseudo=ignore_pseudo))))
-        return [cls._model[v] for v in all_depends]
-
-    @classmethod
-    def has_unitary_definition(cls):
-        """Returns whether the variable has a unitary definition."""
-        return (cls._initial.has_unitary_definition() and
-                cls._incremental.has_unitary_definition())
-
-
 class Stock(Incrementer):
     """A system dynamics stock."""
 
-    @classmethod
-    def calculate_all_increments(cls, timestep):
+    def calculate_all_increments(self, timestep):
         """Compute the increment for all stock variable instances."""
-        for var in cls.all_instances():
+        for var in self.all_instances():
             var._calculate_increment(timestep)
+
+    def _check_for_cycle_in_depends_on(self, checked_already, dependents=None):
+        """Check for cycles involving this stock."""
+        # Note stocks are fine with cycles involving the incr calculator"""
+        for dname in self.depends_on(for_init=True):
+            d = self._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    def _kind(self):
+        """Return what kind of variable this is."""
+        return 'Stock'
+
+class StockInstance(IncrementerInstance, metaclass=Stock):
+    """A instance of a system dynamics stock for a particular treatment."""
+
+    def _calculate_increment(self, timestep):
+        """Compute the increment."""
+        full_step_incr = self._incremental.calculate(
+            self._treatment.name,
+            [v.amount() for v in self._increment_depends_on_instances])
+        self._increment_amount = full_step_incr * timestep
+
+    def _step(self):
+        """Advance the stock by one step."""
+        self._amount = self._amount + self._increment_amount
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
@@ -1757,30 +1779,6 @@ class Stock(Incrementer):
             return []
         else:
             return cls._incremental.depends_on(ignore_pseudo)
-
-    def _calculate_increment(self, timestep):
-        """Compute the increment."""
-        full_step_incr = self._incremental.calculate(
-            self._treatment.name,
-            [v.amount() for v in self._increment_depends_on_instances])
-        self._increment_amount = full_step_incr * timestep
-
-    def _step(self):
-        """Advance the stock by one step."""
-        self._amount = self._amount + self._increment_amount
-
-    @classmethod
-    def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
-        """Check for cycles involving this stock."""
-        # Note stocks are fine with cycles involving the incr calculator"""
-        for dname in cls.depends_on(for_init=True):
-            d = cls._model.variable(dname)
-            d.check_for_cycle(checked_already, dependents=dependents)
-
-    @classmethod
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Stock'
 
 
 #
@@ -1994,7 +1992,7 @@ def _create_stock(stock_name, docstring,
     """Create a new stock."""
     initial = create_calculator(initial_definition, initial_variables)
     incr = create_calculator(increment_definition, increment_variables)
-    newstock = type(stock_name, (Stock,),
+    newstock = type(stock_name, (StockInstance,),
                     {'__doc__': docstring, '_initial': initial,
                      '_incremental': incr})
     Model.add_variable_to_current_context(newstock)
@@ -2005,9 +2003,23 @@ def _create_stock(stock_name, docstring,
 # Accum class
 #
 
-
 class Accum(Incrementer):
     """Like ACCUM in SimLang."""
+    def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
+        """Check for cycles involving this accum."""
+        for dname in cls.depends_on(for_init=True):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+        for dname in cls.depends_on(for_init=False):
+            d = cls._model.variable(dname)
+            d.check_for_cycle(checked_already, dependents=dependents)
+
+    def _kind(cls):
+        """Return what kind of variable this is."""
+        return 'Accum'
+
+class AccumInstance(IncrementerInstance, metaclass=Accum):
+    """Like ACCUM in SimLang, for a particular treatment instance."""
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
@@ -2030,21 +2042,6 @@ class Accum(Incrementer):
             [v.amount() for v in self._increment_depends_on_instances]
             )
         self._amount += increment
-
-    @classmethod
-    def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
-        """Check for cycles involving this accum."""
-        for dname in cls.depends_on(for_init=True):
-            d = cls._model.variable(dname)
-            d.check_for_cycle(checked_already, dependents=dependents)
-        for dname in cls.depends_on(for_init=False):
-            d = cls._model.variable(dname)
-            d.check_for_cycle(checked_already, dependents=dependents)
-
-    @classmethod
-    def _kind(cls):
-        """Return what kind of variable this is."""
-        return 'Accum'
 
 
 def accum(accum_name, *args):
@@ -2230,7 +2227,7 @@ def _create_accum(accum_name, docstring,
     """Create a new accum."""
     initial = create_calculator(initial_definition, initial_variables)
     increment = create_calculator(increment_definition, increment_variables)
-    new_accum = type(accum_name, (Accum,),
+    new_accum = type(accum_name, (AccumInstance,),
                      {'__doc__': docstring, '_initial': initial,
                       '_incremental': increment})
     Model.add_variable_to_current_context(new_accum)
