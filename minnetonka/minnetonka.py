@@ -665,17 +665,17 @@ class ModelVariables:
         """Label the tary of model variables, with some unknown."""
         for var in self._variable_iterator():
             if not var.has_unitary_definition():
-                var.set_tary('multitary')
+                var.tary = 'multitary'
             elif var.antecedents(ignore_pseudo=True) == []:
-                var.set_tary('unitary')
-            else: 
-                var.set_tary('unknown')
+                var.tary = 'unitary'
+            else:   
+                var.tary = 'unknown'
 
     def _label_multitary_succedents(self):
         """Label all succedents of multitary variables as multitary."""
         succedents = self._collect_succedents()
         multitaries = [v for v in self._variable_iterator() 
-                       if v.tary() == 'multitary']
+                       if v.tary == 'multitary']
         for var in multitaries:
             self._label_all_succedents_multitary(var, succedents)
 
@@ -683,22 +683,22 @@ class ModelVariables:
         """Return dict of succedents of each variable."""
         succedents = {v: set([]) for v in self._variable_iterator()}
         for var in self._variable_iterator():
-            for ante in var.antecedents(ignore_pseudo=True):
+            for ante in var.antecedents(ignore_pseudo=True): 
                 succedents[ante].add(var)
         return succedents
 
     def _label_all_succedents_multitary(self, var, succedents):
         """Label all succedents (and their succedents) or var as multitary."""
-        var.set_tary('multitary')
+        var.tary = 'multitary'
         for succ in succedents[var]:
-            if succ.tary() == 'unknown':
+            if succ.tary == 'unknown':
                 self._label_all_succedents_multitary(succ, succedents)
 
     def _label_unknowns_unitary(self):
         """Label every unknown variable as unitary."""
         for v in self._variable_iterator():
-            if v._tary == 'unknown':
-                v.set_tary('unitary')
+            if v.tary == 'unknown':
+                v.tary = 'unitary'
 
     def _create_all_variable_instances(self):
         """Create all variable instances."""
@@ -843,7 +843,7 @@ class CommonVariable(type):
         """Set [] for this variable."""
         if treatment_name == '__all__':
             return self.set_amount_all(amount)
-        elif self.is_unitary():
+        elif self.tary == 'unitary':
             warnings.warn(
                 'Setting amount of unitary variable {} '.format(self.name()) +
                 'in only one treatment',
@@ -864,34 +864,13 @@ class CommonVariable(type):
 
     def create_variable_instances(self):
         """Create variable instances for this variable."""
-        if self.is_unitary():
+        if self.tary == 'unitary':
             v = self()
             for treatment in self._model.treatments():
                 v._initialize_treatment(treatment)
         else:
             for treatment in self._model.treatments():
                 self(treatment)
-
-    # To do: use property
-    
-    def tary(self):
-        """Is the variable unitary or not (i.e. multitary)?"""
-        return self._tary 
-
-    def set_tary(self, tary_value):
-        """Set the taryness of the variable."""
-        self._tary = tary_value 
-
-    def is_unitary(self):
-        """Returns whether variable is unitary: same across all treatments.
-
-        Some variables always take the same value across all treatments.
-        Is this variable one of those unitary variables?
-
-        :return: whether the variable is unitary
-        :rtype: boolean
-        """
-        return self.tary() == 'unitary'
 
     def note_model(self, model):
         """Keep track of the model, for future reference."""
@@ -908,14 +887,14 @@ class CommonVariable(type):
 
     def all_instances(self):
         """Return all the instances of this variable."""
-        if self.is_unitary():
+        if self.tary == 'unitary':
             return itertools.islice(self._by_treatment.values(), 0, 1) 
         else:
             return self._by_treatment.values()
 
     def set_all_initial_amounts(self):
         """Set the initial amounts of all the variable instances."""
-        if self.is_unitary():
+        if self.tary == 'unitary':
             treatment_name, var = list(self._by_treatment.items())[0]
             var._set_initial_amount(treatment_name)
         else:
