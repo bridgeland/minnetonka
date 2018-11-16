@@ -991,6 +991,7 @@ class CommonVariable(type):
 
     def _show_amounts(self):
         """Show the amounts for all the instances of the variable."""
+        # maybe I should show whether it is unitary
         print('Amounts: {}\n'.format(self.all()))
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -1095,12 +1096,67 @@ class SimpleVariableInstance(CommonVariableInstance):
         :param ignore_pseudo: do not return names of pseudo-variables
         :return: list of all variable names this variable depends on
         """
-        # ignore for_init and for_sort since behavior is the same for simple variable
+        # ignore for_init and for_sort since behavior is the same for simple 
+        #variable
         return cls._calculator.depends_on(ignore_pseudo)
 
 
 class Variable(CommonVariable):
-    """A variable whose amount is calculated from amounts of other variables."""
+    """
+    A variable whose amount is calculated from amounts of other variables.
+
+    A variable has a value---called an 'amount'---that changes over simulated 
+    time. A single
+    variable can take a different amount in each model treatment. The amount 
+    of a variable can be any Python object, except a string or a Python 
+    callable. A variable can be defined in terms of other variables, via a 
+    Python callable.
+
+    A variable differs from other variable-like objects (e.g.
+    stocks) in that it keeps no state. Its amount depends entirely on its 
+    definition, and the amounts of other variables used in the definition.
+
+    The amount of a variable can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. 
+
+    A single variable can take a different amount in each model treatment.
+    The amount of a variable in a particular treatmant can be found using
+    subscription brackets, e.g. **Earnings['as is']**. See examples below.
+
+    The amount of a variable can be changed explicitly, outside the model
+    logic, e.g. **Earnings['as is'] = 2.1**. Once changed the amount of 
+    the variable does not change, at least until the simulation is reset or 
+    the amount is changed again explicitly. See examples below.
+
+    See Also
+    --------
+    variable : Create a :class:`Variable`  
+
+    :class:`Constant` : a variable that does not varry
+
+    Examples
+    --------
+    Find the current amount of the variable **Earnings**, in the **as is**
+    treatment.
+
+    >>> Earnings['as is']
+    2.0
+
+    Change the current amount of the variable **Earnings** in the **as is**
+    treatment.
+
+    >>> Earnings['as is'] = 2.1
+
+    Show everything important about the variable **Earnings**.
+
+    >>> Earnings.show()
+    Variable: Earnings
+    Amounts: {'as is': 2.1, 'To be': 4.0}
+    Definition: Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    Depends on: ['Revenue', 'Cost']
+    [Variable('Revenue'), Variable('Cost')]
+    """
 
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
         """Check for cycles among the depends on for this plain variable."""
@@ -1257,7 +1313,7 @@ class ModelPseudoVariable():
 
 def variable(variable_name, *args):
     """
-    Create a plain variable.
+    Create a variable.
 
     A variable has a value---called an 'amount'---that changes over simulated 
     time. A single
@@ -1266,9 +1322,22 @@ def variable(variable_name, *args):
     callable. A variable can be defined in terms of other variables, via a 
     Python callable.
 
-    A simple variable differs form other variable-like objects (e.g.
+    A variable differs from other variable-like objects (e.g.
     stocks) in that it keeps no state. Its amount depends entirely on its 
     definition, and the amounts of other variables used in the definition.
+
+    The amount of a variable can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. See examples below.
+
+    A single variable can take a different amount in each model treatment.
+    The amount of a variable in a particular treatmant can be found using
+    subscription brackets, e.g. **Earnings['as is']**. See examples below.
+
+    The amount of a variable can be changed explicitly, outside the model
+    logic, e.g. **Earnings['as is'] = 2.1**. Once changed the amount of 
+    the variable does not change, at least until the simulation is reset or 
+    the amount is changed again explicitly. See examples below.
 
     Parameters
     ----------
@@ -1288,11 +1357,11 @@ def variable(variable_name, *args):
 
     See Also
     --------
+    :class:`Variable` : a variable, once created
+    
     constant : Create a variable whose amount does not change
 
     stock : Create a system dynamics stock
-
-    :class:`Variable` : a simple variable, once created
 
     :class:`PerTreatment` : for defining how a variable has a different amount
         for each treatment
@@ -1473,19 +1542,19 @@ def constant(constant_name, *args):
     """
     Create a variable whose amount does not vary.
 
-    A constant is a variable that does not vary. Its amount is set on
+    A constant is a variable whose amount does not vary. Its amount is set on
     initialization, and then does not change over the course of the 
-    simulation. When the simulation is reset, the constant can be given a
+    simulation. When the simulation is reset, the constant can take a
     new amount. 
+
+    The amount of a constant can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. See examples below.
 
     A single constant can take a different amount in each
     model treatment. The amount of a constant in a particular treatment
     can be found using the subscription brackets, e.g. **Interest['to be']**.
     See examples below.
-
-    The amount of a constant can be any Python object, except a string or
-    a Python callable. It can be defined in terms of other variables, 
-    using a callable in the definition. See examples below.
 
     The amount of a constant can be changed explicitly, outside the model
     logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
@@ -1505,12 +1574,14 @@ def constant(constant_name, *args):
 
     Returns
     -------
-    Variable
+    Constant
         the newly-created constant
 
     See Also
     --------
-    variable : Create a plain variable whose amount changes
+    :class:`Constant` : a constant, once created
+
+    variable : Create a variable whose amount might change over the simulation
 
     stock : Create a system dynamics stock
 
@@ -1620,7 +1691,56 @@ def constant(constant_name, *args):
     return _parse_and_create(constant_name, ConstantInstance, 'Constant', args)
 
 class Constant(Variable):
-    pass
+    """
+    A variable whose amount does not vary.
+
+    A constant is a variable whose amount does not vary. Its amount is set on
+    initialization, and then does not change over the course of the 
+    simulation. When the simulation is reset, the constant can take a
+    new amount. 
+
+    The amount of a constant can be any Python object, except a string or
+    a Python callable. It can be defined in terms of other variables, 
+    using a callable in the definition. 
+
+    A single constant can take a different amount in each
+    model treatment. The amount of a constant in a particular treatment
+    can be found using the subscription brackets, e.g. **Interest['to be']**.
+    See examples below.
+
+    The amount of a constant can be changed explicitly, outside the model
+    logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
+    the constant remains the same, at least until the simulation is reset
+    or the amount is again changed explicitly. See examples below.
+
+    See also
+    --------
+    constant : Create a :class:`Constant`
+
+    :class:`Variable`: a variable whose amount might vary
+
+    Examples
+    --------
+    Find the current amount of the constant **Interest**, in the **to be**
+    treatment.
+
+    >>> Interest['to be']
+    0.08
+
+    Change the current amount of the constant **Interest** in the **to be**
+    treatment.
+
+    >>> Interest['to be'] = 0.075
+
+    Show everything important about the constant **Interest**.
+
+    >>> Interest.show()
+    Constant: Interest
+    Amounts: {'as is': 0.09, 'to be': 0.075}
+    Definition: PerTreatment({"as is": 0.09, "to be": 0.08})
+    Depends on: []
+    []
+    """
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
