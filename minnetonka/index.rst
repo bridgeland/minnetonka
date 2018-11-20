@@ -9,10 +9,12 @@ Welcome to Minnetonka's documentation!
 	:members: step, reset, variable, treatment, treatments
 
 .. autoclass:: Variable
-	:members: amount
+	:members: __getitem__, history
 
 .. autoclass:: Constant
-	:members: amount
+	:members: __getitem__, show, all
+
+
 
 .. toctree::
    :maxdepth: 2

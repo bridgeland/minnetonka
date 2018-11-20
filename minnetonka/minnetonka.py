@@ -836,7 +836,9 @@ class CommonVariable(type):
     """The common superclass for all Minnetonka variables and variable-like things."""
 
     def __getitem__(self, treatment_name):
-        """Get [] for this variable."""
+        """self(treatment_name)
+
+        Get [] for this variable."""
         return self.by_treatment(treatment_name).amount()
 
     def __setitem__(self, treatment_name, amount):
@@ -939,7 +941,7 @@ class CommonVariable(type):
         self._by_treatment = {}
 
     def history(self, treatment_name, step):
-        """Return the amount at a particular timestep."""
+        """Return the amount at a past timestep."""
         return self.by_treatment(treatment_name)._history(step)
 
     def wire_instances(self):
@@ -1170,13 +1172,64 @@ class Variable(CommonVariable):
         print('Depends on: {}'.format(self.depends_on()))
 
     def antecedents(self, ignore_pseudo=False):
-        """Return all the depends_on variables."""
+        """Return all the variables this variable depends on."""
         m = self._model
         return [m[v] for v in self.depends_on(ignore_pseudo=ignore_pseudo)]
 
     def has_unitary_definition(self):
         """Returns whether the variable has a unitary definition."""
         return self._calculator.has_unitary_definition()
+
+    def history(self, treatment_name, step):
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka keeps track of the past amounts of all the variables, 
+        over the course of a single simulation run,
+        accessible with this function. 
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+
+        Example
+        -------
+
+        Create a model with a single variable RandomVariable.
+
+        >>> import random
+        >>> with model() as m:
+        ...     RandomValue = variable(
+        ...         'RandomValue', lambda: random.random() / 2)
+        >>> RandomValue['']
+        0.4292118957243861
+
+        Advance the simulation. RandomVariable changes value.
+
+        >>> m.step()
+        >>> RandomValue['']
+        0.39110555756064735
+        >>> m.step()
+        >>> RandomValue['']
+        0.23809270739004534
+
+        Find the old values of RandomVarable.
+
+        >>> RandomValue.history('', 0)
+        0.4292118957243861
+        >>> RandomValue.history('', 1)
+        0.39110555756064735
+        """
+
+    def __getitem__(self, treatment_name):
+        """self(treatment_name)
+
+        Get [] for this variable."""
+        pass
 
 
 class VariableInstance(SimpleVariableInstance, metaclass=Variable):
@@ -1358,7 +1411,7 @@ def variable(variable_name, *args):
     See Also
     --------
     :class:`Variable` : a variable, once created
-    
+
     constant : Create a variable whose amount does not change
 
     stock : Create a system dynamics stock
@@ -1741,6 +1794,22 @@ class Constant(Variable):
     Depends on: []
     []
     """
+    def show(self):
+        """
+        Show everything important about the constant.
+
+        Example
+        -------
+        >>> Interest.show()
+        Constant: Interest
+        Amounts: {'as is': 0.09, 'to be': 0.075}
+        Definition: PerTreatment({"as is": 0.09, "to be": 0.08})
+        Depends on: []
+        []
+        """
+        pass 
+
+
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
