@@ -836,11 +836,17 @@ class CommonVariable(type):
     """The common superclass for all Minnetonka variables and variable-like things."""
 
     def __getitem__(self, treatment_name):
-        """Get [] for this variable."""
+        """
+        Retrieve the current amount of the variable in the treatment with
+        the name **treatment_name**.
+        """
         return self.by_treatment(treatment_name).amount()
 
     def __setitem__(self, treatment_name, amount):
-        """Set [] for this variable."""
+        """
+        Change the current amount of the variable in the treatment with the
+        name **treatment_name**.
+        """
         if treatment_name == '__all__':
             return self.set_amount_all(amount)
         elif self.tary == 'unitary':
@@ -1222,7 +1228,22 @@ class Variable(CommonVariable):
         >>> RandomValue.history('', 1)
         0.39110555756064735
         """
-        pass
+        return super().history(treatment_name, step)
+
+    def show(self):
+        """
+        Show everything important about the variable.
+
+        Example
+        -------
+        >>> Earnings.show()
+        Variable: Earnings
+        Amounts: {'as is': 2.1, 'To be': 4.0}
+        Definition: Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        Depends on: ['Revenue', 'Cost']
+        [Variable('Revenue'), Variable('Cost')]
+        """
+        return super().show()
 
     def __getitem__(self, treatment_name):
         """
@@ -1237,7 +1258,7 @@ class Variable(CommonVariable):
         >>> Earnings['as is']
         2.0
         """
-        pass
+        return super().__getitem__(treatment_name)
 
     def __setitem__(self, treatment_name, amount):
         """
@@ -1251,7 +1272,8 @@ class Variable(CommonVariable):
 
         >>> Earnings['as is'] = 2.1
         """
-        pass
+        super().__setitem__(treatment_name, amount)
+
 
 class VariableInstance(SimpleVariableInstance, metaclass=Variable):
     """
@@ -1862,7 +1884,7 @@ class Constant(Variable):
         >>> RandomValue.history('', 1)
         0.39110555756064735
         """
-        pass
+        return super().history(treatment_name, step)
 
     def show(self):
         """
@@ -1877,7 +1899,7 @@ class Constant(Variable):
         Depends on: []
         []
         """
-        pass 
+        return super().show()
 
     def __getitem__(self, treatment_name):
         """
@@ -1892,7 +1914,7 @@ class Constant(Variable):
         >>> Interest['to be']
         0.08
         """
-        pass
+        return super().__getitem__(treatment_name)
 
     def __setitem__(self, treatment_name, amount):
         """
@@ -1906,7 +1928,8 @@ class Constant(Variable):
 
         >>> Interest['to be'] = 0.075
         """
-        pass
+        super().__setitem__(treatment_name, amount)
+
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
