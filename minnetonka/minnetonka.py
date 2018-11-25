@@ -836,9 +836,7 @@ class CommonVariable(type):
     """The common superclass for all Minnetonka variables and variable-like things."""
 
     def __getitem__(self, treatment_name):
-        """self(treatment_name)
-
-        Get [] for this variable."""
+        """Get [] for this variable."""
         return self.by_treatment(treatment_name).amount()
 
     def __setitem__(self, treatment_name, amount):
@@ -1184,7 +1182,7 @@ class Variable(CommonVariable):
         """
         Return the amount at a past timestep for a particular treatment.
 
-        Minnetonka keeps track of the past amounts of all the variables, 
+        Minnetonka keeps track of the past amounts of all the variables 
         over the course of a single simulation run,
         accessible with this function. 
 
@@ -1224,13 +1222,36 @@ class Variable(CommonVariable):
         >>> RandomValue.history('', 1)
         0.39110555756064735
         """
-
-    def __getitem__(self, treatment_name):
-        """self(treatment_name)
-
-        Get [] for this variable."""
         pass
 
+    def __getitem__(self, treatment_name):
+        """
+        Retrieve the current amount of the variable in the treatment with
+        the name **treatment_name**.
+
+        Example
+        --------
+        Find the current amount of the variable **Earnings**, in the **as is**
+        treatment.
+
+        >>> Earnings['as is']
+        2.0
+        """
+        pass
+
+    def __setitem__(self, treatment_name, amount):
+        """
+        Change the current amount of the variable in the treatment with the
+        name **treatment_name**.
+
+        Example
+        -------
+        Change the current amount of the variable **Earnings** in the **as is**
+        treatment to **2.1**.
+
+        >>> Earnings['as is'] = 2.1
+        """
+        pass
 
 class VariableInstance(SimpleVariableInstance, metaclass=Variable):
     """
@@ -1794,6 +1815,55 @@ class Constant(Variable):
     Depends on: []
     []
     """
+    def history(self, treatment_name, step):
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka keeps track of the past amounts of all constants 
+        over the course of a single simulation run,
+        accessible with this function.  Of course, constants do not change
+        value, except by explicit setting, outside of model logic. So 
+        **history()** serves to return the history of those extra-model 
+        changes.
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+
+        Example
+        -------
+
+        Create a model with a single variable RandomVariable.
+
+        >>> import random
+        >>> with model() as m:
+        ...     RandomValue = variable(
+        ...         'RandomValue', lambda: random.random() / 2)
+        >>> RandomValue['']
+        0.4292118957243861
+
+        Advance the simulation. RandomVariable changes value.
+
+        >>> m.step()
+        >>> RandomValue['']
+        0.39110555756064735
+        >>> m.step()
+        >>> RandomValue['']
+        0.23809270739004534
+
+        Find the old values of RandomVarable.
+
+        >>> RandomValue.history('', 0)
+        0.4292118957243861
+        >>> RandomValue.history('', 1)
+        0.39110555756064735
+        """
+        pass
+
     def show(self):
         """
         Show everything important about the constant.
@@ -1809,7 +1879,34 @@ class Constant(Variable):
         """
         pass 
 
+    def __getitem__(self, treatment_name):
+        """
+        Retrieve the current amount of the constant in the treatment with
+        the name **treatment_name**.
 
+        Examples
+        --------
+        Find the current amount of the constant **Interest**, in the **to be**
+        treatment.
+
+        >>> Interest['to be']
+        0.08
+        """
+        pass
+
+    def __setitem__(self, treatment_name, amount):
+        """
+        Change the current amount of the variable in the treatment with the
+        name **treatment_name**.
+
+        Example
+        -------
+        Change the current amount of the constant **Interest** in the **to be**
+        treatment to **0.075**.
+
+        >>> Interest['to be'] = 0.075
+        """
+        pass
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""

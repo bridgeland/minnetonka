@@ -9,10 +9,12 @@ Welcome to Minnetonka's documentation!
 	:members: step, reset, variable, treatment, treatments
 
 .. autoclass:: Variable
-	:members: __getitem__, history
+	:members: show, history, all
+	:special-members: __getitem__, __setitem__
 
 .. autoclass:: Constant
-	:members: __getitem__, show, all
+	:members: show, history, all
+	:special-members: __getitem__, __setitem__
 
 
 
