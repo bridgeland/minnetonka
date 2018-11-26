@@ -970,7 +970,15 @@ class CommonVariable(type):
         checked_already.append(self)
 
     def all(self):
-        """Return a dict of all amounts, one for each treatment."""
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> Interest.all()
+        {'as is': 0.09, 'to be': 0.08}
+
+        """
         return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()}
 
     def show(self):
