@@ -2710,6 +2710,19 @@ class Previous(unittest.TestCase):
         m.step()
         self.assertEqual(Foo[''], 0)
 
+    def test_set_previous(self):
+        """Does setting the amount of a previous raise an error?"""
+        with model() as m:
+            stock('Foo', 1, 0)
+            LastFoo = previous('LastFoo', 'docstring', 'Foo', 0.3)
+        with self.assertRaises(MinnetonkaError) as me:
+            LastFoo[''] = 12
+        self.assertEqual(
+            me.exception.message, 
+            'Amount of <Previous LastFoo> cannot be changed outside model logic'
+            )
+
+
 class OldValues(unittest.TestCase):
     """For checking that values are stored every step"""
     def test_stock_old_values(self):

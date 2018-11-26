@@ -920,7 +920,21 @@ class CommonVariable(type):
         self._by_treatment = {}
 
     def history(self, treatment_name, step):
-        """Return the amount at a past timestep."""
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka keeps track of the past amounts of all the variables 
+        over the course of a single simulation run,
+        accessible with this function. 
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+        """
         return self.by_treatment(treatment_name)._history(step)
 
     def wire_instances(self):
@@ -2509,6 +2523,26 @@ def _create_accum(accum_name, docstring,
 #
 
 class Previous(CommonVariable):
+    """
+    A variable whose amount is that of some other variable in previous timestep.
+
+    A previous retains the prior value of some other variable, allowing a reach
+    into the past from within the model. 
+
+    See Also
+    --------
+    previous : Create a :class:`Previous`
+
+    :class:`Variable` : a variable whose amount is calculated from other vars
+
+    Example
+    -------
+    Find last quarter's earnings, assuming the timestep is one quarter.
+
+    >>> PriorEarnings['']
+    1.9
+
+    """
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
         """Check for cycles among the depends on for this simpler variable."""
         pass
@@ -2527,6 +2561,40 @@ class Previous(CommonVariable):
     def has_unitary_definition(self):
         """Returns whether the previous has a unitary definition."""
         return True
+
+    def __getitem__(self, treatment_name):
+        """
+        Retrieve the current amount of the previous in the treatment with
+        the name **treatment_name**.
+
+        Example
+        --------
+        Find the current amount of the variable **PriorEarnings**, in the 
+        **as is** treatment.
+
+        >>> PriorEarnings['as is']
+        1.9
+        """
+        return super().__getitem__(treatment_name)
+
+    def __setitem__(self, treatment_name, amount):
+        """An error. Should not set a previous."""
+        raise MinnetonkaError(
+            'Amount of {} cannot be changed outside model logic'.format(self))
+
+    def show(self):
+        """
+        Show everything important about the previous.
+
+        Example
+        -------
+        >>> PriorEarnings.show()
+        Variable: PriorEarnings
+        Amounts: {'as is': 2.0, 'To be': 4.0}
+        Previous variable: Earnings
+        [Variable('Earnings')]
+        """
+        return super().show()
 
 
 class PreviousInstance(SimpleVariableInstance, metaclass=Previous):

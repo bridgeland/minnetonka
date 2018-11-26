@@ -16,7 +16,9 @@ Welcome to Minnetonka's documentation!
 	:members: show, history, all
 	:special-members: __getitem__, __setitem__
 
-
+.. autoclass:: Previous
+	:members: show, history, all
+	:special-members: __getitem__
 
 .. toctree::
    :maxdepth: 2
