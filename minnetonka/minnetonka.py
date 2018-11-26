@@ -30,10 +30,6 @@ Variables:
     # a varaible can be defined to be the previous value of another
     OldFoo = previous('OldFoo', 'Foo', 1)
 
-
-    # a variable can show the values of all its treatments as a dict
-    Step.all()
-
 Models:
 
     # A variable can be accessed by name from a model
@@ -56,33 +52,12 @@ Treatments:
     m.treatment('')
 
 Variable values:
-    # a variable value can be accessed, by treatment name
-    DischargeBegins = variable('DischargeBegins', 12)
-    m = model([DischargeBegins])
-    DischargeBegins['']
-    #    --> 12
 
-    # a variable has a value in each treatment of the model
-    DischargeEnds = variable('DischargeEnds',
-        PerTreatment{'As is': 20, 'To be': 18}))
-    m = model([DischargeEnds], treatments=['As is', 'To be'])
-    DischargeEnds['As is']
-    #    --> 20
-    DischargeEnds['To be']
-    #    -- 18
-
-    # a variable value can be set, overriding any other value
-    DischargeBegins[''] = 22
-
-    Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-    Earnings[''] == 1_000_000
 
     # a variable value can be set in all treatments at once
     DischargeBegins = variable('DischargeBegins',
             PerTreatment({'As is': 10, 'To be': 8, 'Might be': 6}))
     DischargeBegins['__all__'] = 9
-
-
 
 Model behavior:
 
