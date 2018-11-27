@@ -24,11 +24,7 @@ from scipy.stats import norm
 import numpy as np
 
 """
-Variables:
 
-
-    # a varaible can be defined to be the previous value of another
-    OldFoo = previous('OldFoo', 'Foo', 1)
 
 Models:
 
@@ -51,13 +47,7 @@ Treatments:
     m = model()
     m.treatment('')
 
-Variable values:
 
-
-    # a variable value can be set in all treatments at once
-    DischargeBegins = variable('DischargeBegins',
-            PerTreatment({'As is': 10, 'To be': 8, 'Might be': 6}))
-    DischargeBegins['__all__'] = 9
 
 Model behavior:
 
@@ -1248,7 +1238,7 @@ class Variable(CommonVariable):
         the name **treatment_name**.
 
         Example
-        --------
+        -------
         Find the current amount of the variable **Earnings**, in the **as is**
         treatment.
 
@@ -1262,12 +1252,17 @@ class Variable(CommonVariable):
         Change the current amount of the variable in the treatment with the
         name **treatment_name**.
 
-        Example
-        -------
+        Examples
+        --------
         Change the current amount of the variable **Earnings** in the **as is**
         treatment to **2.1**.
 
         >>> Earnings['as is'] = 2.1
+
+        Change the current amount of the variable **Taxes** in all treatments
+        at once.
+
+        >>> Taxes['__all__'] = 0.3
         """
         super().__setitem__(treatment_name, amount)
 
@@ -1921,8 +1916,8 @@ class Constant(Variable):
         Retrieve the current amount of the constant in the treatment with
         the name **treatment_name**.
 
-        Examples
-        --------
+        Example
+        -------
         Find the current amount of the constant **Interest**, in the **to be**
         treatment.
 
@@ -1936,12 +1931,17 @@ class Constant(Variable):
         Change the current amount of the variable in the treatment with the
         name **treatment_name**.
 
-        Example
-        -------
+        Examples
+        --------
         Change the current amount of the constant **Interest** in the **to be**
         treatment to **0.075**.
 
         >>> Interest['to be'] = 0.075
+
+        Change the current amount of the constant **Interest** in all treatments
+        at once.
+
+        >>> Interest['__all__'] = 0.06
         """
         super().__setitem__(treatment_name, amount)
 
