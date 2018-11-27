@@ -1,4 +1,4 @@
-"""minnetonka.py: defining a language for value modeling."""
+"""minnetonka.py: value modeling in python
 
 __author__ = "Dave Bridgeland"
 __copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
@@ -2176,9 +2176,9 @@ def stock(stock_name, *args):
 
     See Also
     --------
-    variable : Create a non-stock plain variable
+    variable : Create a variable whose amount might change
 
-    constant : Create a plain variable whose amount does not change
+    constant : Create a variable whose amount does not change
 
     accum : Create an accum, much like a stock except that it uses the 
         amounts of the variables in the current period, instead of the 
@@ -2636,8 +2636,6 @@ class PreviousInstance(SimpleVariableInstance, metaclass=Previous):
             return []
 
 
-
-
 def previous(variable_name, *args):
     """
     Create a new previous, a variable whose amount is the amount of another
@@ -2675,9 +2673,9 @@ def previous(variable_name, *args):
 
     See Also
     --------
-    variable : Create a non-stock plain variable
+    variable : Create a variable whose amount might change
 
-    constant : Create a plain variable whose amount does not change
+    constant : Create a variable whose amount does not change
 
     Examples
     --------
