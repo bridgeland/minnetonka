@@ -20,6 +20,8 @@ Welcome to Minnetonka's documentation!
 	:members: show, history, all
 	:special-members: __getitem__
 
+.. autoclass:: PerTreatment
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

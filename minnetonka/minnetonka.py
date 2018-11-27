@@ -1,4 +1,4 @@
-"""minnetonka.py: value modeling in python
+"""minnetonka.py: value modeling in python"""
 
 __author__ = "Dave Bridgeland"
 __copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
@@ -1376,7 +1376,7 @@ class Calculator:
     def has_unitary_definition(self):
         """Is the definition of this calculator unitary?"""
         try:
-            self._definition.treatments_and_values()
+            self._definition.treatments_and_amounts()
             return False
         except AttributeError:
             return True 
@@ -1483,7 +1483,7 @@ def variable(variable_name, *args):
     >>> DischargeEnds = variable('DischargeEnds',
     ...     PerTreatment({'As is': 20, 'To be': 18}))
 
-    A variable can take a different value every timestep, via an 
+    A variable can take a different amount every timestep, via an 
     expression wrapped in a lambda ...
 
     >>> RandomValue = variable('RandomValue', lambda: random.random() + 1)
@@ -1571,13 +1571,11 @@ def is_list_of_strings(arg):
     """Return whethr arg is list of tuple of strings."""
     return is_sequence(arg) and is_all_strings(arg)
 
-
 def is_sequence(arg):
     """Return whether arg is list or tuple or some other sequence."""
     return (not hasattr(arg, "strip") and
             hasattr(arg, "__getitem__") or
             hasattr(arg, "__iter__"))
-
 
 def is_all_strings(arg):
     """Return whether arg is iterable, are all the elements strings."""
@@ -1586,24 +1584,47 @@ def is_all_strings(arg):
 
 
 class PerTreatment:
-    """Indicate different values in each treatment.
+    """
+    Specify different amounts for each treatment.
 
-    Initialized with dict of treatments and values, e.g.
-    PerTreatment({'As is': 12, 'To be': 9})
+    A variable's amount can be any Python object, except a string or a callable.
+    But how to indicate that the amount differs across the treatments? Use this
+    class. 
+
+    Parameters
+    ----------
+    treatments_and_amounts : dict
+        The keys of the dict are treatment names and the value are amounts
+
+    Examples
+    --------
+    Create a constant whose amount differs by treatment.
+
+    >>> constant('KitchenOpens', 
+    ...     PerTreatment({'As is': 17.0, 'Open early': 15.5}))
+
+    Create a variable whose amount is calculated from different expressions
+    in each treatment.
+
+    >>> variable('KitchenCloses',
+    ...     PerTreatment(
+    ...         {'As is': lambda lst: lst + 15, 
+    ...          'Open early': lambda lst: lst}),
+    ...     'LastCustomerOrders')
     """
 
-    def __init__(self, treatments_and_values):
+    def __init__(self, treatments_and_amounts):
         """Initialize PerTreatment."""
-        self._treatments_and_values = treatments_and_values
+        self._treatments_and_amounts = treatments_and_amounts
 
-    def treatments_and_values(self):
+    def treatments_and_amounts(self):
         """Return all treatments and values, as a dict."""
-        return self._treatments_and_values
+        return self._treatments_and_amounts
 
     def by_treatment(self, treatment_name):
         """Return definition associate with treatment name."""
         try:
-            return self._treatments_and_values[treatment_name]
+            return self._treatments_and_amounts[treatment_name]
         except KeyError:
             raise MinnetonkaError("Treatment '{}' not defined".format(
                 treatment_name))
@@ -1612,8 +1633,8 @@ class PerTreatment:
         """Return the serialization of the definition of this calculator."""
         return 'PerTreatment({{{}}})'.format(', '.join(map(
             lambda k, v: self._serialize_treatment(k, v), 
-            self._treatments_and_values.keys(), 
-            self._treatments_and_values.values())))
+            self._treatments_and_amounts.keys(), 
+            self._treatments_and_amounts.values())))
 
     def _serialize_treatment(self, k, v):
         """Serialize the key snd value so it can be an item in a larger dict."""
@@ -1621,9 +1642,6 @@ class PerTreatment:
             return '"{}": {}'.format(k, v.serialize_definition())
         except:
             return '"{}": {}'.format(k, v)
-
-    def any_callable(self):
-        """Is the value callable in any treatment?"""
 
 
 #
