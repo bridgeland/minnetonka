@@ -378,12 +378,12 @@ class Model:
         Find the variable **Cost** ...
 
         >>> m.variable('Cost')
-        __main__.Cost
+        variable('Cost')
 
         ... or use subscription syntax to do the same thing
 
         >>> m['Cost']
-        __main__.Cost
+        variable('Cost')
         >>> m.variable('Cost') == m['Cost']
         True
 
