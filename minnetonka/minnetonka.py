@@ -1401,6 +1401,8 @@ class ModelPseudoVariable():
 
 def variable(variable_name, *args):
     """
+    variable(variable_name, [description,] amount [, *amount_arguments])
+
     Create a variable.
 
     A variable has a value---called an 'amount'---that changes over simulated 
@@ -1432,11 +1434,18 @@ def variable(variable_name, *args):
     variable_name : str
         Name of the variable. The name is unique within a single model.
 
-    args
-        Either a list of a callable and the names of variables, or a
-        Python object that is neither a string nor a callable. In either case,
-        the first element of args is an optional docstring-like description.
-        See examples below.
+    description : str, optional
+        Docstring-like description of the variable. 
+
+    amount : callable or Any
+        The amount can be a callable. If a callable, zero or more
+        `amount_arguments` are supplied. If not a callable, `amount` can be any 
+        Python object except a string, but no `amount_arguments` are supplied.
+
+    amount_arguments : list of str
+        Names of variables used as arguments for the callable `amount`. Empty
+        list unless `amount` is a callable. See examples below.
+
 
     Returns
     -------
@@ -1461,7 +1470,7 @@ def variable(variable_name, *args):
 
     >>> variable('DischargeBegins', 12)
 
-    The amount can be any non-callable, non-string Python object.
+    The constant amount can be any non-callable, non-string Python object.
 
     >>> Revenue = variable('Revenue', np.array([30.1, 15, 20]))
     
@@ -1478,8 +1487,7 @@ def variable(variable_name, *args):
     >>> DischargeEnds = variable('DischargeEnds',
     ...     PerTreatment({'As is': 20, 'To be': 18}))
 
-    A variable can take a different amount every timestep, via an 
-    expression wrapped in a lambda ...
+    A variable can take a different amount every timestep, via a lambda ...
 
     >>> RandomValue = variable('RandomValue', lambda: random.random() + 1)
 
@@ -1487,7 +1495,7 @@ def variable(variable_name, *args):
 
     >>> RandomValue = variable('RandomValue', random.random)
 
-    The expression can depend on another variable in the model ...
+    The callable can depend on the amount of another variable in the model ...
 
     >>> DischargeProgress = variable(
     ...     'DischargeProgress', lambda db: (current_step - db) / 4,
@@ -1497,20 +1505,21 @@ def variable(variable_name, *args):
 
     >>> Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
-    A variable can use different expressions in different treatments ...
+    A variable can use different callables in different treatments ...
 
     >>> DischargeEnds = variable('DischargeEnds',
     ...     PerTreatment(
     ...         {'As is': lambda db: db + 10, 'To be': lambda db: db + 5}),
     ...         'DischargeBegins')
 
-    ... or an expression in one treatment and a constant in another.
+    ... or a callable in one treatment and a constant in another.
 
     >>> MortalityImprovement = variable('MortailityImprovement',
     ...     PerTreatment({'Value at risk': lambda x: x, 'Value expected': 0}),
     ...     'MortalityImprovementViaRRC')
 
-    An expression can use something in the model itself.
+    An callable can use the model itself, instead of a variable
+    in the model.
 
     >>> Step = variable('Step', lambda md: md.TIME, '__model__')
     """
@@ -1646,7 +1655,9 @@ class PerTreatment:
 
 def constant(constant_name, *args):
     """
-    Create a variable whose amount does not vary.
+    constant(constant_name, [description,] *args)
+    
+    Create a constant.
 
     A constant is a variable whose amount does not vary. Its amount is set on
     initialization, and then does not change over the course of the 
@@ -1672,11 +1683,13 @@ def constant(constant_name, *args):
     constant_name : str
         Name of the constant. The name is unique within a single model.
 
+    description: str, optional
+        Docstring-like description of the constant.
+
     args 
         Either a list of a single Python object (that is neither a string 
         nor a callable),
-        or a list of a callable and the names of variables. In either case,
-        the first element of args is an optional docstring-like description.
+        or a list of a callable and the names of variables. See examples below.
 
     Returns
     -------
