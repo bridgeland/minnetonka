@@ -1310,8 +1310,6 @@ class VariableInstance(SimpleVariableInstance, metaclass=Variable):
             for v in self.depends_on()]
 
 
-
-
 class Calculator:
     """Calculate amounts based on either lambdas or treatments or constants."""
 
@@ -1322,7 +1320,8 @@ class Calculator:
 
     def calculate(self, treatment_name, depends_on_amounts):
         """Calculate amount of thing."""
-        # could optimize by doing this all only once
+        # could optimize by doing this all only once rather than on every call to
+        # calculate
         try:
             defn = self._definition.by_treatment(treatment_name)
         except (KeyError, TypeError, AttributeError):
@@ -1401,28 +1400,24 @@ class ModelPseudoVariable():
 
 def variable(variable_name, *args):
     """
-    variable(variable_name, [description,] amount [, *amount_arguments])
+    variable(variable_name, [description,] specifier [, *antecedent_variables])
 
     Create a variable.
 
     A variable has a value---called an 'amount'---that changes over simulated 
     time. A single
-    variable can take a different amount in each model treatment. The amount 
+    variable can have a different amount in each model treatment. The amount 
     of a variable can be any Python object, except a string or a Python 
-    callable. A variable can be defined in terms of other variables, via a 
-    Python callable.
+    callable.  The amount of a variable in a particular treatmant can be found 
+    using subscription brackets, e.g. **Earnings['as is']**. See examples below.
 
     A variable differs from other variable-like objects (e.g.
     stocks) in that it keeps no state. Its amount depends entirely on its 
-    definition, and the amounts of other variables used in the definition.
+    specifier, and the amounts of other variables, whose names are in the list
+    `antecedent_variables`.
 
-    The amount of a variable can be any Python object, except a string or
-    a Python callable. It can be defined in terms of other variables, 
-    using a callable in the definition. See examples below.
-
-    A single variable can take a different amount in each model treatment.
-    The amount of a variable in a particular treatmant can be found using
-    subscription brackets, e.g. **Earnings['as is']**. See examples below.
+    The `specifier` is a callable, and is called once at each timestep, using 
+    the amounts of the antecedent variables
 
     The amount of a variable can be changed explicitly, outside the model
     logic, e.g. **Earnings['as is'] = 2.1**. Once changed the amount of 
@@ -1437,15 +1432,13 @@ def variable(variable_name, *args):
     description : str, optional
         Docstring-like description of the variable. 
 
-    amount : callable or Any
-        The amount can be a callable. If a callable, zero or more
-        `amount_arguments` are supplied. If not a callable, `amount` can be any 
-        Python object except a string, but no `amount_arguments` are supplied.
+    specifier : callable
+        The specifier is called at every timestep.  Zero or more
+        `antecedent_variables` are supplied.  
 
-    amount_arguments : list of str
-        Names of variables used as arguments for the callable `amount`. Empty
-        list unless `amount` is a callable. See examples below.
-
+    antecedent_variables : list of str
+        Names of variables used as arguments for the callable `specifier`. 
+        Might be empty, if callable requires no arguments.
 
     Returns
     -------
@@ -1655,7 +1648,7 @@ class PerTreatment:
 
 def constant(constant_name, *args):
     """
-    constant(constant_name, [description,] *args)
+    constant(constant_name, [description,] amount [, *amount_arguments])
     
     Create a constant.
 
@@ -1686,10 +1679,18 @@ def constant(constant_name, *args):
     description: str, optional
         Docstring-like description of the constant.
 
-    args 
-        Either a list of a single Python object (that is neither a string 
-        nor a callable),
-        or a list of a callable and the names of variables. See examples below.
+    amount : callable or Any
+        The amount can be a callable. If a callable, it is called once, at the 
+        beginning of the simulation run. Zero or more `amount_arguments` are
+        supplied, names of variables whose amounts are provided when the 
+        callable is called. If not a callable, `amount` can be any Python
+        object except a string, but no `amount_arguments` are supplied. If not
+        a callable, the amount is provided as the amount at the beginning of
+        the simulation run.
+
+    amount_arguments : list of str
+        Names of variables used as arguments for the callable `amount`. Empty
+        list unless `amount` is a callable. See examples below.
 
     Returns
     -------
