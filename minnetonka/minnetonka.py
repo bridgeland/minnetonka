@@ -1400,28 +1400,30 @@ class ModelPseudoVariable():
 
 def variable(variable_name, *args):
     """
-    variable(variable_name, [description,] specifier [, *antecedent_variables])
+    variable(variable_name, [description,] specifier, *antecedent_variables)
 
     Create a variable.
 
     A variable has a value---called an 'amount'---that changes over simulated 
     time. A single
     variable can have a different amount in each model treatment. The amount 
-    of a variable can be any Python object, except a string or a Python 
-    callable.  The amount of a variable in a particular treatmant can be found 
+    of a variable can be any Python object.  The amount of a variable in a 
+    particular treatmant can be found 
     using subscription brackets, e.g. **Earnings['as is']**. See examples below.
 
     A variable differs from other variable-like objects (e.g.
-    stocks) in that it keeps no state. Its amount depends entirely on its 
+    stocks) in that it keeps no state. At any timestep, its amount depends 
+    entirely on its 
     specifier, and the amounts of other variables, whose names are in the list
     `antecedent_variables`.
 
     The `specifier` is a callable, and is called once at each timestep, using 
-    the amounts of the antecedent variables
+    the amounts of the antecedent variables.
 
     The amount of a variable can be changed explicitly, outside the model
-    logic, e.g. **Earnings['as is'] = 2.1**. Once changed the amount of 
-    the variable does not change, at least until the simulation is reset or 
+    logic, e.g. **Earnings['as is'] = 2.1**. Once changed explicitly,
+    the amount of 
+    the variable never changes again, at least until the simulation is reset or 
     the amount is changed again explicitly. See examples below.
 
     Parameters
@@ -1458,28 +1460,6 @@ def variable(variable_name, *args):
 
     Examples
     --------
-    A variable with a constant amount. (An alternate approach
-    is to define this with :func:`constant`.)
-
-    >>> variable('DischargeBegins', 12)
-
-    The constant amount can be any non-callable, non-string Python object.
-
-    >>> Revenue = variable('Revenue', np.array([30.1, 15, 20]))
-    
-    >>> Cost = variable('Cost', {'drg001': 1000, 'drg003': 1005})
-
-    A variable can have an optional docstring-like description.
-
-    >>> Revenue = variable('Revenue',
-    ...     '''The revenue for each business unit, as a 3 element array''',
-    ...     np.array([30.1, 15, 20]))
-
-    A variable can have a different constant amount for each treatment.
-
-    >>> DischargeEnds = variable('DischargeEnds',
-    ...     PerTreatment({'As is': 20, 'To be': 18}))
-
     A variable can take a different amount every timestep, via a lambda ...
 
     >>> RandomValue = variable('RandomValue', lambda: random.random() + 1)
@@ -1498,18 +1478,12 @@ def variable(variable_name, *args):
 
     >>> Earnings = variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
-    A variable can use different callables in different treatments ...
+    A variable can use different callables in different treatments.
 
     >>> DischargeEnds = variable('DischargeEnds',
     ...     PerTreatment(
     ...         {'As is': lambda db: db + 10, 'To be': lambda db: db + 5}),
-    ...         'DischargeBegins')
-
-    ... or a callable in one treatment and a constant in another.
-
-    >>> MortalityImprovement = variable('MortailityImprovement',
-    ...     PerTreatment({'Value at risk': lambda x: x, 'Value expected': 0}),
-    ...     'MortalityImprovementViaRRC')
+    ...     DischargeBegins')
 
     An callable can use the model itself, instead of a variable
     in the model.
@@ -1648,18 +1622,19 @@ class PerTreatment:
 
 def constant(constant_name, *args):
     """
-    constant(constant_name, [description,] amount [, *amount_arguments])
+    constant(constant_name, [description,] specifier [, *antecedent_variables])
     
     Create a constant.
 
-    A constant is a variable whose amount does not vary. Its amount is set on
+    A constant is similar to a variable except that its amount does not vary. 
+    Its amount is set on
     initialization, and then does not change over the course of the 
-    simulation. When the simulation is reset, the constant can take a
+    simulation run. When the model is reset, the constant can take a
     new amount. 
 
     The amount of a constant can be any Python object, except a string or
     a Python callable. It can be defined in terms of other variables, 
-    using a callable in the definition. See examples below.
+    using a callable as the specifier. See examples below.
 
     A single constant can take a different amount in each
     model treatment. The amount of a constant in a particular treatment
@@ -1668,7 +1643,7 @@ def constant(constant_name, *args):
 
     The amount of a constant can be changed explicitly, outside the model
     logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
-    the constant remains the same, at least until the simulation is reset
+    the constant remains the same, at least until the model is reset
     or the amount is again changed explicitly. See examples below.
 
     Parameters
@@ -1679,18 +1654,18 @@ def constant(constant_name, *args):
     description: str, optional
         Docstring-like description of the constant.
 
-    amount : callable or Any
-        The amount can be a callable. If a callable, it is called once, at the 
-        beginning of the simulation run. Zero or more `amount_arguments` are
-        supplied, names of variables whose amounts are provided when the 
-        callable is called. If not a callable, `amount` can be any Python
-        object except a string, but no `amount_arguments` are supplied. If not
-        a callable, the amount is provided as the amount at the beginning of
-        the simulation run.
+    specifier : callable or Any
+        The specifier can be a callable. If a callable, it is called once, at 
+        the beginning of the simulation run. Zero or more `specifier_arguments` 
+        are supplied, names of variables whose amounts are provided when the
+        callable is called. If not a callable, `specifier` can be any Python
+        object except a string, but no `specifier_arguments` are supplied. If 
+        not a callable, the specifier is provided as the amount at the beginning
+        of the simulation run.
 
-    amount_arguments : list of str
-        Names of variables used as arguments for the callable `amount`. Empty
-        list unless `amount` is a callable. See examples below.
+    specifier_arguments : list of str
+        Names of variables used as arguments for the callable `specifier`. Empty
+        list unless `specifier` is a callable. See examples below.
 
     Returns
     -------
