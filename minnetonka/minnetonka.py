@@ -1101,25 +1101,21 @@ class Variable(CommonVariable):
     A variable has a value---called an 'amount'---that changes over simulated 
     time. A single
     variable can take a different amount in each model treatment. The amount 
-    of a variable can be any Python object, except a string or a Python 
-    callable. A variable can be defined in terms of other variables, via a 
-    Python callable.
+    of a variable can be any Python object. A variable can be defined in terms 
+    of the amounts of other variables.
 
     A variable differs from other variable-like objects (e.g.
     stocks) in that it keeps no state. Its amount depends entirely on its 
     definition, and the amounts of other variables used in the definition.
-
-    The amount of a variable can be any Python object, except a string or
-    a Python callable. It can be defined in terms of other variables, 
-    using a callable in the definition. 
 
     A single variable can take a different amount in each model treatment.
     The amount of a variable in a particular treatmant can be found using
     subscription brackets, e.g. **Earnings['as is']**. See examples below.
 
     The amount of a variable can be changed explicitly, outside the model
-    logic, e.g. **Earnings['as is'] = 2.1**. Once changed the amount of 
-    the variable does not change, at least until the simulation is reset or 
+    logic, e.g. **Earnings['as is'] = 2.1**. Once changed explicitly,
+    the amount of 
+    the variable never changes again, at least until the simulation is reset or 
     the amount is changed again explicitly. See examples below.
 
     See Also
@@ -1787,11 +1783,12 @@ def constant(constant_name, *args):
 
 class Constant(Variable):
     """
-    A variable whose amount does not vary.
+    A constant, whose amount does not change.
 
-    A constant is a variable whose amount does not vary. Its amount is set on
+    A constant is similar to a variable except that its amount does not vary. 
+    Its amount is set on
     initialization, and then does not change over the course of the 
-    simulation. When the simulation is reset, the constant can take a
+    simulation. When the model is reset, the constant can take a
     new amount. 
 
     The amount of a constant can be any Python object, except a string or
@@ -1805,7 +1802,7 @@ class Constant(Variable):
 
     The amount of a constant can be changed explicitly, outside the model
     logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
-    the constant remains the same, at least until the simulation is reset
+    the constant remains the same, at least until the model is reset
     or the amount is again changed explicitly. See examples below.
 
     See also
