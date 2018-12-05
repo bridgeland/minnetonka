@@ -1115,7 +1115,7 @@ class Variable(CommonVariable):
     The amount of a variable can be changed explicitly, outside the model
     logic, e.g. **Earnings['as is'] = 2.1**. Once changed explicitly,
     the amount of 
-    the variable never changes again, at least until the simulation is reset or 
+    the variable never changes again, until the simulation is reset or 
     the amount is changed again explicitly. See examples below.
 
     See Also
@@ -1393,10 +1393,9 @@ class ModelPseudoVariable():
 # Defining variables
 #
 
-
 def variable(variable_name, *args):
     """
-    variable(variable_name, [description,] specifier, *antecedent_variables)
+    variable(variable_name, [description,] specifier, *dependencies)
 
     Create a variable.
 
@@ -1405,21 +1404,20 @@ def variable(variable_name, *args):
     variable can have a different amount in each model treatment. The amount 
     of a variable can be any Python object.  The amount of a variable in a 
     particular treatmant can be found 
-    using subscription brackets, e.g. **Earnings['as is']**. See examples below.
+    using subscription brackets, e.g. **Earnings['as is']**. 
 
     A variable differs from other variable-like objects (e.g.
     stocks) in that it keeps no state. At any timestep, its amount depends 
-    entirely on its 
-    specifier, and the amounts of other variables, whose names are in the list
-    `antecedent_variables`.
+    entirely on its specifier, and the amounts of dependencies. 
 
-    The `specifier` is a callable, and is called once at each timestep, using 
-    the amounts of the antecedent variables.
+    The `specifier` is a callable, and is called once at each timestep for each
+    treatment, using as arguments the amounts of the dependencies in
+    that treatment.
 
-    The amount of a variable can be changed explicitly, outside the model
-    logic, e.g. **Earnings['as is'] = 2.1**. Once changed explicitly,
+    The amount of a variable in a treatment can be changed explicitly, outside 
+    the model logic, e.g. **Earnings['as is'] = 2.1**. Once changed explicitly,
     the amount of 
-    the variable never changes again, at least until the simulation is reset or 
+    the variable never changes again, until the simulation is reset or 
     the amount is changed again explicitly. See examples below.
 
     Parameters
@@ -1432,10 +1430,11 @@ def variable(variable_name, *args):
 
     specifier : callable
         The specifier is called at every timestep.  Zero or more
-        `antecedent_variables` are supplied.  
+        `dependencies` are supplied.  
 
-    antecedent_variables : list of str
-        Names of variables used as arguments for the callable `specifier`. 
+    dependencies : list of str
+        Names of variables (or constants or stocks or ...) used as arguments 
+        for the callable `specifier`. 
         Might be empty, if callable requires no arguments.
 
     Returns
@@ -1618,7 +1617,7 @@ class PerTreatment:
 
 def constant(constant_name, *args):
     """
-    constant(constant_name, [description,] specifier [, *antecedent_variables])
+    constant(constant_name, [description,] specifier [, *dependencies])
     
     Create a constant.
 
@@ -1639,7 +1638,7 @@ def constant(constant_name, *args):
 
     The amount of a constant can be changed explicitly, outside the model
     logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
-    the constant remains the same, at least until the model is reset
+    the constant remains the same, until the model is reset
     or the amount is again changed explicitly. See examples below.
 
     Parameters
@@ -1652,15 +1651,16 @@ def constant(constant_name, *args):
 
     specifier : callable or Any
         The specifier can be a callable. If a callable, it is called once, at 
-        the beginning of the simulation run. Zero or more `specifier_arguments` 
+        the beginning of the simulation run. Zero or more `dependencies` 
         are supplied, names of variables whose amounts are provided when the
         callable is called. If not a callable, `specifier` can be any Python
-        object except a string, but no `specifier_arguments` are supplied. If 
+        object except a string, but no `dependencies` are supplied. If 
         not a callable, the specifier is provided as the amount at the beginning
         of the simulation run.
 
-    specifier_arguments : list of str
-        Names of variables used as arguments for the callable `specifier`. Empty
+    dependencies : list of str
+        Names of variables (or stocks or constants or ...) used as arguments 
+        for the callable `specifier`. Empty
         list unless `specifier` is a callable. See examples below.
 
     Returns
@@ -1802,7 +1802,7 @@ class Constant(Variable):
 
     The amount of a constant can be changed explicitly, outside the model
     logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
-    the constant remains the same, at least until the model is reset
+    the constant remains the same, until the model is reset
     or the amount is again changed explicitly. See examples below.
 
     See also
@@ -2076,9 +2076,10 @@ class StockInstance(IncrementerInstance, metaclass=Stock):
 # Defining stocks
 #
 
-
 def stock(stock_name, *args):
     """
+    stock(stock_name, [description,] increment [,[increment_dependencies,] initial [, initial_dependencies]]) 
+
     Create a system dynamics stock.
 
     In `system dynamics <https://en.wikipedia.org/wiki/System_dynamics>`_,
@@ -2086,92 +2087,116 @@ def stock(stock_name, *args):
     time. The stock defines both an initial amount and an increment.
 
     At any simulated period, the stock has an amount. The amount changes
-    over time, incrementing or decrementing at each period. The amount
+    over time, incrementing or decrementing at each timestep. The amount
     can be a simple numeric like a Python integer or a Python float. 
     Or it might be some more complex Python object: a list,
     a tuple, a numpy array, or an instance of a user-defined class. In 
     any case, the stock's amount must support addition.
 
-    The stock may have several amounts, one for each treatment in the
-    model of which it lives. 
+    If the model in which the stock lives has multiple treatments, 
+    the stock may have several amounts, one for each treatment. The amount of
+    a stock in a particular treatment can be accessed using subscription 
+    brackets, e.g. **Savings['to be']**.
 
-    A stock definition has two parts: an initial amount and an increment.
-    The initial amount is defined by either a Python object, or by
-    a callable and a list of dependency variables. If defined by a Python 
-    object, any Python object can be used, except for a string or a 
-    callable. 
+    A stock definition has two parts: an initial and an increment.
+    The initial is either a callable or any non-callable Python object 
+    except a string. If a callable, the initial has a (possibly empty) tuple 
+    of dependencies. If a non-callable, `initial_dependencies` is an
+    empty tuple.
 
-    If the initial amount is defined by a callable and list of variables,
-    that callable is called a single time, at stock initialization, with the 
-    initial amounts of each of the dependency variables. The names of
-    the dependency variables are provided, i.e. the list is a list of strings.
-    Each dependency
-    variable named can either be a plain variable or a stock or a constant
+    If `initial` is a callable,
+    that callable is called once for each treatment, at model initialization, 
+    with the initial amount of each of the dependencies for that
+    treatment. The names of
+    the dependencies are provided: `initial_dependencies` is a tuple of strings.
+    Each dependency named can either be a (plain) variable (i.e. an instance
+    of :class:`Variable`) or a stock or a constant
     or any of the other variable elements of a model. The result of the 
-    execution of the callable becomes the initial amount of the stock.
+    execution of the callable becomes the initial amount of the stock, for
+    that treatment.
 
-    The stock increment is also defined by either a Python object, or by
-    a callable and a list of dependency variables. If defined by a Python
-    object, any Python object can be used, except for a string or a 
-    callable. 
+    The stock increment is also either a callable or any non-callable Python
+    object except a string. If a callable, the increment has a (possibly empty)
+    tuple of dependencies. If a non-callable, `increment_dependencies` is an
+    empty tuple. 
 
-    If the increment is a callable, the callable is called once every
-    period, with the amounts of each of the dependency variables. Each 
-    dependency variable
-    can be a plain variable or a stock or a constant or any of the 
-    elements of a model. The callable is given the amounts of the 
-    variables at the previous period, not the current period, to 
+    If `increment` is a callable, the callable is called once every
+    period for each treatment, using as arguments the amounts of each of the 
+    dependencies in that treatment. Each
+    dependency can be the name of a (plain) variable (i.e. an instance
+    of :class:`Variable`) or a stock or a constant or any of the
+    variable elements of a model. The callable is given the amounts of the 
+    variables at the previous timestep, not the current timestep, to 
     determine the increment of the stock for this period. 
 
-    The increment is how much the stock's amount changes in each unit of
-    time. If the timestep of the model is 1.0, the stock's amount will
-    change by increment. If the timestep is not 1.0, the stock's amount
-    will change by a different quantity. For example, if the timestep 
+    The increment is how much the stock's amount changes in each unit of time.
+    If the timestep of the model is 1.0, the stock's amount will
+    change by exactly that increment. If the timestep is not 1.0, the stock's 
+    amount will change by a different quantity. For example, if the timestep
     is 0.5, the stock's amount will change by half the increment, at
-    every step.
+    every step. (For more on the timestep, see :func:`model`.)
 
-    The initial amount and the increment may vary by treatment, either
-    because one or more of the the dependency variables vary by treatment,
-    or because of an explicit :class:`PerTreatment` expression. 
+    The initial amount and the increment amount may vary by treatment, either
+    because one or more of the the dependencies vary by treatment,
+    or because of an explicit :class:`PerTreatment` expression. See examples
+    below.
+
+    The amount of a stock in a treatment can be changed explicitly, outside
+    the model logic, e.g. **Savings['to be'] = 1000**. Once changed explicitly,
+    the amount of the stock never changes again (in that treatment),
+    until the simulation is reset or the amount is changed again explicitly.
 
     Parameters
     ----------
     stock_name : str
-        Name of the stock. The name must be unique within a single model.
+        Name of the stock. The name must be unique within the model.
 
-    args
-        The args might include an optional docstring-like description, at
-        the beginning. The interpretation of the remaining args depends on
-        their count. 
+    description : str, optional
+        Docstring-like description of the stock.
 
-        If there is only a single argument (aside from the
-        optional description), it is the non-callable
-        definition of the increment. The stock is assumed to be initialized
-        at zero.
+    increment : callable or Any
+        The increment can be either a callable or any Python object, except a 
+        string. If a callable, the increment is called once for each treatment
+        at every timestep, with arguments the amounts of
+        `increment_dependencies` in that treatment. The result of the callable 
+        execution for
+        a single treatment is the unit time change in amount for that treatment.
+        See examples below.
 
-        If there are only two arguments (aside from the description),
-        the first is the non-callable definition of the increment, and the
-        second is the non-callable definiton of the initialization.
+        If `increment` is not a callable, it is interpreted as the unit time 
+        change in amount, unchanging with each timestep. 
 
-        If there are three arguments (aside from description):
+        Using :class:`PerTreatment`, a different amount or different callable 
+        can be provided for different treatments. See examples below.
 
-        #. the first argument is a callable definition of the increment, executed every period
+    increment_dependencies : tuple of str, optional
+        Names of dependencies---i.e. names of (plain) variables or constants or 
+        other stocks or ...---
+        used as arguments for the callable `increment`. Might be an empty tuple, 
+        the default, either
+        if callable `increment` requires no arguments, or if `increment` is not
+        a callable.
 
-        #. the second argument is a tuple of names of dependency variables, whose amounts will be used as arguments of the increment callable. The tuple may be empty (i.e. **()**), if the increment callable takes no arguments.
-        
-        #. the third argument is a Python object, the non-callable definition of the initialization
+    initial: callable or Any, optional
+        The initial can be either a callable or any Python object, except a 
+        string. If a callable, the initial is called once for each treatment
+        at the beginning of the simulation, with arguments of the amounts of 
+        `initial_dependencies`. The results of the callable execution for a single
+        treatment becomes the initial amount of the stock, for that treatment.
 
-        If there are four arguments (sans descriptions):
+        If `initial` is not a callable, it is interpreted as the initial amount
+        for the stock. 
 
-        #. the first argument is a callable definition of the increment, executed every period
+        Using :class:`PerTreatment`, a different amount or different callable 
+        can be provided for different treatments. See examples below.
 
-        #. the second argument is a tuple of names of dependency variables, whose amounts will be used as arguments of the increment callable. The tuple may be empty (i.e. **()**), if the increment callable takes no arguments.
-        
-        #. the third argument is a callable definition of the initialization, executed once, at at initialization, and again each time the simulation is reset
-
-        #. the fourth argument is a tuple of names of dependency variables, whose amounts are used as arguments of the initialization callable. The tuple may be empty (i.e. **()**), if the initialization callable takes no arguments.
-
-        See usage examples below.
+    initial_dependencies: tuple of str, optional
+        Names of dependencies---i.e. names of (plain) variables or constants or 
+        other stocks or ...---
+        used as arguments for the callable `initial`. Might be an empty tuple, 
+        the default, either
+        if callable `initial` requires no arguments, or if `increment` is not
+        a callable.
 
     Returns
     -------
@@ -2214,8 +2239,8 @@ def stock(stock_name, *args):
 
     >>> stock('MenuItemCount', PerTreatment({'As is': 1, 'To be': 2}), 20)
 
-    The increment can be a callable that uses no variables. Note the empty
-    tuple of variables.
+    The increment can be a callable with no dependencies. Note the empty
+    tuple of dependencies.
 
     >>> stock('MenuItemCount', lambda: random.randint(0,2), (), 20)
 
@@ -2226,11 +2251,11 @@ def stock(stock_name, *args):
     .,,     lambda: random.randint(15, 18), (),
     ...     lambda: random.randint(20, 22), ())
 
-    Variables can be provided for the increment callable.
+    Dependencies can be provided for the increment callable.
 
     >>> stock('Savings', lambda interest: interest, ('Interest',), 0)
 
-    Variables can be provided for the initial callable.
+    Dependencies can be provided for the initial callable.
 
     >>> stock('Savings', 
     ...     lambda interest, additions: interest + additions, 
@@ -2278,11 +2303,11 @@ def _parse_stock(name, args):
 
 
 def _create_stock(stock_name, docstring,
-                  increment_definition, increment_variables,
-                  initial_definition, initial_variables):
+                  increment_definition, increment_dependencies,
+                  initial_definition, initial_dependencies):
     """Create a new stock."""
-    initial = create_calculator(initial_definition, initial_variables)
-    incr = create_calculator(increment_definition, increment_variables)
+    initial = create_calculator(initial_definition, initial_dependencies)
+    incr = create_calculator(increment_definition, increment_dependencies)
     newstock = type(stock_name, (StockInstance,),
                     {'__doc__': docstring, '_initial': initial,
                      '_incremental': incr})
@@ -2334,6 +2359,8 @@ class AccumInstance(IncrementerInstance, metaclass=Accum):
 
 def accum(accum_name, *args):
     """
+    accum(accum_name, [description,] increment [,[increment_dependencies,] initial [, initial_dependencies]]) 
+
     Create a system dynamics accum. 
 
     An accum is much like a :class:`Stock`, modeling something that
@@ -2342,7 +2369,7 @@ def accum(accum_name, *args):
 
     There is one key difference between a stock and an accum: an accum 
     is incremented with the current amounts
-    of its dependency variables, not the amounts in the last period. 
+    of its dependencies, not the amounts in the last period. 
     This seemingly minor difference has a big impact: a circular dependency
     can be created with a stock, but not with an accum. The stock
     **Savings** can depend on **Interest**, which depends in turn on
@@ -2356,86 +2383,109 @@ def accum(accum_name, *args):
     a tuple, a numpy array, or an instance of a user-defined class. In 
     any case, the accum's amount must support addition.
 
-    The accum may have several amounts, one for each treatment in the model.
+    If the model in which the accum lives has multiple treatments, the 
+    accum may have several amounts, one for each treatment in the model. The 
+    amount of an accum in a particular treatment can be accessed using 
+    subscription brackets, e.g. **RevenueYearToDate['as is']**.
 
-    An accum definition has two parts: an initial amount and an increment.
-    The initial amount is defined by either a Python object, or by a
-    a callable and a list of dependency variables. If it is defined by a Python 
-    object, any Python object can be used, except for a string or a 
-    callable.
+    An accum definition has two parts: an initial and an increment.
+    The initial is either a callable or any non-callable Python object
+    except a string. If a callable, the initial has a (posssibly empty) tuple
+    of dependencies. If a non-callable, `iniitial_dependences` is an 
+    empty tuple.
 
-    If the initial amount is defined by a callable and list of variables,
-    that callable is called a single time, at accum initialization, with the 
-    initial amounts of each of the dependency variables. The names of
-    the dependency variables are provided, i.e. the list is a list of strings.
-    Each dependency
-    variable named can either be a plain variable or a stock or a constant
+    If `initial` is a callable,
+    that callable is called once for each treatment, at model initialization, 
+    with the initial amounts of each of the dependencies. The names of
+    the dependencies are provided: `initial_dependencies` is a tuple of strings.
+    Each dependency named can either be a (plain) variable (i.e. an instance
+    of :class:`Variable`) or a stock or a constant
     or any of the other variable elements of a model. The result of the 
-    execution of the callable becomes the initial amount of the accum.
+    execution of the callable becomes the initial amount of the accum, for
+    that treatment.
 
-    The accum increment is also defined by either a Python object, or by
-    a callable and a list of dependency variables. If defined by a Python
-    object, any Python object can be used, except for a string or a 
-    callable. 
+    The accum increment is also either a callable or any non-callable Python
+    object except a string. If a callable, the increment has a (possibly empty)
+    tuple of dependencies. If a non-callable, `increment_dependencies` is an
+    empty tuple.    
 
-    If the increment is a callable, the callable is called once every
-    period, with the amounts of each of the dependency variables. As with
-    the initial amount, names of dependency variables are given, and the
-    list is a list of strings. Each dependency variable
-    can be a plain variable or a stock or a constant or any of the 
-    elements of a model. The callable is given the amounts of the 
-    variables at the previous period, not the current period, to 
-    determine the increment of the stock for this period. 
+    If `increment` is a callable, the callable is called once every
+    period for each treatment, using as arguments the amounts of each of the 
+    dependencies in that treatment. Each
+    dependency can be the name of a (plain) variable (i.e. an instance
+    of :class:`Variable`) or a stock or a constant or any of the
+    variable elements of a model.  The callable is given the amounts of the 
+    variables at the current period, to 
+    determine the increment of the accume for this period. 
 
-    The increment is how much the stock's amount changes in each period.
+    The increment is how much the accum's amount changes in each period.
     Note that this is another difference between an accum and a stock: 
     for a stock the amount incremented depends on the timestep; for an 
     accum it does not. For example, if both a stock **S** and an accum **A**
     have an increment of 10, and the timestep is 0.5, **S** will increase
     by 5 every period but **A** will increase by 10.
 
-    The initial amount and the increment may vary by treatment, either
-    because one or more of the the dependency variables vary by treatment,
+    The initial amount and the increment amount may vary by treatment, either
+    because one or more of the the dependencies vary by treatment,
     or because of an explicit :class:`PerTreatment` expression. 
+
+    The amount of an accum in a treatment can be changed explicitly, outside
+    the model logic, e.g. **RevenueYearToDate['as is'] = 1000**. 
+    Once changed explicitly,
+    the amount of the accum never changes again (in that treatment),
+    until the simulation is reset or the amount is changed again explicitly.
 
     Parameters
     ----------
     accum_name : str
-        Name of the accum. The name must be unique within a model.
+        Name of the accum. The name must be unique within the model.
 
-    args
-        The args might include an optional docstring-like description, at
-        the beginning. The interpretation of the remaining args depends on
-        their count. 
+    description : str, optional
+        Docstring-like description of the accum.
 
-        If there is only a single argument (aside from the
-        optional description), it is the non-callable
-        definition of the increment. The accum is assumed to be initialized
-        at zero.
+    increment : callable or Any
+        The increment can be either a callable or any Python object, except a 
+        string. If a callable, the increment is called once for each treatment
+        at every timestep, with arguments the amounts of
+        `increment_dependencies` in that treatment. The result of the callable 
+        execution for
+        a single treatment is the change in amount for that treatment.
+        See examples below.
 
-        If there are only two arguments (aside from the description),
-        the first is the non-callable definition of the increment, and the
-        second is the non-callable definiton of the initialization.
+        If `increment` is not a callable, it is interpreted as the 
+        change in amount, unchanging with each timestep. 
 
-        If there are three arguments (aside from description):
+        Using :class:`PerTreatment`, a different amount or different callable 
+        can be provided for different treatments. See examples below.
 
-        #. the first argument is a callable definition of the increment, executed every period
+    increment_dependencies : tuple of str, optional
+        Names of dependencies---i.e. names of (plain) variables or constants or 
+        other stocks or ...---
+        used as arguments for the callable `increment`. Might be an empty tuple, 
+        the default, either
+        if callable `increment` requires no arguments, or if `increment` is not
+        a callable.  
 
-        #. the second argument is a tuple of names of dependency variables, whose amounts will be used as arguments of the increment callable. The tuple may be empty (i.e. **()**), if the increment callable takes no arguments.
-        
-        #. the third argument is a Python object, the non-callable definition of the initialization
+    initial : callable or Any, optional
+        The initial can be either a callable or any Python object, except a 
+        string. If a callable, the initial is called once for each treatment
+        at the beginning of the simulation, with arguments of the amounts of 
+        `initial_dependencies`. The results of the callable execution for a single
+        treatment becomes the initial amount of the stock, for that treatment.
 
-        If there are four arguments (sans descriptions):
+        If `initial` is not a callable, it is interpreted as the initial amount
+        for the stock. 
 
-        #. the first argument is a callable definition of the increment, executed every period
+        Using :class:`PerTreatment`, a different amount or different callable 
+        can be provided for different treatments. See examples below.
 
-        #. the second argument is a tuple of names of dependency variables, whose amounts will be used as arguments of the increment callable. The tuple may be empty (i.e. **()**), if the increment callable takes no arguments.
-        
-        #. the third argument is a callable definition of the initialization, executed once, at at initialization, and again each time the simulation is reset
-
-        #. the fourth argument is a tuple of names of dependency variables, whose amounts are used as arguments of the initialization callable. The tuple may be empty (i.e. **()**), if the initialization callable takes no arguments.
-
-        See usage examples below.
+    initial_dependencies: tuple of str, optional
+        Names of dependencies---i.e. names of (plain) variables or constants or 
+        other stocks or ...---
+        used as arguments for the callable `initial`. Might be an empty tuple, 
+        the default, either
+        if callable `initial` requires no arguments, or if `increment` is not
+        a callable.
 
     Returns
     -------
@@ -2510,11 +2560,11 @@ def accum(accum_name, *args):
 
 
 def _create_accum(accum_name, docstring,
-                  increment_definition=0, increment_variables=None,
-                  initial_definition=0, initial_variables=None):
+                  increment_definition=0, increment_dependencies=None,
+                  initial_definition=0, initial_dependencies=None):
     """Create a new accum."""
-    initial = create_calculator(initial_definition, initial_variables)
-    increment = create_calculator(increment_definition, increment_variables)
+    initial = create_calculator(initial_definition, initial_dependencies)
+    increment = create_calculator(increment_definition, increment_dependencies)
     new_accum = type(accum_name, (AccumInstance,),
                      {'__doc__': docstring, '_initial': initial,
                       '_incremental': increment})
@@ -2642,33 +2692,40 @@ class PreviousInstance(SimpleVariableInstance, metaclass=Previous):
 
 def previous(variable_name, *args):
     """
+    previous(previous_name, [description,], prior [, initial_amount])
+
+    Create a previous.
+
     Create a new previous, a variable whose amount is the amount of another
-    variable in the previous timestep.
+    variable---the one named by `prior`---in the previous timestep. 
+
+    If the model in which the previous lives has multiple treatments, the 
+    previous may have several amounts, one for each treatment, if its prior
+    does. The amount of a previous in a particular treatment can be 
+    accessed using subscription brackets, e.g. **YesterdaySales['as is']**.
+
+    When the model is initialized, the amount of the previous is either set
+    to `initial_amount`, or if no initial amount is provided, it is set to
+    the amount of `prior`.
 
     Parameters
     ----------
     variable_name : str
         Name of the previous. The name must be unique within a single model.
 
-    args 
-        The args might include an optional docstring-like description, at
-        the beginning. The interpretation of the remaining args depends on
-        their count.
+    description : str, optional
+        Docstring-like description of the previous.
 
-        If there is only a single argument (aside from the optional 
-        description), it is the name of the prior variable, as a string.
-        The prior the variable is the variable 
-        whose previous amount becomes the current amount of this preious. 
-        The initial amount of the newly defined previous is the initial 
-        amount of the prior variable.
+    prior : str
+        The name of a variable (or constant or stock or ...). The amount of
+        the prior in the last timestep becomes the new amount of the previous
+        in this timestep. 
 
-        If there are two arguments (aside from the optional description),
-        the first is the name of the prior variable, and the second is a
-        Python object that is the initial amount of the previous. Any 
-        Python object is allowed, except a string or a callable.
-
-        As with any other variable, a previous may take different amounts
-        in each treatment of the model.
+    initial_amount : Any, optional
+        Any non-string and non-callable Python object. But typically this is 
+        some kind of numeric: an int or a float or a numpy array of floats or 
+        the like. If provided, when the model is initialized, the initial 
+        amount of `prior` is set to `initial_amount`.
 
     Returns
     -------
