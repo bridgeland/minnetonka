@@ -1122,7 +1122,7 @@ class Variable(CommonVariable):
     --------
     variable : Create a :class:`Variable`  
 
-    :class:`Constant` : a variable that does not varry
+    :class:`Constant` : a variable that does not vary
 
     Examples
     --------
@@ -2026,8 +2026,69 @@ class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
             model.variable_instance(v, treatment_name)
             for v in self._incremental.depends_on()]
 
+
 class Stock(Incrementer):
-    """A system dynamics stock."""
+    """
+    A system dynamics stock.
+
+    In `system dynamics <https://en.wikipedia.org/wiki/System_dynamics>`_,
+    a stock is used to model something that accumulates or depletes over
+    time. 
+
+    At any simulated period, the stock has an amount. The amount changes
+    over time, incrementing or decrementing at each timestep. The amount
+    can be a simple numeric like a Python integer or a Python float. 
+    Or it might be some more complex Python object: a list,
+    a tuple, a numpy array, or an instance of a user-defined class. In 
+    any case, the stock's amount must support addition.
+
+    If the model in which the stock lives has multiple treatments, 
+    the stock may have several amounts, one for each treatment. The amount of
+    a stock in a particular treatment can be accessed using subscription 
+    brackets, e.g. **Savings['to be']**.
+
+    The amount of a stock in a treatment can be changed explicitly, outside
+    the model logic, e.g. **Savings['to be'] = 16000**. Once changed explicitly,
+    the amount of the stock never changes again (in that treatment),
+    until the simulation is reset or the amount is changed again explicitly.
+
+    See Also
+    --------
+    stock : Create a :class:`Stock`  
+
+    :class:`Variable` : a variable whose amount is calculated from other vars
+
+    :class:`Constant` : a variable that does not vary
+
+    :class:`Previous` : a variable that has the previous amount of some other
+        variable
+
+    :class:`Accum`: a stock-like variable that uses current amounts
+
+    Examples
+    --------
+    Find the current amount of the stock **Savings**, in the **to be** 
+    treatment.
+
+    >>> Savings['to be']
+    16288.94
+
+    Change the current amount of the stock **Savings** in the **to be**
+    treatment.
+
+    >>> Savings['to be'] = 16000
+
+    Show everything important about the stock **Savings**.
+
+    >>> Savings.show()
+    Stock: Savings
+    Amounts: {'as is': 14802.442849183435, 'to be': 16000}
+    Initial definition: 10000.0
+    Initial depends on: []
+    Incremental definition: Savings = stock('Savings', lambda i: i, ('Interest',), 10000.0)
+    Incremental depends on: ['Interest']
+    [variable('Interest')]
+    """
 
     def calculate_all_increments(self, timestep):
         """Compute the increment for all stock variable instances."""
@@ -2040,6 +2101,14 @@ class Stock(Incrementer):
         for dname in self.depends_on(for_init=True):
             d = self._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
+
+    def show(self):
+        """
+        Show everything important about the stock.
+
+        Yada yada
+        """
+        return super().show()
 
 class StockInstance(IncrementerInstance, metaclass=Stock):
     """A instance of a system dynamics stock for a particular treatment."""

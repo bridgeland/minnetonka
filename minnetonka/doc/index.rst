@@ -20,6 +20,10 @@ Welcome to Minnetonka's documentation!
 	:members: show, history, all
 	:special-members: __getitem__
 
+.. autoclass:: Stock
+	:members: show, history, all
+	:special-members: __getitem__, __setitem__
+
 .. autoclass:: PerTreatment
 
 .. toctree::
