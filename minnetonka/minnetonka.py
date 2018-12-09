@@ -1244,7 +1244,7 @@ class Variable(CommonVariable):
         Change the current amount of the variable **Taxes** in all treatments
         at once.
 
-        >>> Taxes['__all__'] = 0.3
+        >>> Earnings['__all__'] = 2.1
         """
         super().__setitem__(treatment_name, amount)
 
@@ -2178,7 +2178,7 @@ class Stock(Incrementer):
         Change the current amount of the stock **Taxes** in all treatments
         at once.
 
-        >>> Taxes['__all__'] = 5000
+        >>> Savings['__all__'] = 10000
         """
         super().__setitem__(treatment_name, amount)
 
