@@ -910,21 +910,7 @@ class CommonVariable(type):
         self._by_treatment = {}
 
     def history(self, treatment_name, step):
-        """
-        Return the amount at a past timestep for a particular treatment.
-
-        Minnetonka keeps track of the past amounts of all the variables 
-        over the course of a single simulation run,
-        accessible with this function. 
-
-        Parameters
-        ----------
-        treatment_name : str
-            the name of some treatment defined in the model
-
-        step : int
-            the step number in the past 
-        """
+        """Return the amount at a past timestep for a particular treatment. """
         return self.by_treatment(treatment_name)._history(step)
 
     def wire_instances(self):
@@ -1171,7 +1157,7 @@ class Variable(CommonVariable):
         """
         Return the amount at a past timestep for a particular treatment.
 
-        Minnetonka keeps track of the past amounts of all the variables 
+        Minnetonka tracks the past amounts of a variable
         over the course of a single simulation run,
         accessible with this function. 
 
@@ -1837,7 +1823,7 @@ class Constant(Variable):
         """
         Return the amount at a past timestep for a particular treatment.
 
-        Minnetonka keeps track of the past amounts of all constants 
+        Minnetonka tracks the past amounts of a constant
         over the course of a single simulation run,
         accessible with this function.  Of course, constants do not change
         value, except by explicit setting, outside of model logic. So 
@@ -2106,7 +2092,7 @@ class Stock(Incrementer):
         """
         Return the amount at a past timestep for a particular treatment.
 
-        Minnetonka keeps track of the past amounts of all the stocks 
+        Minnetonka tracks the past amounts of a stock
         over the course of a single simulation run,
         accessible with this function. 
 
@@ -2477,7 +2463,75 @@ def _create_stock(stock_name, docstring,
 
 class Accum(Incrementer):
     """
-    Foo. 
+    A stock-like incrementer, with a couple of differences from a stock.
+
+    An accum is much like a :class:`Stock`, modeling something that
+    accumulates or depletes over time. Like a stock, an accum defines
+    both an initial amount and an increment.
+
+    There is an important difference between a stock and an accum: an accum 
+    is incremented with the current amounts
+    of its dependencies, not the amounts in the last period. 
+    This seemingly minor difference has a big impact: a circular dependency
+    can be created with a stock, but not with an accum. The stock
+    **Savings** can depend on **Interest**, which depends in turn on
+    **Savings**. But this only works if **Savings** is a stock. If 
+    **Savings** is an accum, the same circular dependency is a model error.
+
+    At any simulated period, the accum has an amount. The amount changes
+    over time, incrementing or decrementing at each period. The amount
+    can be a simple numeric like a Python integer or a Python float. 
+    Or it might be some more complex Python object: a list,
+    a tuple, a numpy array, or an instance of a user-defined class. In 
+    any case, the accum's amount must support addition.
+
+    If the model in which the accum lives has multiple treatments, the 
+    accum may have several amounts, one for each treatment in the model. The 
+    amount of an accum in a particular treatment can be accessed using 
+    subscription brackets, e.g. **RevenueYearToDate['as is']**.
+
+    The amount of an accum in a treatment can be changed explicitly, outside
+    the model logic, e.g. **RevenueYearToDate['as is'] = 1000**. 
+    Once changed explicitly,
+    the amount of the accum never changes again (in that treatment),
+    until the simulation is reset or the amount is changed again explicitly.
+
+    See Also
+    --------
+    accum : Create an :class:`Accum`
+
+    :class:`Stock`: a system dynamics stock
+
+    :class:`Variable` : a variable whose amount is calculated from other vars
+
+    :class:`Constant` : a variable that does not vary
+
+    :class:`Previous` : a variable that has the previous amount of some other
+        variable
+
+    Examples
+    --------
+    Find the current amount of the accum **RevenueYearToDate** in the 
+    **cautious** treatment.
+
+    >>> RevenueYearToDate['cautious']
+    224014.87326935912
+
+    Change the current amount of the accum **RevenueYearToDate** in the 
+    **cautious** treatment.
+
+    >>> RevenueYearToDate['cautious'] = 200000
+
+    Show everything important about the accum **RevenueYearToDate**
+
+    >>> RevenueYearToDate.show()
+    Accum: RevenueYearToDate
+    Amounts: {'as is': 186679.06105779926, 'cautious': 200000, 'aggressive': 633395.3052889963}
+    Initial definition: 0
+    Initial depends on: []
+    Incremental definition: RevenueYearToDate = accum('RevenueYearToDate', lambda x: x, ('Revenue',), 0)
+    Incremental depends on: ['Revenue']
+    [variable('Revenue')]
     """
     def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
         """Check for cycles involving this accum."""
@@ -2488,6 +2542,113 @@ class Accum(Incrementer):
             d = cls._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
 
+    def history(self, treatment_name, step):
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka tracks the past amounts of an accum
+        over the course of a single simulation run,
+        accessible with this function. 
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+
+        Example
+        -------
+        Create a model with an accum and three treatments
+
+        >>> with model(treatments=['as is', 'cautious', 'aggressive']) as m:
+        ...     RevenueYearToDate = accum('RevenueYearToDate', 
+        ...         lambda x: x, ('Revenue',), 0)
+        ...     Revenue = variable('Revenue', 
+        ...         lambda lst, mst, w: lst + w * (mst - lst),
+        ...         'Least', 'Most', 'Weather')
+        ...     Weather = variable('Weather', 
+        ...         lambda: random.random())
+        ...     Least = constant('Least', 
+        ...         PerTreatment(
+        ...             {'as is': 0, 'cautious': 0, 'aggressive': -100000}))
+        ...     Most = constant('Most', 
+        ...         PerTreatment(
+        ...             {'as is': 100000, 'cautious': 120000, 
+        ...              'aggressive': 400000}))
+
+        Advance the simulation. **RevenueYearToDate** changes value.
+
+        >>> m.step()
+        >>> RevenueYearToDate['aggressive']
+        240076.8319119932
+        >>> m.step()
+        >>> RevenueYearToDate['aggressive']
+        440712.80369068065
+        >>> m.step()
+        >>> RevenueYearToDate['aggressive']
+        633395.3052889963
+
+        Find the old values of **RevenueYearToDate**
+
+        >>> RevenueYearToDate.history('aggressive', 1)
+        240076.8319119932
+        >>> RevenueYearToDate.history('aggressive', 2)
+        440712.80369068065
+        """
+        return super().history(treatment_name, step)
+
+    def show(self):
+        """
+        Show everything important about the accum.
+
+        Example
+        -------
+        >>> RevenueYearToDate.show()
+        Accum: RevenueYearToDate
+        Amounts: {'as is': 186679.06105779926, 'cautious': 200000, 'aggressive': 633395.3052889963}
+        Initial definition: 0
+        Initial depends on: []
+        Incremental definition: RevenueYearToDate = accum('RevenueYearToDate', lambda x: x, ('Revenue',), 0)
+        Incremental depends on: ['Revenue']
+        [variable('Revenue')]
+        """
+        return super().show()
+
+    def __getitem__(self, treatment_name):
+        """
+        Retrieve the current amount of the accum in the treatment with
+        the name **treatment_name**.
+
+        Example
+        -------
+        Find the current amount of the accum **RevenueYearToDate**, 
+        in the **as is** treatment.
+
+        >>> RevenueYearToDate['as is']
+        186679.06105779926
+        """
+        return super().__getitem__(treatment_name)
+
+    def __setitem__(self, treatment_name, amount):
+        """
+        Change the current amount of the accum in the treatment with the
+        name **treatment_name**.
+
+        Examples
+        --------
+        Change the current amount of the accum **RevenueYearToDate** 
+        in the **as is** treatment to **2.1**.
+
+        >>> RevenueYearToDate['as is'] = 190000
+
+        Change the current amount of the accum **RevenueYearToDate** 
+        in all treatments at once.
+
+        >>> RevenueYearToDate['__all__'] = 0
+        """
+        super().__setitem__(treatment_name, amount)
 
 class AccumInstance(IncrementerInstance, metaclass=Accum):
     """Like ACCUM in SimLang, for a particular treatment instance."""
@@ -2525,7 +2686,7 @@ def accum(accum_name, *args):
     accumulates or depletes over time. Like a stock, an accum defines
     both an initial amount and an increment.
 
-    There is one key difference between a stock and an accum: an accum 
+    There is an important difference between a stock and an accum: an accum 
     is incremented with the current amounts
     of its dependencies, not the amounts in the last period. 
     This seemingly minor difference has a big impact: a circular dependency
@@ -2665,8 +2826,7 @@ def accum(accum_name, *args):
 
     Examples
     --------
-    An accum that starts with the amount 2018, and increments the amount
-    by 1 at each timestep.
+    An accum that collects all the revenue to date.
 
     >>> accum('Year', 1, 2019)
 

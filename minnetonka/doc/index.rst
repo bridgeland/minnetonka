@@ -24,6 +24,10 @@ Welcome to Minnetonka's documentation!
 	:members: show, history, all
 	:special-members: __getitem__, __setitem__
 
+.. autoclass:: Accum
+	:members: show, history, all
+	:special-members: __getitem__, __setitem__
+
 .. autoclass:: PerTreatment
 
 .. toctree::
