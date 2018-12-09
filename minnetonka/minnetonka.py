@@ -497,6 +497,16 @@ def model(variables=[], treatments=[''], initialize=True, timestep=1,
     See Also
     --------
     :class:`Model` : a model, once created
+
+    variable : Create a :class:`Variable` to put in a model
+
+    constant : Create a :class:`Constant` to put in a model
+
+    previous : Create a :class:`Previous` to put in a model
+
+    stock : Create a system dynamics :class:`Stock`, to put in a model
+
+    accum : Create an :class:`Accum`, to put in a model
     
     Examples
     --------
@@ -1145,6 +1155,17 @@ class Variable(CommonVariable):
         """Returns whether the variable has a unitary definition."""
         return self._calculator.has_unitary_definition()
 
+    def all(self):
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> Earnings.all()
+        {'as is': 2.1, 'to be': 4.0}
+        """
+        return super().all()
+
     def history(self, treatment_name, step):
         """
         Return the amount at a past timestep for a particular treatment.
@@ -1427,6 +1448,8 @@ def variable(variable_name, *args):
     constant : Create a variable whose amount does not change
 
     stock : Create a system dynamics stock
+
+    previous : Create a variable for the prior amount of some other variable
 
     :class:`PerTreatment` : for defining how a variable has a different amount
         for each treatment
@@ -1847,9 +1870,9 @@ class Constant(Variable):
         Create a model with a single constant InterestRate.
 
         >>> import random
-        >>> with model() as m:
+        >>> with model(treatments=['as is', 'to be']) as m:
         ...     InterestRate = variable('InterestRate',
-        ...         PerTreatment({"as is": 0.09, "to be": 0.08})
+        ...         PerTreatment({"as is": 0.09, "to be": 0.08}))
         >>> InterestRate['to be']
         0.08
 
@@ -2096,6 +2119,17 @@ class Stock(Incrementer):
         for dname in self.depends_on(for_init=True):
             d = self._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
+
+    def all(self):
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> Savings.all()
+        {'as is': 14090, 'to be': 16000}
+        """
+        return super().all()
 
     def history(self, treatment_name, step):
         """
@@ -2364,7 +2398,7 @@ def stock(stock_name, *args):
         amounts of the variables in the current period, instead of the 
         previous period.
 
-    :class:`PerTreatment` : for defining how an increment or initialization
+    :class:`PerTreatment` : for defining how an increment or initial
         varies from treatment to treatment
 
     Examples
@@ -2550,6 +2584,19 @@ class Accum(Incrementer):
         for dname in cls.depends_on(for_init=False):
             d = cls._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
+
+    def all(self):
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> RevenueYearToDate.all()
+        {'as is': 186679.06105779926,
+         'cautious': 224014.87326935912,
+         'aggressive': 633395.3052889963}
+        """
+        return super().all()
 
     def history(self, treatment_name, step):
         """
@@ -2822,15 +2869,15 @@ def accum(accum_name, *args):
 
     See Also
     --------
-    variable : Create a non-stock plain variable
+    variable : Create a non-stock variable
 
-    constant : Create a plain variable whose amount does not change
+    constant : Create a non-stock variable whose amount does not change
 
     stock : Create an stock, much like a stock except that it uses the 
         amounts of the variables in the prior period, instead of the current
         period
 
-    :class:`PerTreatment` : for defining how an increment or initialization
+    :class:`PerTreatment` : for defining how an increment or initial
         varies from treatment to treatment
 
     Examples
@@ -2935,6 +2982,17 @@ class Previous(CommonVariable):
     def has_unitary_definition(self):
         """Returns whether the previous has a unitary definition."""
         return True
+
+    def all(self):
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> PreviousEarnings.all()
+        {'as is': 1.9, 'to be': 2.4}
+        """
+        return super().all()
 
     def __getitem__(self, treatment_name):
         """
