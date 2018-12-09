@@ -935,15 +935,7 @@ class CommonVariable(type):
         checked_already.append(self)
 
     def all(self):
-        """
-        Return a dict of all current amounts, one for each treatment.
-
-        Example
-        -------
-        >>> Interest.all()
-        {'as is': 0.09, 'to be': 0.08}
-
-        """
+        """Return a dict of all current amounts, one for each treatment."""
         return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()}
 
     def show(self):
@@ -1767,6 +1759,7 @@ def constant(constant_name, *args):
     logging.info('Creating constant %s', constant_name)
     return _parse_and_create(constant_name, ConstantInstance, 'Constant', args)
 
+
 class Constant(Variable):
     """
     A constant, whose amount does not change.
@@ -1783,11 +1776,11 @@ class Constant(Variable):
 
     A single constant can take a different amount in each
     model treatment. The amount of a constant in a particular treatment
-    can be found using the subscription brackets, e.g. **Interest['to be']**.
+    can be found using the subscription brackets, e.g. **InterestRate['to be']**.
     See examples below.
 
     The amount of a constant can be changed explicitly, outside the model
-    logic, e.g. **Interest['to be'] = 0.07**. Once changed, the amount of
+    logic, e.g. **InterestRate['to be'] = 0.07**. Once changed, the amount of
     the constant remains the same, until the model is reset
     or the amount is again changed explicitly. See examples below.
 
@@ -1799,26 +1792,37 @@ class Constant(Variable):
 
     Examples
     --------
-    Find the current amount of the constant **Interest**, in the **to be**
+    Find the current amount of the constant **InterestRate**, in the **to be**
     treatment.
 
-    >>> Interest['to be']
+    >>> InterestRate['to be']
     0.08
 
-    Change the current amount of the constant **Interest** in the **to be**
+    Change the current amount of the constant **InterestRate** in the **to be**
     treatment.
 
-    >>> Interest['to be'] = 0.075
+    >>> InterestRate['to be'] = 0.075
 
-    Show everything important about the constant **Interest**.
+    Show everything important about the constant **InterestRate**.
 
-    >>> Interest.show()
-    Constant: Interest
+    >>> InterestRate.show()
+    Constant: InterestRate
     Amounts: {'as is': 0.09, 'to be': 0.075}
     Definition: PerTreatment({"as is": 0.09, "to be": 0.08})
     Depends on: []
     []
     """
+    def all(self):
+        """
+        Return a dict of all current amounts, one for each treatment.
+
+        Example
+        -------
+        >>> InterestRate.all()
+        {'as is': 0.09, 'to be': 0.08}
+        """
+        return super().all()
+
     def history(self, treatment_name, step):
         """
         Return the amount at a past timestep for a particular treatment.
@@ -1840,31 +1844,36 @@ class Constant(Variable):
 
         Example
         -------
-
-        Create a model with a single variable RandomVariable.
+        Create a model with a single constant InterestRate.
 
         >>> import random
         >>> with model() as m:
-        ...     RandomValue = variable(
-        ...         'RandomValue', lambda: random.random() / 2)
-        >>> RandomValue['']
-        0.4292118957243861
+        ...     InterestRate = variable('InterestRate',
+        ...         PerTreatment({"as is": 0.09, "to be": 0.08})
+        >>> InterestRate['to be']
+        0.08
 
-        Advance the simulation. RandomVariable changes value.
+        Advance the simulation. InterestRate stays the same
 
         >>> m.step()
-        >>> RandomValue['']
-        0.39110555756064735
+        >>> InterestRate['to be']
+        0.08
         >>> m.step()
-        >>> RandomValue['']
-        0.23809270739004534
+        >>> InterestRate['to be']
+        0.08
+
+        Change the amount of InterestRate explicitly.
+
+        >>> InterestRate['to be'] = 0.075
 
         Find the old values of RandomVarable.
 
-        >>> RandomValue.history('', 0)
-        0.4292118957243861
-        >>> RandomValue.history('', 1)
-        0.39110555756064735
+        >>> InterestRate.history('to be', 0)
+        0.08
+        >>> InterestRate.history('to be', 1)
+        0.08
+        >>> InterestRate.history('to be', 2)
+        0.075
         """
         return super().history(treatment_name, step)
 
@@ -1874,8 +1883,8 @@ class Constant(Variable):
 
         Example
         -------
-        >>> Interest.show()
-        Constant: Interest
+        >>> InterestRate.show()
+        Constant: InterestRate
         Amounts: {'as is': 0.09, 'to be': 0.075}
         Definition: PerTreatment({"as is": 0.09, "to be": 0.08})
         Depends on: []
@@ -1890,10 +1899,10 @@ class Constant(Variable):
 
         Example
         -------
-        Find the current amount of the constant **Interest**, in the **to be**
+        Find the current amount of the constant **InterestRate**, in the **to be**
         treatment.
 
-        >>> Interest['to be']
+        >>> InterestRate['to be']
         0.08
         """
         return super().__getitem__(treatment_name)
@@ -1905,15 +1914,15 @@ class Constant(Variable):
 
         Examples
         --------
-        Change the current amount of the constant **Interest** in the **to be**
+        Change the current amount of the constant **InterestRate** in the **to be**
         treatment to **0.075**.
 
-        >>> Interest['to be'] = 0.075
+        >>> InterestRate['to be'] = 0.075
 
-        Change the current amount of the constant **Interest** in all treatments
+        Change the current amount of the constant **InterestRate** in all treatments
         at once.
 
-        >>> Interest['__all__'] = 0.06
+        >>> InterestRate['__all__'] = 0.06
         """
         super().__setitem__(treatment_name, amount)
 
