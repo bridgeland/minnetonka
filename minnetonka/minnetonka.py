@@ -1193,7 +1193,7 @@ class Variable(CommonVariable):
         ...     RandomValue = variable(
         ...         'RandomValue', lambda: random.random() / 2)
         >>> RandomValue['']
-        0.4292118957243861
+        0.4292118957243861  
 
         Advance the simulation. RandomVariable changes value.
 
@@ -2081,7 +2081,7 @@ class Stock(Incrementer):
     Show everything important about the stock **Savings**.
 
     >>> Savings.show()
-    Stock: Savings
+    Stock: Savings 
     Amounts: {'as is': 14802.442849183435, 'to be': 16000}
     Initial definition: 10000.0
     Initial depends on: []
@@ -2102,13 +2102,100 @@ class Stock(Incrementer):
             d = self._model.variable(dname)
             d.check_for_cycle(checked_already, dependents=dependents)
 
+    def history(self, treatment_name, step):
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka keeps track of the past amounts of all the stocks 
+        over the course of a single simulation run,
+        accessible with this function. 
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+
+        Example
+        -------
+        Create a model with a single stock **Year**.
+
+        >>> with model() as m:
+        ...     Year = stock('Year', 1, 2019)
+        >>> Year['']
+        2019
+
+        Advance the simulation. **Year** changes value.
+
+        >>> m.step()
+        >>> Year['']
+        2020
+        >>> m.step()
+        >>> Year['']
+        2021
+
+        Find the old values of **Year**
+
+        >>> Year.history('', 0)
+        2019
+        >>> Year.history('', 1)
+        2020
+        """
+        return super().history(treatment_name, step)
+
     def show(self):
         """
         Show everything important about the stock.
 
-        Yada yada
+        Example
+        -------
+        >>> Savings.show()
+        Stock: Savings 
+        Amounts: {'as is': 14802.442849183435, 'to be': 16000} 
+        Initial definition: 10000.0
+        Initial depends on: [] 
+        Incremental definition: Savings = stock('Savings', lambda i: i, ('Interest',), 10000.0)
+        Incremental depends on: ['Interest'] 
+        [variable('Interest')]
         """
         return super().show()
+
+    def __getitem__(self, treatment_name):
+        """
+        Retrieve the current amount of the stock in the treatment with
+        the name **treatment_name**.
+
+        Example
+        -------
+        Find the current amount of the stock **Savings**, in the **as is**
+        treatment.
+
+        >>> Savings['as is']
+        14802.442849183435
+        """
+        return super().__getitem__(treatment_name)
+
+    def __setitem__(self, treatment_name, amount):
+        """
+        Change the current amount of the stock in the treatment with the
+        name **treatment_name**.
+
+        Examples
+        --------
+        Change the current amount of the stock **Savings** in the **as is**
+        treatment to **2.1**.
+
+        >>> Savings['as is'] = 14000
+
+        Change the current amount of the stock **Taxes** in all treatments
+        at once.
+
+        >>> Taxes['__all__'] = 5000
+        """
+        super().__setitem__(treatment_name, amount)
+
 
 class StockInstance(IncrementerInstance, metaclass=Stock):
     """A instance of a system dynamics stock for a particular treatment."""
@@ -2389,7 +2476,9 @@ def _create_stock(stock_name, docstring,
 #
 
 class Accum(Incrementer):
-    """Like ACCUM in SimLang."""
+    """
+    Foo. 
+    """
     def _check_for_cycle_in_depends_on(cls, checked_already, dependents=None):
         """Check for cycles involving this accum."""
         for dname in cls.depends_on(for_init=True):
@@ -2657,13 +2746,6 @@ class Previous(CommonVariable):
     previous : Create a :class:`Previous`
 
     :class:`Variable` : a variable whose amount is calculated from other vars
-
-    Example
-    -------
-    Find last quarter's earnings, assuming the timestep is one quarter.
-
-    >>> PriorEarnings['']
-    1.9
 
     """
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
