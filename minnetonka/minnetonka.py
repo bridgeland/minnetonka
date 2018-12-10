@@ -26,10 +26,6 @@ import numpy as np
 """
 
 
-Models:
-
-    # A variable can be accessed by name from a model
-    m['Earnings']
 
 Treatments:
     # a treatment can be found by name
@@ -327,6 +323,9 @@ class Model:
     def variable(self, variable_name):
         """
         Return a single variable from the model, by name.
+
+        Return a single variable---or stock or constant or accum or previous---
+        from the model, by providing the variable's name. 
 
         A variable is typically accessed from a model by subscription, like a 
         dictionary value from a dictionary, e.g. ``modl['var']``. The
@@ -3222,7 +3221,6 @@ def _create_previous(
 #
 # foreach: for iterating across a dict within a variable
 #
-
 
 def foreach(by_item_callable):
     """Return a new callable that will iterate across dict or tuple.
