@@ -6,7 +6,7 @@ Welcome to Minnetonka's documentation!
 	:members: model, variable, constant, stock, previous, accum
 
 .. autoclass:: Model
-	:members: step, reset, variable, treatment, treatments
+	:members: step, reset, variable 
 
 .. autoclass:: Variable
 	:members: show, history, all

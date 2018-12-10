@@ -313,23 +313,11 @@ class Model:
         self.STEP = self.STEP + 1
 
     def treatments(self):
-        """Return an iterators of the treatments.
-
-        rtype: collections.Iterable[Treatment]
-        """
+        """Return an iterator of the treatments."""
         return self._treatments.values()
 
     def treatment(self, treatment_name):
-        """
-        Return a particular treatment from the model.
-
-
-
-        :param str treatment_name: name of the treatment to be returned
-        :return: the treatment named
-        :rtype: Treatment
-        :raises MinnetonkaError: if the model has no treatment of that name
-        """
+        """Return a particular treatment from the model."""
         try:
             return self._treatments[treatment_name]
         except KeyError:
