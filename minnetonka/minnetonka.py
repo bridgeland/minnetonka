@@ -2952,10 +2952,16 @@ def _create_accum(accum_name, docstring,
 
 class Previous(CommonVariable):
     """
-    A variable whose amount is that of some other variable in previous timestep.
+    A previous.
 
-    A previous retains the prior value of some other variable, allowing a reach
-    into the past from within the model. 
+    A previous is a variable whose amount is that of some other variable in 
+    the prior timestep. A previous allows a reach into the past from within
+    the model.
+
+    If the model in which the previous lives has multiple treatments, and its
+    prior has a different amount for each treatment, so will the previous.
+    The amount of the previous in a particular treatment can be accessed
+    using subscription brackets, e.g. **YesterdaySales['as is']**.
 
     See Also
     --------
@@ -2963,6 +2969,20 @@ class Previous(CommonVariable):
 
     :class:`Variable` : a variable whose amount is calculated from other vars
 
+    Examples
+    --------
+    Find yesterday's sales, when the timestep is one day.
+
+    >>> YesterdaySales['as is']
+    13
+
+    Show everything important about the previous **YesterdaySales**.
+
+    >>> YesterdaySales.show()
+    Previous: YesterdaySales
+    Amounts: {'as is': 13, 'to be': 9}
+    Previous variable: Sales
+    [variable('Sales')]
     """
     def _check_for_cycle_in_depends_on(self, checked_already, dependents):
         """Check for cycles among the depends on for this simpler variable."""
@@ -2994,6 +3014,57 @@ class Previous(CommonVariable):
         """
         return super().all()
 
+    def history(self, treatment_name, step):
+        """
+        Return the amount at a past timestep for a particular treatment.
+
+        Minnetonka tracks the past amounts of a previous
+        over the course of a single simulation run,
+        accessible with this function. 
+
+        Parameters
+        ----------
+        treatment_name : str
+            the name of some treatment defined in the model
+
+        step : int
+            the step number in the past 
+
+        Example
+        -------
+        Create a model with a stock **Year**, and a previous **LastYear**.
+
+        >>> with model() as m:
+        ...     Year = stock('Year', 1, 2019)
+        ...     LastYear = previous('LastYear', 'Year', None)
+
+        Advance the simulation ten years.
+
+        >>> m.step(10)
+
+        Find the value of both **Year** and **LastYear** in year 5.
+
+        >>> Year.history('', 5)
+        2024
+        >>> LastYear.history('', 5)
+        2023
+        """
+        return super().history(treatment_name, step)
+
+    def show(self):
+        """
+        Show everything important about the previous.
+
+        Example
+        -------
+        >>> YesterdaySales.show()
+        Previous: YesterdaySales
+        Amounts: {'as is': 13, 'to be': 9}
+        Previous variable: Sales
+        [variable('Sales')]
+        """
+        return super().show()
+
     def __getitem__(self, treatment_name):
         """
         Retrieve the current amount of the previous in the treatment with
@@ -3013,20 +3084,6 @@ class Previous(CommonVariable):
         """An error. Should not set a previous."""
         raise MinnetonkaError(
             'Amount of {} cannot be changed outside model logic'.format(self))
-
-    def show(self):
-        """
-        Show everything important about the previous.
-
-        Example
-        -------
-        >>> PriorEarnings.show()
-        Variable: PriorEarnings
-        Amounts: {'as is': 2.0, 'To be': 4.0}
-        Previous variable: Earnings
-        [Variable('Earnings')]
-        """
-        return super().show()
 
 
 class PreviousInstance(SimpleVariableInstance, metaclass=Previous):
@@ -3077,10 +3134,10 @@ def previous(variable_name, *args):
     Create a new previous, a variable whose amount is the amount of another
     variable---the one named by `prior`---in the previous timestep. 
 
-    If the model in which the previous lives has multiple treatments, the 
-    previous may have several amounts, one for each treatment, if its prior
-    does. The amount of a previous in a particular treatment can be 
-    accessed using subscription brackets, e.g. **YesterdaySales['as is']**.
+    If the model in which the previous lives has multiple treatments, and its
+    prior has a different amount for each treatment, so will the previous.
+    The amount of the previous in a particular treatment can be accessed
+    using subscription brackets, e.g. **YesterdaySales['as is']**.
 
     When the model is initialized, the amount of the previous is either set
     to `initial_amount`, or if no initial amount is provided, it is set to
