@@ -3,7 +3,7 @@ Welcome to Minnetonka's documentation!
 ======================================
 
 .. automodule:: minnetonka
-	:members: model, variable, constant, stock, previous, accum
+	:members: model, variable, constant, stock, previous, accum, foreach
 
 .. autoclass:: Model
 	:members: step, reset, variable 

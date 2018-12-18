@@ -3223,12 +3223,126 @@ def _create_previous(
 #
 
 def foreach(by_item_callable):
-    """Return a new callable that will iterate across dict or tuple.
+    """
+    Return a new callable iterates across dicts or tuples.
 
-    The new callable---when provided with a dict or tuple---will iterate
-    across it, calling the original callable, and creating a new dict or tuple.
-    If multiple dicts or tuples are provided, the original callable is called
-    on each set of them, in turn.
+    Variables often take simple values: ints or floats. But sometimes they
+    take more complex values: dicts or tuples. Consider a business model
+    of a group of five restaurants, all owned by the same company. Each 
+    individual restaurant is managed differently with its own opening
+    and closing hours, its own table count, its own daily revenue, its own 
+    mix of party sizes.
+    But although the variables take different values for each restaurant, they
+    participate in the same structure. Earnings is always revenue minus cost.
+    (The restaurant example is borrowed from `a book on business modeling
+    <https://www.amazon.com/Business-Modeling-Practical-Guide-Realizing/dp/0123741513>`_.)
+
+    A good approach to model the restaurants is to have each variable take a Python
+    dict as a value, with the name of the restaurant as the key and numeric 
+    value for each key. For example the variable **DailyRevenue** might take a
+    value of ``{'Portia': 7489, 'Nola': 7136, 'Viola': 4248, 'Zona': 6412, 
+    'Adelina': 4826}``, assuming the restaurants are named Portia, Nola, etc.
+
+    But how should the `specifier` of variable **DailyEarnings** be modeled if
+    both **DailyRevenue** and **DailyCosts** are dicts? Although earnings is
+    revenue minus cost, the specifier cannot be 
+    ``lambda revenue, cost: revenue - cost`` because revenue and cost are both
+    dicts, and subtraction is unsupported for dicts in Python.
+
+    One approach is to write a custom specifier for **DailyEarnings**, a Python
+    custom function that takes the two dicts, and returns a third dict,
+    subtracting each restaurant's cost from its revenues. A better approach
+    is to use foreach: ``foreach(lambda revenue, cost: revenue - cost)``. See
+    example below.
+
+    :func:`foreach` takes a single callable that operates on individual
+    values (e.g. the revenue and cost of a single restaurant), and returns a
+    callable that operates on dicts as a whole (e.g. the revenue of all the
+    restaurants as a dict, the costs of all the restaurants as a dict). 
+
+    The dict that is the amount of the second variable must contain the 
+    keys as the dict that is the amount of the first variable, or else the
+    foreach-generated callable raises a :class:`MinnetonkaError`. The second
+    dict can contain additional keys, not present in the first dict. Those
+    additional keys are ignored. Similarly, the third dict (if present) must
+    contain the same keys as the first dict.
+
+    :func:`foreach` also works on tuples. For example, suppose instead of a 
+    dict, 
+    the revenue of the restaurants were represented as a tuple, with the first 
+    element of the tuple being Portia's revenue, the second element Nola's 
+    revenue and so on. The cost of the restaurants are also
+    represented as a tuple. Then the specifier of **DailyEarnings** could
+    be provided as ``foreach(lambda revenue, cost: revenue - cost)``, the
+    same :func:`foreach` expression as with dicts.
+
+    The tuple that is the amount of the second variable can be shorter (of
+    lessor length) than the dict that is the amount of the first variable. The
+    foreach-generated callable uses the shortest of the tuples as the length
+    of the resultant tuple. 
+
+    If the first variable has an amount that is a tuple, the second 
+    variable can be a scalar, as can the third variable, etc. When encountering
+    a scalar in subsequent amounts, the foreach-generated callable interprets 
+    the scalar as if an iterator provided the scalar repeated, as often as 
+    needed for the length of the first tuple. 
+
+    :func:`foreach` can be used in defining variables, stocks, accums, or 
+    constants, anywhere that a callable can be provided.
+
+    Parameters
+    ----------
+    by_item_callable : callable
+        A callable that is to be called on individual elements, either elements
+        of a tuple or values of a dict.
+
+    Returns
+    -------
+    callable
+        A new callable that can be called on dicts or tuples, calling 
+        `by_item_callable` as on each element of the dict or tuple.
+
+    Examples
+    --------
+    Suppose there are five restaurants. Each of the restaurants has a weekly
+    cost and a weekly revenue. (In practice the cost and revenue would 
+    themselves be variables, not constants, and dependent on other variables, 
+    like weekly customers, order mix, number of cooks, number of waitstaff, 
+    etc.)
+
+    >>> with model(treatments=['as is', 'to be']) as m:
+    ...     Revenue = constant('Revenue',
+    ...         {'Portia': 44929, 'Nola': 42798, 'Viola': 25490, 'Zona': 38477,
+    ...          'Adelina': 28956})
+    ...     Cost = constant('Cost',
+    ...         {'Portia': 40440, 'Nola': 42031, 'Viola': 28819, 'Zona': 41103,
+    ...          'Adelina': 25770})
+
+    Earnings is revenue minus cost, for each restaurant.
+
+    >>> with m:
+    ...     Earnings = variable('Earnings', 
+    ...         foreach(lambda revenue, cost: revenue - cost), 
+    ...         'Revenue', 'Cost')
+    >>> Earnings['']
+    {'Portia': 4489, 
+     'Nola': 767, 
+     'Viola': -3329, 
+     'Zona': -2626, 
+     'Adelina': 3186}
+
+    Stocks can also use :func:`foreach`. Suppose each restaurant has a stock
+    of regular customers. Every week, some customers are delighted with the
+    restaurant and become regulars. Every week some of the regulars attrit, 
+    growing tired with the restaurant they once frequented, or moving away
+    to somewhere else, and no longer able to enjoy that restaurant regularly.
+
+    >>> with m:
+    ... 
+
+
+
+
     """
     def _across(item1, *rest_items):
         return _foreach_fn(item1)(item1, *rest_items)
