@@ -1963,8 +1963,6 @@ class ConstantInstance(VariableInstance, metaclass=Constant):
         return self.amount()
 
 
-
-
 #
 # Stock classes
 #
@@ -2221,7 +2219,11 @@ class StockInstance(IncrementerInstance, metaclass=Stock):
         full_step_incr = self._incremental.calculate(
             self._treatment.name,
             [v.amount() for v in self._increment_depends_on_instances])
-        self._increment_amount = full_step_incr * timestep
+        self._increment_amount = self._multiply(full_step_incr, timestep)
+
+    def _multiply(self, full_step_incr, timestep):
+        """Multiply the increment by timestep, perhaps over a foreach."""
+        return full_step_incr * timestep
 
     def _step(self):
         """Advance the stock by one step."""

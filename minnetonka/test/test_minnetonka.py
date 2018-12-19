@@ -2384,6 +2384,18 @@ class ForeachDict(unittest.TestCase):
             Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], {'foo': 24, 'bar': 25})
 
+    def test_foreach_stock(self):
+        """Does foreach work with stocks and dicts?"""
+        with model() as m:
+            variable('Baz', {'foo': 12, 'bar': 13})
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                {'foo': 0, 'bar': 0})
+        m.step()
+        self.assertEqual(Corge[''], {'foo':14, 'bar': 15} )
+        m.step(2)
+        self.assertEqual(Corge[''], {'foo':42, 'bar': 45} )
+
 class ForeachTuples(unittest.TestCase):
     """For testing the foreach construct with tuples"""
     def test_simple(self):
