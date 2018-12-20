@@ -1357,6 +1357,10 @@ class Calculator:
         except AttributeError:
             return True 
 
+    # def adjust_for_timestep(self, full_step_incr, timestep):
+    #     """Adjust the increment by the timestep, in case the latter is not 1."""
+    #     return self._definition.multiply(full_step_incr, timestep)
+
 
 class ModelPseudoVariable():
     """Special variable for capturing the model."""
@@ -2219,11 +2223,16 @@ class StockInstance(IncrementerInstance, metaclass=Stock):
         full_step_incr = self._incremental.calculate(
             self._treatment.name,
             [v.amount() for v in self._increment_depends_on_instances])
-        self._increment_amount = self._multiply(full_step_incr, timestep)
+        self._increment_amount = self._adjust_for_timestep(
+            full_step_incr, timestep)
 
-    def _multiply(self, full_step_incr, timestep):
-        """Multiply the increment by timestep, perhaps over a foreach."""
+    def _adjust_for_timestep(self, full_step_incr, timestep):
+        """Adjust the increment by the timestep, in case the latter is not 1."""
+        # try:
         return full_step_incr * timestep
+        # except TypeError:
+        #     return self._incremental.adjust_for_timestep(
+        #         full_step_incr, timestep)
 
     def _step(self):
         """Advance the stock by one step."""
@@ -3346,32 +3355,39 @@ def foreach(by_item_callable):
 
 
     """
-    def _across(item1, *rest_items):
-        return _foreach_fn(item1)(item1, *rest_items)
+    return Foreach(by_item_callable)
 
-    def _foreach_fn(item):
+class Foreach:
+    """Implements the foreach, and also provides support for addition and mult."""
+    def __init__(self, by_item_callable):
+        self._by_item = lambda self, *whatever: by_item_callable(self, *whatever)
+
+    def __call__(self, item1, *rest_items):
+        return self._foreach_fn(item1)(item1, *rest_items)
+
+    def _foreach_fn(self, item):
         """Return the appropriate foreach function for the argument."""
         if isinstance(item, dict):
-            return _across_dicts
+            return self._across_dicts
         elif isinstance(item, MinnetonkaNamedTuple):
-            return _across_namedtuples
+            return self._across_namedtuples
         elif isinstance(item, tuple):
-            return _across_tuples
+            return self._across_tuples
         else:
             raise MinnetonkaError(
                 'First arg of foreach {} must be dictionary or tuple'.format(
                     item))
 
-    def _across_dicts(dict1, *rest_dicts):
+    def _across_dicts(self, dict1, *rest_dicts):
         """Execute by_item_callable on every item across dict."""
         try:
-            return {k: by_item_callable(dict1[k], *[_maybe_element(r, k)
-                                                    for r in rest_dicts])
+            return {k: self._by_item(
+                        dict1[k], *[self._maybe_element(r, k) for r in rest_dicts])
                     for k in dict1.keys()}
         except KeyError:
             raise MinnetonkaError('Foreach encountered mismatched dicts')
 
-    def _maybe_element(maybe_dict, k):
+    def _maybe_element(self, maybe_dict, k):
         """Return maybe_dict[k], or just maybe_dict, if not a dict."""
         # It's kind of stupid that it tries maybe_dict[k] repeatedly
         try:
@@ -3379,31 +3395,40 @@ def foreach(by_item_callable):
         except TypeError:
             return maybe_dict
 
-    def _across_namedtuples(*tuples):
+    def _across_namedtuples(self, *tuples):
         """Execute by_item_callable across tuples and scalars."""
-        if _is_all_same_type_or_nontuple(*tuples):
-            tuples = [_repeat_if_necessary(elt) for elt in tuples]
-            return type(tuples[0])(*(by_item_callable(*tupes)
+        if self._is_all_same_type_or_nontuple(*tuples):
+            tuples = [self._repeat_if_necessary(elt) for elt in tuples]
+            return type(tuples[0])(*(self._by_item(*tupes)
                                      for tupes in zip(*tuples)))
         else:
             raise MinnetonkaError('Foreach encountered mismatched namedtuples')
 
-    def _is_all_same_type_or_nontuple(first_thing, *rest_things):
+    def _is_all_same_type_or_nontuple(self, first_thing, *rest_things):
         """Return whether everything is either the same type, or a scalar."""
         first_type = type(first_thing)
         return all(type(thing) == first_type or not isinstance(thing, tuple)
                    for thing in rest_things)
 
-    def _across_tuples(*tuples):
+    def _across_tuples(self, *tuples):
         """Execute by_item_callable across tuples."""
-        tuples = (_repeat_if_necessary(elt) for elt in tuples)
-        return tuple(by_item_callable(*tupes) for tupes in zip(*tuples))
+        tuples = (self._repeat_if_necessary(elt) for elt in tuples)
+        return tuple(self._by_item(*tupes) for tupes in zip(*tuples))
 
-    def _repeat_if_necessary(elt):
+    def _repeat_if_necessary(self, elt):
         """Make an infinite iter from a scalar."""
         return elt if isinstance(elt, tuple) else itertools.repeat(elt)
 
-    return _across
+    def multiply(self, foreach_item, factor):
+        """Multiply foreach_item by factor."""
+        if isinstance(foreach_item, dict):
+            return {k: v*factor for k, v in foreach_item.items()}
+        else:
+            raise MinnetonkaError(
+                'Cannot multiply {} by {}'.format(foreach_item, factor))
+
+
+
 
 #
 # mn_namedtuple: a variant of namedtuple in which the named tuples support
