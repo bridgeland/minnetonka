@@ -1357,9 +1357,22 @@ class Calculator:
         except AttributeError:
             return True 
 
-    # def adjust_for_timestep(self, full_step_incr, timestep):
-    #     """Adjust the increment by the timestep, in case the latter is not 1."""
-    #     return self._definition.multiply(full_step_incr, timestep)
+    def add(self, augend, addend):
+        """Add the two together. Augend might be a foreached object."""
+        # It is kind of stupid to first try the special case, and then try
+        # the general case. But adding tuples work generally, even though
+        # they give the wrong result.
+        try: 
+            return self._definition.add(augend, addend)
+        except AttributeError:
+            return augend + addend
+
+    def multiply(self, multiplicand, multiplier):
+        """Multiply together. Multiplicand might be a foreached object."""
+        try:
+            return self._definition.multiply(multiplicand, multiplier)
+        except AttributeError:
+            return multiplicand * multiplier
 
 
 class ModelPseudoVariable():
@@ -2223,20 +2236,13 @@ class StockInstance(IncrementerInstance, metaclass=Stock):
         full_step_incr = self._incremental.calculate(
             self._treatment.name,
             [v.amount() for v in self._increment_depends_on_instances])
-        self._increment_amount = self._adjust_for_timestep(
+        self._increment_amount = self._incremental.multiply(
             full_step_incr, timestep)
-
-    def _adjust_for_timestep(self, full_step_incr, timestep):
-        """Adjust the increment by the timestep, in case the latter is not 1."""
-        # try:
-        return full_step_incr * timestep
-        # except TypeError:
-        #     return self._incremental.adjust_for_timestep(
-        #         full_step_incr, timestep)
 
     def _step(self):
         """Advance the stock by one step."""
-        self._amount = self._amount + self._increment_amount
+        self._amount = self._incremental.add(
+            self._amount, self._increment_amount)
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
@@ -3360,7 +3366,7 @@ def foreach(by_item_callable):
 class Foreach:
     """Implements the foreach, and also provides support for addition and mult."""
     def __init__(self, by_item_callable):
-        self._by_item = lambda self, *whatever: by_item_callable(self, *whatever)
+        self._by_item = by_item_callable
 
     def __call__(self, item1, *rest_items):
         return self._foreach_fn(item1)(item1, *rest_items)
@@ -3419,15 +3425,41 @@ class Foreach:
         """Make an infinite iter from a scalar."""
         return elt if isinstance(elt, tuple) else itertools.repeat(elt)
 
+    def add(self, augend, addend):
+        """Add together across foreach."""
+        try: 
+            inner_add = self._by_item.add
+            add = lambda a, b: inner_add(a, b)
+        except AttributeError:
+            add = lambda a, b: a + b 
+
+        if isinstance(augend, dict):
+            return {k: add(augend[k], addend[k]) for k in augend.keys()}
+        elif isinstance(augend, MinnetonkaNamedTuple):
+            return augend + addend 
+        elif isinstance(augend, tuple):
+            return tuple(add(a1, a2) for a1, a2 in zip(augend, addend))
+        else:
+            raise MinnetonkaError(
+                'Cannot add {} and {}'.format(augend, addend))
+
     def multiply(self, foreach_item, factor):
-        """Multiply foreach_item by factor."""
+        """Multiply foreach_item by (simple) factor."""
+        try:
+            inner_mult = self._by_item.multiply 
+            mult = lambda a, b: inner_mult(a, b)
+        except AttributeError:
+            mult = lambda a, b: a * b 
+
         if isinstance(foreach_item, dict):
-            return {k: v*factor for k, v in foreach_item.items()}
+            return {k: mult(v, factor) for k, v in foreach_item.items()}
+        elif isinstance(foreach_item, MinnetonkaNamedTuple):
+            return foreach_item * factor 
+        elif isinstance(foreach_item, tuple):
+            return tuple(mult(v, factor) for v in foreach_item)
         else:
             raise MinnetonkaError(
                 'Cannot multiply {} by {}'.format(foreach_item, factor))
-
-
 
 
 #

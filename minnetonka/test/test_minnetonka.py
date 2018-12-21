@@ -2388,13 +2388,64 @@ class ForeachDict(unittest.TestCase):
         """Does foreach work with stocks and dicts?"""
         with model() as m:
             variable('Baz', {'foo': 12, 'bar': 13})
+            variable('Waldo', {'foo': 1, 'bar': 2})
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                foreach(lambda w: w), ('Waldo',))
+        m.step()
+        self.assertEqual(Corge[''], {'foo':15, 'bar': 17} )
+        m.step(2)
+        self.assertEqual(Corge[''], {'foo':43, 'bar': 47} )
+
+    def test_nested_foreach_stock(self):
+        """Do nested foreaches work with stocks and dicts?"""
+        with model() as m:
+            Baz = variable('Baz', 
+                {'drg001': {'trad': 7, 'rrc': 9},
+                 'drg003': {'trad': 18, 'rrc': 4},
+                 'drg257': {'trad': 6, 'rrc': 11}})
+            Corge = stock('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                {'drg001': {'trad': 0, 'rrc': 0},
+                 'drg003': {'trad': 0, 'rrc': 0},
+                 'drg257': {'trad': 0, 'rrc': 0}})
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': {'trad': 8, 'rrc': 10},
+             'drg003': {'trad': 19, 'rrc': 5},
+             'drg257': {'trad': 7, 'rrc': 12}})
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': {'trad': 24, 'rrc': 30},
+             'drg003': {'trad': 57, 'rrc': 15},
+             'drg257': {'trad': 21, 'rrc': 36}})
+
+    def test_foreach_stock_timestep(self):
+        """Does foreach work with stocks and dicts, and smaller timestep?"""
+        with model(timestep=0.5) as m:
+            variable('Baz', {'foo': 12, 'bar': 13})
             Corge = stock('Corge', 
                 foreach(lambda b: b+2), ('Baz',), 
                 {'foo': 0, 'bar': 0})
         m.step()
-        self.assertEqual(Corge[''], {'foo':14, 'bar': 15} )
+        self.assertEqual(Corge[''], {'foo':7, 'bar': 7.5} )
         m.step(2)
-        self.assertEqual(Corge[''], {'foo':42, 'bar': 45} )
+        self.assertEqual(Corge[''], {'foo':21, 'bar': 22.5} )
+
+    def test_foreach_stock_multivariable(self):
+        """Does foreach work with stocks that have multiple variables?"""
+        with model() as m:
+            variable('Baz', {'foo': 12, 'bar': 13})
+            variable('Quz', {'foo': 1, 'bar': 2})
+            Corge = stock('Corge', 
+                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+                {'foo': 0, 'bar': 0})
+        m.step()
+        self.assertEqual(Corge[''], {'foo':13, 'bar': 15} )
+        m.step(2)
+        self.assertEqual(Corge[''], {'foo':39, 'bar': 45} )
 
 class ForeachTuples(unittest.TestCase):
     """For testing the foreach construct with tuples"""
@@ -2436,6 +2487,74 @@ class ForeachTuples(unittest.TestCase):
             variable('Corge', 12)
             Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], (24, 25))
+
+    def test_foreach_stock(self):
+        """Does foreach work with stocks?"""
+        with model() as m:
+            variable('Baz', (12, 13))
+            variable('Waldo', (1, 2))
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                lambda w: w, ('Waldo',))
+        m.step()
+        self.assertEqual(Corge[''], (15, 17))
+        m.step(2)
+        self.assertEqual(Corge[''], (43, 47))
+
+    def test_nested_foreach_stock(self):
+        """Do nested foreaches work with stocks and tuples?"""
+        with model() as m:
+            Baz = variable('Baz', ((7, 9), (18, 4), (6, 11)))
+            Corge = stock('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                ((0, 0), (0, 0), (0, 0)))
+        m.step()
+        self.assertEqual(Corge[''], ((8, 10), (19, 5), (7, 12)))
+        m.step(2)
+        self.assertEqual(Corge[''], ((24, 30), (57, 15), (21, 36)))
+
+    def test_nested_foreach_stock_mixed(self):
+        """Do nested foreaches work with stocks and a mix of tuples and dicts?"""
+        with model() as m:
+            Baz = variable('Baz', 
+                {'drg001': (7, 9), 'drg003': (18, 4), 'drg257': (6, 11)})
+            Corge = stock('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                {'drg001': (0, 0), 'drg003': (0, 0), 'drg257': (0,0)})
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': (8, 10), 'drg003': (19, 5), 'drg257': (7, 12)})
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': (24, 30), 'drg003': (57, 15), 'drg257': (21, 36)})
+
+    def test_foreach_stock_timestep(self):
+        """Does foreach work with stocks?"""
+        with model(timestep=0.5) as m:
+            variable('Baz', (12, 13))
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                (0, 0))
+        m.step()
+        self.assertEqual(Corge[''], (7, 7.5))
+        m.step(2)
+        self.assertEqual(Corge[''], (21, 22.5))
+
+    def test_foreach_stock_multivariable(self):
+        """Does foreach work with stocks that have multiple variables?"""
+        with model() as m:
+            variable('Baz', (12, 13))
+            variable('Quz', (1, 2))
+            Corge = stock('Corge', 
+                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+                (0, 0))
+        m.step()
+        self.assertEqual(Corge[''], (13, 15))
+        m.step(2)
+        self.assertEqual(Corge[''], (39, 45))
+
 
 class ForeachNamedTuples(unittest.TestCase):
     """For testing the foreach construct with mn_namedtuples"""
@@ -2519,6 +2638,62 @@ class ForeachNamedTuples(unittest.TestCase):
                 foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
             Qux[''], self.drg(site(21, 18), site(22, 13), site(28, 27)))
+
+    def test_foreach_stock(self):
+        """Does foreach work with stocks and mn named tuples?"""
+        with model() as m:
+            variable('Baz', self.drg(12, 13, 19))
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                self.drg(0, 0, 0))
+        m.step()
+        self.assertEqual(Corge[''], self.drg(14, 15, 21))
+        m.step(2)
+        self.assertEqual(Corge[''], self.drg(42, 45, 63))
+
+    def test_nested_foreach_stock(self):
+        """Do nested foreaches work with stocks and tuples?"""
+        site = mn_namedtuple('site', ['trad', 'rrc'])
+        with model() as m:
+            Baz = variable('Baz', 
+                self.drg(site(7, 9), site(18, 4), site(6, 11)))
+            Corge = stock('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                self.drg(site(0, 0), site(0, 0), site(0, 0)))
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            self.drg(site(8, 10), site(19, 5), site(7, 12)))
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            self.drg(site(24, 30), site(57, 15), site(21, 36)))
+
+    def test_foreach_stock_timestep(self):
+        """Does foreach work with stocks and mn named tuples?"""
+        with model(timestep=0.5) as m:
+            variable('Baz', self.drg(12, 13, 19))
+            Corge = stock('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                self.drg(0, 0, 0))
+        m.step()
+        self.assertEqual(Corge[''], self.drg(7, 7.5, 10.5))
+        m.step(2)
+        self.assertEqual(Corge[''], self.drg(21, 22.5, 31.5))
+
+    def test_foreach_stock_multivariable(self):
+        """Does foreach work with stocks that have multiple variables?"""
+        with model() as m:
+            variable('Baz', self.drg(12, 13, 19))
+            variable('Quz', self.drg(1, 2, 3))
+            Corge = stock('Corge', 
+                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+                self.drg(0, 0, 0))
+        m.step()
+        self.assertEqual(Corge[''], self.drg(13, 15, 22))
+        m.step(2)
+        self.assertEqual(Corge[''], self.drg(39, 45, 66))
+
 
 class Previous(unittest.TestCase):
     """For testing previous"""
