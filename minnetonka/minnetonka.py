@@ -3351,7 +3351,7 @@ def foreach(by_item_callable):
     Stocks can also use :func:`foreach`. Suppose each restaurant has a stock
     of regular customers. Every week, some customers are delighted with the
     restaurant and become regulars. Every week some of the regulars attrit, 
-    growing tired with the restaurant they once frequented, or moving away
+    growing tired with the restaurant they once frequented, or move away
     to somewhere else, and no longer able to enjoy that restaurant regularly.
 
     >>> with m:
@@ -3364,7 +3364,7 @@ def foreach(by_item_callable):
     return Foreach(by_item_callable)
 
 class Foreach:
-    """Implements the foreach, and also provides support for addition and mult."""
+    """Implements the foreach, and also supports addition and multiplication."""
     def __init__(self, by_item_callable):
         self._by_item = by_item_callable
 

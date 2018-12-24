@@ -2652,7 +2652,7 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(Corge[''], self.drg(42, 45, 63))
 
     def test_nested_foreach_stock(self):
-        """Do nested foreaches work with stocks and tuples?"""
+        """Do nested foreaches work with stocks and named tuples?"""
         site = mn_namedtuple('site', ['trad', 'rrc'])
         with model() as m:
             Baz = variable('Baz', 
@@ -2668,6 +2668,24 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(
             Corge[''], 
             self.drg(site(24, 30), site(57, 15), site(21, 36)))
+
+    def test_nested_mixed_foreach_stock(self):
+        """Does nested foreaches work with stocks, named tuples, and tuples?"""
+        with model() as m:
+            Baz = variable('Baz', 
+                self.drg((7, 9), (18, 4), (6, 11)))
+            Corge = stock('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                self.drg((0, 0), (0, 0), (0, 0)))
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            self.drg((8, 10), (19, 5), (7, 12)))
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            self.drg((24, 30), (57, 15), (21, 36)))
+
 
     def test_foreach_stock_timestep(self):
         """Does foreach work with stocks and mn named tuples?"""
