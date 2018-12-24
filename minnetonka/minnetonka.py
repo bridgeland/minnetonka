@@ -3375,7 +3375,7 @@ class Foreach:
         """Return the appropriate foreach function for the argument."""
         if isinstance(item, dict):
             return self._across_dicts
-        elif isinstance(item, MinnetonkaNamedTuple):
+        elif isnamedtuple(item):
             return self._across_namedtuples
         elif isinstance(item, tuple):
             return self._across_tuples
@@ -3401,25 +3401,26 @@ class Foreach:
         except TypeError:
             return maybe_dict
 
-    def _across_namedtuples(self, *tuples):
-        """Execute by_item_callable across tuples and scalars."""
-        if self._is_all_same_type_or_nontuple(*tuples):
-            tuples = [self._repeat_if_necessary(elt) for elt in tuples]
-            return type(tuples[0])(*(self._by_item(*tupes)
-                                     for tupes in zip(*tuples)))
+    def _across_namedtuples(self, *nts):
+        """Execute by_item_callable across namedtuples and scalars."""
+        if self._is_all_same_type_or_nontuple(*nts):
+            tuples = (self._repeat_if_necessary(elt) for elt in nts)
+            typ = type(nts[0])
+            return typ(*(self._by_item(*tupes) for tupes in zip(*tuples)))
         else:
-            raise MinnetonkaError('Foreach encountered mismatched namedtuples')
+            raise MinnetonkaError(
+                'Foreach encountered mismatched named tuples: {}'.format(nts))
+
+    def _across_tuples(self, *tuples):
+        """Execute by_item_callable across tuples and scalars."""
+        tuples = (self._repeat_if_necessary(elt) for elt in tuples)
+        return tuple((self._by_item(*tupes) for tupes in zip(*tuples)))
 
     def _is_all_same_type_or_nontuple(self, first_thing, *rest_things):
         """Return whether everything is either the same type, or a scalar."""
         first_type = type(first_thing)
         return all(type(thing) == first_type or not isinstance(thing, tuple)
                    for thing in rest_things)
-
-    def _across_tuples(self, *tuples):
-        """Execute by_item_callable across tuples."""
-        tuples = (self._repeat_if_necessary(elt) for elt in tuples)
-        return tuple(self._by_item(*tupes) for tupes in zip(*tuples))
 
     def _repeat_if_necessary(self, elt):
         """Make an infinite iter from a scalar."""
@@ -3435,8 +3436,8 @@ class Foreach:
 
         if isinstance(augend, dict):
             return {k: add(augend[k], addend[k]) for k in augend.keys()}
-        elif isinstance(augend, MinnetonkaNamedTuple):
-            return augend + addend 
+        elif isnamedtuple(augend):
+            return type(augend)(*(add(a1, a2) for a1, a2 in zip(augend,addend)))
         elif isinstance(augend, tuple):
             return tuple(add(a1, a2) for a1, a2 in zip(augend, addend))
         else:
@@ -3453,8 +3454,8 @@ class Foreach:
 
         if isinstance(foreach_item, dict):
             return {k: mult(v, factor) for k, v in foreach_item.items()}
-        elif isinstance(foreach_item, MinnetonkaNamedTuple):
-            return foreach_item * factor 
+        elif isnamedtuple(foreach_item):
+            return type(foreach_item)(*(mult(v, factor) for v in foreach_item))
         elif isinstance(foreach_item, tuple):
             return tuple(mult(v, factor) for v in foreach_item)
         else:
@@ -3462,6 +3463,12 @@ class Foreach:
                 'Cannot multiply {} by {}'.format(foreach_item, factor))
 
 
+def isnamedtuple(x):
+    """Returns whether x is a namedtuple."""
+    # from https://bit.ly/2SkthFu
+    return (isinstance(x, tuple) and
+          isinstance(getattr(x, '__dict__', None), collections.Mapping) and
+          getattr(x, '_fields', None) is not None)
 #
 # mn_namedtuple: a variant of namedtuple in which the named tuples support
 # some basic operations

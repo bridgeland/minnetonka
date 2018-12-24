@@ -16,6 +16,7 @@ import unittest.mock
 import io
 import sys
 import random
+import collections
 import numpy as np 
 
 from minnetonka import *
@@ -2557,9 +2558,9 @@ class ForeachTuples(unittest.TestCase):
 
 
 class ForeachNamedTuples(unittest.TestCase):
-    """For testing the foreach construct with mn_namedtuples"""
+    """For testing the foreach construct with named tuples"""
     def setUp(self):
-        self.drg = mn_namedtuple('drg', ['drg001', 'drg003', 'drg257'])
+        self.drg = collections.namedtuple('drg', ['drg001', 'drg003', 'drg257'])
 
     def test_simple(self):
         """Does the simplest possible foreach work with named tuples?"""
@@ -2575,18 +2576,6 @@ class ForeachNamedTuples(unittest.TestCase):
             variable('Corge', self.drg(0, 99, 12))
             Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], self.drg(12, 112, 12))
-
-    def test_foreach_with_mismatch(self):
-        """Does a two arg foreach with mismatched dicts error correctly?"""
-        payers = mn_namedtuple('payers', ['aetna', 'anthem', 'humana'])
-        with self.assertRaises(MinnetonkaError) as me:
-            with model():
-                variable('Baz', self.drg(12, 13, 0))
-                variable('Corge', payers(0, 99, 45))
-                Quz = variable('Quz', 
-                    foreach(lambda b, c: b + c), 'Baz', 'Corge')
-        self.assertEqual(
-            me.exception.message, 'Foreach encountered mismatched namedtuples')
 
     def test_foreach_scalar_sunny_day(self):
         """Does foreach do the right thing with a scalar as second element?"""
@@ -2608,7 +2597,7 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach(self):
         """Do nested namedtuple foreaches work?"""
-        site = mn_namedtuple('site', ['traditional', 'rrc'])
+        site = collections.namedtuple('site', ['traditional', 'rrc'])
         with model():
             variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
             variable('Grault', self.drg(site(1, 2), site(3, 4), site(5, 6)))
@@ -2619,7 +2608,7 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach_one_level_const(self):
         """Do nested namedtuple foreaches work, with one level const?"""
-        site = mn_namedtuple('site', ['traditional', 'rrc'])
+        site = collections.namedtuple('site', ['traditional', 'rrc'])
         with model():
             variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
             variable('Grault', self.drg(1, 2, 3))
@@ -2630,7 +2619,7 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach_two_levels_const(self):
         """Do nested namedtuple foreaches work, with two levels const?"""
-        site = mn_namedtuple('site', ['traditional', 'rrc'])
+        site = collections.namedtuple('site', ['traditional', 'rrc'])
         with model():
             variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
             variable('Grault', 9)
@@ -2653,7 +2642,7 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach_stock(self):
         """Do nested foreaches work with stocks and named tuples?"""
-        site = mn_namedtuple('site', ['trad', 'rrc'])
+        site = collections.namedtuple('site', ['trad', 'rrc'])
         with model() as m:
             Baz = variable('Baz', 
                 self.drg(site(7, 9), site(18, 4), site(6, 11)))
@@ -2670,7 +2659,7 @@ class ForeachNamedTuples(unittest.TestCase):
             self.drg(site(24, 30), site(57, 15), site(21, 36)))
 
     def test_nested_mixed_foreach_stock(self):
-        """Does nested foreaches work with stocks, named tuples, and tuples?"""
+        """Do nested foreaches work with stocks, named tuples, and tuples?"""
         with model() as m:
             Baz = variable('Baz', 
                 self.drg((7, 9), (18, 4), (6, 11)))
