@@ -3246,19 +3246,20 @@ def foreach(by_item_callable):
     Variables often take simple values: ints or floats. But sometimes they
     take more complex values: dicts or tuples. Consider a business model
     of a group of five restaurants, all owned by the same company. Each 
-    individual restaurant is managed differently with its own opening
+    individual restaurant is managed differently, with its own opening
     and closing hours, its own table count, its own daily revenue, its own 
     mix of party sizes.
     But although the variables take different values for each restaurant, they
     participate in the same structure. Earnings is always revenue minus cost.
-    (The restaurant example is borrowed from `a book on business modeling
+    (This restaurant example is borrowed from `a book on business modeling
     <https://www.amazon.com/Business-Modeling-Practical-Guide-Realizing/dp/0123741513>`_.)
 
-    A good approach to model the restaurants is to have each variable take a Python
-    dict as a value, with the name of the restaurant as the key and numeric 
-    value for each key. For example the variable **DailyRevenue** might take a
-    value of ``{'Portia': 7489, 'Nola': 7136, 'Viola': 4248, 'Zona': 6412, 
-    'Adelina': 4826}``, assuming the restaurants are named Portia, Nola, etc.
+    A good approach to model the restaurants is to have each variable take a 
+    Python dict as a value, with the name of the restaurant as the key and a 
+    numeric value for each key. For example the variable **DailyRevenue** might 
+    take a value of ``{'Portia': 7489, 'Nola': 7136, 'Viola': 4248, 
+    'Zona': 6412, 'Adelina': 4826}``, assuming the restaurants are named 
+    Portia, Nola, etc.
 
     But how should the `specifier` of variable **DailyEarnings** be modeled if
     both **DailyRevenue** and **DailyCosts** are dicts? Although earnings is
@@ -3278,11 +3279,11 @@ def foreach(by_item_callable):
     restaurants as a dict, the costs of all the restaurants as a dict). 
 
     The dict that is the amount of the second variable must contain the 
-    keys as the dict that is the amount of the first variable, or else the
+    same keys as the dict that is the amount of the first variable, or else the
     foreach-generated callable raises a :class:`MinnetonkaError`. The second
     dict can contain additional keys, not present in the first dict. Those
     additional keys are ignored. Similarly, the third dict (if present) must
-    contain the same keys as the first dict.
+    contain the same keys as the first dict. And so on.
 
     :func:`foreach` also works on tuples. For example, suppose instead of a 
     dict, 
@@ -3301,8 +3302,16 @@ def foreach(by_item_callable):
     If the first variable has an amount that is a tuple, the second 
     variable can be a scalar, as can the third variable, etc. When encountering
     a scalar in subsequent amounts, the foreach-generated callable interprets 
-    the scalar as if an iterator provided the scalar repeated, as often as 
+    the scalar as if an iterator repeated the scalar, as often as 
     needed for the length of the first tuple. 
+
+    :func:`foreach` works on Python named tuples as well. The result of the
+    foreach-generated specifier is a named tuple of the same type as the first
+    dependency.
+
+    :func:`foreach` can be nested, if the amounts of the dependencies are
+    nested dicts, or nested tuples, or nested named tuples, or some nested
+    combination of dicts, tuples, or named tuples. See example below.
 
     :func:`foreach` can be used in defining variables, stocks, accums, or 
     constants, anywhere that a callable can be provided.
@@ -3311,13 +3320,14 @@ def foreach(by_item_callable):
     ----------
     by_item_callable : callable
         A callable that is to be called on individual elements, either elements
-        of a tuple or values of a dict.
+        of a tuple or elements of a named tuple or values of a dict.
 
     Returns
     -------
     callable
-        A new callable that can be called on dicts or tuples, calling 
-        `by_item_callable` as on each element of the dict or tuple.
+        A new callable that can be called on dicts or tuples or named tuples,
+        calling `by_item_callable` as on each element of the dict or tuple or
+        named tuple.
 
     Examples
     --------
@@ -3352,14 +3362,76 @@ def foreach(by_item_callable):
     of regular customers. Every week, some customers are delighted with the
     restaurant and become regulars. Every week some of the regulars attrit, 
     growing tired with the restaurant they once frequented, or move away
-    to somewhere else, and no longer able to enjoy that restaurant regularly.
+    to somewhere else, and are no longer able to enjoy the restaurant regularly.
 
-    >>> with m:
-    ... 
+    >>> with model(treatments=['as is', 'to be']) as m:
+    ...     Regulars = stock('Regulars', 
+    ...         foreach(lambda add, lost: add - lost), 
+    ...         ('NewRegulars', 'LostRegulars'),
+    ...         {'Portia': 420, 'Nola': 382, 'Viola': 0, 'Zona': 294, 
+    ...          'Adelina': 23})
+    ...     NewRegulars = constant('NewRegulars', 
+    ...         {'Portia': 4, 'Nola': 1, 'Viola': 1, 'Zona': 2, 'Adelina': 4})
+    ...     LostRegulars = variable('LostRegulars',
+    ...         foreach(lambda regulars, lossage_prop: regulars * lossage_prop),
+    ...         'Regulars', 'LossageProportion')
+    ...     LossageProportion = constant('LossageProportion', 
+    ...         PerTreatment({'as is': 0.01, 'to be': 0.0075}))
+    
+    >>> Regulars['as is']
+    {'Portia': 420, 'Nola': 382, 'Viola': 0, 'Zona': 294, 'Adelina': 23}
 
+    >>> m.step()
+    >>> Regulars['as is']
+    {'Portia': 419.8, 'Nola': 379.18, 'Viola': 1.0, 'Zona': 293.06, 
+     'Adelina': 26.77}
 
+    A variable can take an amount that is a dict of named tuples (or any
+    other combination of dicts, named tuples, and tuples). Nested foreach
+    calls can work on these nested variables.
 
+    In this example, menu items change over time, as items are added or
+    removed for each restaurant. Note that **Shape** serves only to give
+    other variables the right shape: a dict of restaurants with values that
+    are instances of **Course** named tuples.
 
+    >>> import collections
+    >>> import random
+    >>> Course=collections.namedtuple(
+    ...     'Course', ['appetizer', 'salad', 'entree', 'desert'])
+    >>> with model() as m:
+    ...     MenuItemCount = stock('MenuItemCount', 
+    ...         foreach(foreach(lambda new, old: new - old)), 
+    ...         ('AddedMenuItem', 'RemovedMenuItem'),
+    ...         {'Portia': Course(6, 4, 12, 7), 
+    ...          'Nola': Course(3, 3, 8, 4),
+    ...          'Viola': Course(17, 8, 9, 12), 
+    ...          'Zona': Course(10, 4, 20, 6),
+    ...          'Adelina': Course(6, 9, 9, 3)})
+    ...     AddedMenuItem = variable('AddedMenuItem', 
+    ...         foreach(foreach(lambda s: 1 if random.random() < 0.1 else 0)),
+    ...         'Shape')
+    ...     RemovedMenuItem = variable('RemovedMenuItem',
+    ...         foreach(foreach(lambda s: 1 if random.random() < 0.08 else 0)),
+    ...         'Shape')
+    ...     Shape = constant('Shape', 
+    ...         lambda: {r: Course(0, 0, 0, 0) 
+    ...             for r in ['Portia', 'Nola', 'Viola', 'Zona', 'Adelina']})
+
+    >>> MenuItemCount['']
+    {'Portia': Course(appetizer=6, salad=4, entree=12, desert=7),
+     'Nola': Course(appetizer=3, salad=3, entree=8, desert=4),
+     'Viola': Course(appetizer=17, salad=8, entree=9, desert=12),
+     'Zona': Course(appetizer=10, salad=4, entree=20, desert=6),
+     'Adelina': Course(appetizer=6, salad=9, entree=9, desert=3)}
+
+    >>> m.step(10)
+    >>> MenuItemCount['']
+    {'Portia': Course(appetizer=7, salad=3, entree=12, desert=4),
+     'Nola': Course(appetizer=4, salad=4, entree=8, desert=4),
+     'Viola': Course(appetizer=18, salad=6, entree=8, desert=13),
+     'Zona': Course(appetizer=12, salad=5, entree=18, desert=9),
+     'Adelina': Course(appetizer=4, salad=8, entree=7, desert=3)}
     """
     return Foreach(by_item_callable)
 
@@ -3385,10 +3457,11 @@ class Foreach:
                     item))
 
     def _across_dicts(self, dict1, *rest_dicts):
-        """Execute by_item_callable on every item across dict."""
+        """Execute by_item on every item across dict."""
         try:
             return {k: self._by_item(
-                        dict1[k], *[self._maybe_element(r, k) for r in rest_dicts])
+                        dict1[k], 
+                        *[self._maybe_element(r, k) for r in rest_dicts])
                     for k in dict1.keys()}
         except KeyError:
             raise MinnetonkaError('Foreach encountered mismatched dicts')
@@ -3466,9 +3539,13 @@ class Foreach:
 def isnamedtuple(x):
     """Returns whether x is a namedtuple."""
     # from https://bit.ly/2SkthFu
-    return (isinstance(x, tuple) and
-          isinstance(getattr(x, '__dict__', None), collections.Mapping) and
-          getattr(x, '_fields', None) is not None)
+    t = type(x)
+    b = t.__bases__
+    if len(b) != 1 or b[0] != tuple: return False
+    f = getattr(t, '_fields', None)
+    if not isinstance(f, tuple): return False
+    return all(type(n)==str for n in f)
+
 #
 # mn_namedtuple: a variant of namedtuple in which the named tuples support
 # some basic operations

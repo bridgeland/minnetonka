@@ -2561,6 +2561,7 @@ class ForeachNamedTuples(unittest.TestCase):
     """For testing the foreach construct with named tuples"""
     def setUp(self):
         self.drg = collections.namedtuple('drg', ['drg001', 'drg003', 'drg257'])
+        self.site = collections.namedtuple('site', ['traditional', 'rrc'])
 
     def test_simple(self):
         """Does the simplest possible foreach work with named tuples?"""
@@ -2596,37 +2597,56 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(Quz[''], self.drg(24, 25, 33))
 
     def test_nested_foreach(self):
-        """Do nested namedtuple foreaches work?"""
-        site = collections.namedtuple('site', ['traditional', 'rrc'])
+        """Do nested namedtuple foreaches work?""" 
         with model():
-            variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
-            variable('Grault', self.drg(site(1, 2), site(3, 4), site(5, 6)))
+            variable('Baz', 
+                self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
+            variable('Grault', 
+                self.drg(self.site(1, 2), self.site(3, 4), self.site(5, 6)))
             Qux = variable('Qux',
                 foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
-            Qux[''], self.drg(site(13, 11), site(16, 8), site(24, 24)))
+            Qux[''], 
+            self.drg(self.site(13, 11), self.site(16, 8), self.site(24, 24)))
 
     def test_nested_foreach_one_level_const(self):
-        """Do nested namedtuple foreaches work, with one level const?"""
-        site = collections.namedtuple('site', ['traditional', 'rrc'])
+        """Do nested namedtuple foreaches work, with one level const?""" 
         with model():
-            variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
+            variable('Baz', 
+                self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
             variable('Grault', self.drg(1, 2, 3))
             Qux = variable('Qux',
                 foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
-            Qux[''], self.drg(site(13, 10), site(15, 6), site(22, 21)))
+            Qux[''], 
+            self.drg(self.site(13, 10), self.site(15, 6), self.site(22, 21)))
 
     def test_nested_foreach_two_levels_const(self):
-        """Do nested namedtuple foreaches work, with two levels const?"""
-        site = collections.namedtuple('site', ['traditional', 'rrc'])
+        """Do nested namedtuple foreaches work, with two levels const?""" 
         with model():
-            variable('Baz', self.drg(site(12, 9), site(13, 4), site(19, 18)))
+            variable('Baz', 
+                self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
             variable('Grault', 9)
             Qux = variable('Qux',
                 foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
-            Qux[''], self.drg(site(21, 18), site(22, 13), site(28, 27)))
+            Qux[''], 
+            self.drg(self.site(21, 18), self.site(22, 13), self.site(28, 27)))
+
+    def test_nested_foreach_namedtuple_within_dict(self):
+        """Does nested foreaches work when a namedtuple is within a dict?"""
+        with model():
+            Baz = variable('Baz', foreach(foreach(lambda x: x+1)), 'Grault')
+            Grault = constant('Grault',
+                {'drg001': self.site(7, 9),
+                 'drg003': self.site(18, 4),
+                 'drg257': self.site(6, 11)})
+        self.assertEqual(
+            Baz[''],
+            {'drg001': self.site(8, 10),
+             'drg003': self.site(19, 5),
+             'drg257': self.site(7, 12)})
+
 
     def test_foreach_stock(self):
         """Does foreach work with stocks and mn named tuples?"""
@@ -2641,22 +2661,21 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(Corge[''], self.drg(42, 45, 63))
 
     def test_nested_foreach_stock(self):
-        """Do nested foreaches work with stocks and named tuples?"""
-        site = collections.namedtuple('site', ['trad', 'rrc'])
+        """Do nested foreaches work with stocks and named tuples?""" 
         with model() as m:
             Baz = variable('Baz', 
-                self.drg(site(7, 9), site(18, 4), site(6, 11)))
+                self.drg(self.site(7, 9), self.site(18, 4), self.site(6, 11)))
             Corge = stock('Corge',
                 foreach(foreach(lambda x: x+1)), ('Baz',),
-                self.drg(site(0, 0), site(0, 0), site(0, 0)))
+                self.drg(self.site(0, 0), self.site(0, 0), self.site(0, 0)))
         m.step()
         self.assertEqual(
             Corge[''], 
-            self.drg(site(8, 10), site(19, 5), site(7, 12)))
+            self.drg(self.site(8, 10), self.site(19, 5), self.site(7, 12)))
         m.step(2)
         self.assertEqual(
             Corge[''], 
-            self.drg(site(24, 30), site(57, 15), site(21, 36)))
+            self.drg(self.site(24, 30), self.site(57, 15), self.site(21, 36)))
 
     def test_nested_mixed_foreach_stock(self):
         """Do nested foreaches work with stocks, named tuples, and tuples?"""
@@ -2674,7 +2693,6 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(
             Corge[''], 
             self.drg((24, 30), (57, 15), (21, 36)))
-
 
     def test_foreach_stock_timestep(self):
         """Does foreach work with stocks and mn named tuples?"""
