@@ -27,52 +27,10 @@ import numpy as np
 
 
 
-Treatments:
-    # a treatment can be found by name
-    as_is = m.treatment('As is')
-
-    # a treatment knows about its name and description
-    as_is.name
-    as_is.description
-
-    # all the treatments can be found as a list
-    m.treatments()
-
-    # a model created without an explicit treatment has a null treatment---a
-    # single treatment with an empty string name
-    m = model()
-    m.treatment('')
-
-
 
 Model behavior:
 
-    # a model can be reset
-    m = model([stock('Year', 1, 2017)])
-    m.step(10)
-    m.reset()
-    m['Year']['']
-    #   --> 2017
 
-    # resetting resets any overridden variables
-    DischargeProgress = variable('DischargeProgress', lambda: 0.5)
-    m = model([DischargeProgress])
-    DischargeProgress[''] = 0.75
-    DischargeProgress['']
-    #   --> 0.75
-    m.reset()
-    DischargeProgress['']
-    #   --> 0.5
-
-    # resetting resets any overridden variables
-    DischargeProgress = variable('DischargeProgress', lambda: 0.5)
-    m = model([DischargeProgress])
-    DischargeProgress[''] = 0.75
-    DischargeProgress['']
-    #   --> 0.75
-    m.reset(reset_external_vars=False)
-    DischargeProgress['']
-    #   --> 0.75
 
     # setting a variable's values can create a need for explicit recalculation
     Foo = variable('Foo', 9)
@@ -412,14 +370,43 @@ class Model:
         self.TIME = self._start_time
         self.STEP = 0
 
-    
-
     def previous_step(self):
         """Return the prior value of STEP."""
         return self.STEP - 1
 
     def recalculate(self):
-        """Recalculate all variables, without changing the step."""
+        """
+        Recalculate all variables, without advancing the step.
+
+        Recalculation is only necessary when the amount of a variable (or 
+        constant or stock) is changed
+        explicitly, outside of the model logic. The variables that depend on
+        that changed variable will take amounts that do not reflect the changes,
+        at least until the model is stepped. If that is not appropriate, a
+        call to **recalculate()** will calculate new updated amounts for all
+        those dependent variables.
+
+        Example
+        -------
+        >>> with model() as m:
+        ...    Foo = constant('Foo', 9)
+        ...    Bar = variable('Bar', lambda x: x+2, 'Foo')
+        >>> Bar['']
+        11
+
+        >>> Foo[''] = 7
+
+        **Bar** still takes the amount based on the previous amount of **Foo**.
+
+        >>> Bar['']
+        11
+
+        Recalculating updates the amounts.
+
+        >>> m.recalculate()
+        >>> Bar['']
+        9
+        """
         self._variables.recalculate()
 
     def variable_instance(self, variable_name, treatment_name):
@@ -2060,7 +2047,9 @@ class Stock(Incrementer):
     can be a simple numeric like a Python integer or a Python float. 
     Or it might be some more complex Python object: a list,
     a tuple, a numpy array, or an instance of a user-defined class. In 
-    any case, the stock's amount must support addition.
+    any case, the stock's amount must support addition and multiplication. 
+    (Addition and multiplication are supported
+    for dicts, tuples, and named tuples via :func:`foreach`.)
 
     If the model in which the stock lives has multiple treatments, 
     the stock may have several amounts, one for each treatment. The amount of
@@ -2280,7 +2269,9 @@ def stock(stock_name, *args):
     can be a simple numeric like a Python integer or a Python float. 
     Or it might be some more complex Python object: a list,
     a tuple, a numpy array, or an instance of a user-defined class. In 
-    any case, the stock's amount must support addition.
+    any case, the stock's amount must support addition and multiplication.
+    (Addition and multiplication are supported
+    for dicts, tuples, and named tuples via :func:`foreach`.)
 
     If the model in which the stock lives has multiple treatments, 
     the stock may have several amounts, one for each treatment. The amount of
@@ -2531,6 +2522,8 @@ class Accum(Incrementer):
     Or it might be some more complex Python object: a list,
     a tuple, a numpy array, or an instance of a user-defined class. In 
     any case, the accum's amount must support addition.
+    (Addition is supported
+    for dicts, tuples, and named tuples via :func:`foreach`.)
 
     If the model in which the accum lives has multiple treatments, the 
     accum may have several amounts, one for each treatment in the model. The 
@@ -2762,6 +2755,8 @@ def accum(accum_name, *args):
     Or it might be some more complex Python object: a list,
     a tuple, a numpy array, or an instance of a user-defined class. In 
     any case, the accum's amount must support addition.
+    (Addition is supported
+    for dicts, tuples, and named tuples via :func:`foreach`.)
 
     If the model in which the accum lives has multiple treatments, the 
     accum may have several amounts, one for each treatment in the model. The 
