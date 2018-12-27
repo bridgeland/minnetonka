@@ -2710,8 +2710,17 @@ class Accum(Incrementer):
         """
         super().__setitem__(treatment_name, amount)
 
+
 class AccumInstance(IncrementerInstance, metaclass=Accum):
     """Like ACCUM in SimLang, for a particular treatment instance."""
+
+    def _step(self):
+        """Advance the accum by one step."""
+        increment = self._incremental.calculate(
+            self._treatment.name,
+            [v.amount() for v in self._increment_depends_on_instances]
+            )
+        self._amount = self._incremental.add(self._amount, increment)
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
@@ -2726,14 +2735,6 @@ class AccumInstance(IncrementerInstance, metaclass=Accum):
             return cls._initial.depends_on(ignore_pseudo)
         else:
             return cls._incremental.depends_on(ignore_pseudo)
-
-    def _step(self):
-        """Advance the accum by one step."""
-        increment = self._incremental.calculate(
-            self._treatment.name,
-            [v.amount() for v in self._increment_depends_on_instances]
-            )
-        self._amount += increment
 
 
 def accum(accum_name, *args):

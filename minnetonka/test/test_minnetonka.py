@@ -2448,6 +2448,44 @@ class ForeachDict(unittest.TestCase):
         m.step(2)
         self.assertEqual(Corge[''], {'foo':39, 'bar': 45} )
 
+    def test_foreach_accum(self):
+        """Does foreach work with accums and dicts?"""
+        with model() as m:
+            variable('Baz', {'foo': 12, 'bar': 13})
+            variable('Waldo', {'foo': 1, 'bar': 2})
+            Corge = accum('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                foreach(lambda w: w), ('Waldo',))
+        m.step()
+        self.assertEqual(Corge[''], {'foo':15, 'bar': 17} )
+        m.step(2)
+        self.assertEqual(Corge[''], {'foo':43, 'bar': 47} )
+
+    def test_nested_foreach_accum(self):
+        """Do nested foreaches work with accums and dicts?"""
+        with model() as m:
+            Baz = variable('Baz', 
+                {'drg001': {'trad': 7, 'rrc': 9},
+                 'drg003': {'trad': 18, 'rrc': 4},
+                 'drg257': {'trad': 6, 'rrc': 11}})
+            Corge = accum('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                {'drg001': {'trad': 0, 'rrc': 0},
+                 'drg003': {'trad': 0, 'rrc': 0},
+                 'drg257': {'trad': 0, 'rrc': 0}})
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': {'trad': 8, 'rrc': 10},
+             'drg003': {'trad': 19, 'rrc': 5},
+             'drg257': {'trad': 7, 'rrc': 12}})
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            {'drg001': {'trad': 24, 'rrc': 30},
+             'drg003': {'trad': 57, 'rrc': 15},
+             'drg257': {'trad': 21, 'rrc': 36}})
+
 class ForeachTuples(unittest.TestCase):
     """For testing the foreach construct with tuples"""
     def test_simple(self):
@@ -2538,6 +2576,31 @@ class ForeachTuples(unittest.TestCase):
         self.assertEqual(Corge[''], (13, 15))
         m.step(2)
         self.assertEqual(Corge[''], (39, 45))
+
+    def test_foreach_accum(self):
+        """Does foreach work with accums?"""
+        with model() as m:
+            variable('Baz', (12, 13))
+            variable('Waldo', (1, 2))
+            Corge = accum('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                lambda w: w, ('Waldo',))
+        m.step()
+        self.assertEqual(Corge[''], (15, 17))
+        m.step(2)
+        self.assertEqual(Corge[''], (43, 47))
+
+    def test_nested_foreach_accum(self):
+        """Do nested foreaches work with accums and tuples?"""
+        with model() as m:
+            Baz = variable('Baz', ((7, 9), (18, 4), (6, 11)))
+            Corge = accum('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                ((0, 0), (0, 0), (0, 0)))
+        m.step()
+        self.assertEqual(Corge[''], ((8, 10), (19, 5), (7, 12)))
+        m.step(2)
+        self.assertEqual(Corge[''], ((24, 30), (57, 15), (21, 36)))
 
 
 class ForeachNamedTuples(unittest.TestCase):
@@ -2669,6 +2732,36 @@ class ForeachNamedTuples(unittest.TestCase):
         self.assertEqual(Corge[''], self.drg(13, 15, 22))
         m.step(2)
         self.assertEqual(Corge[''], self.drg(39, 45, 66))
+
+    def test_foreach_accum(self):
+        """Does foreach work with accums and mn named tuples?"""
+        with model() as m:
+            variable('Baz', self.drg(12, 13, 19))
+            Corge = accum('Corge', 
+                foreach(lambda b: b+2), ('Baz',), 
+                self.drg(0, 0, 0))
+        m.step()
+        self.assertEqual(Corge[''], self.drg(14, 15, 21))
+        m.step(2)
+        self.assertEqual(Corge[''], self.drg(42, 45, 63))
+
+    def test_nested_foreach_accum(self):
+        """Do nested foreaches work with accums and named tuples?""" 
+        with model() as m:
+            Baz = variable('Baz', 
+                self.drg(self.site(7, 9), self.site(18, 4), self.site(6, 11)))
+            Corge = accum('Corge',
+                foreach(foreach(lambda x: x+1)), ('Baz',),
+                self.drg(self.site(0, 0), self.site(0, 0), self.site(0, 0)))
+        m.step()
+        self.assertEqual(
+            Corge[''], 
+            self.drg(self.site(8, 10), self.site(19, 5), self.site(7, 12)))
+        m.step(2)
+        self.assertEqual(
+            Corge[''], 
+            self.drg(self.site(24, 30), self.site(57, 15), self.site(21, 36)))
+
 
 class ForeachMixed(unittest.TestCase):
     """For testing the foreach construct on mixed data."""
