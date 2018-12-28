@@ -23,29 +23,6 @@ from scipy.stats import norm
 
 import numpy as np
 
-"""
-
-
-
-
-Model behavior:
-
-
-
-    # setting a variable's values can create a need for explicit recalculation
-    Foo = variable('Foo', 9)
-    Bar = variable('Bar', lambda f: f, 'Foo')
-    m = model([Foo, Bar])
-    Foo[''] = 2.4
-    Bar['']
-    #   --> 9
-    m.recalculate()
-    Bar['']
-    #   --> 2.4
-
-"""
-
-
 class Model:
     """
     A collection of variables, that can be simulated.
@@ -84,11 +61,11 @@ class Model:
     Create a model with two treatments and three variables:
 
     >>> with model(treatments=['As is', 'To be']) as m:
-    ...  variable('Revenue', np.array([30.1, 15, 20]))
-    ...  variable('Cost', 
-    ...     PerTreatment({'As is': np.array([10, 10, 10]),
-    ...                  {'To be': np.array([5, 5, 20])})
-    ...  variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+    ...     variable('Revenue', np.array([30.1, 15, 20]))
+    ...     variable('Cost', 
+    ...         PerTreatment({'As is': np.array([10, 10, 10]),
+    ...                      {'To be': np.array([5, 5, 20])})
+    ...     variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
     """
 
     # is a model being defined in a context manager? which one?
@@ -96,6 +73,7 @@ class Model:
 
     def __init__(self, treatments, timestep=1, start_time=0, end_time=None):
         """Initialize the model, with treatments and optional timestep."""
+
         self._treatments = {t.name: t for t in treatments}
         # prior to m.initialize(), this is a regular dict. It is
         # converted to an OrderedDict on initialization, ordered with
@@ -105,6 +83,10 @@ class Model:
         self._timestep = timestep
         self._start_time = start_time 
         self._end_time = end_time
+
+        #: Current time in the model, accessible in a specifier. See
+        #: example detailed in :func:`variable`
+        self.TIME = start_time
 
     def __getitem__(self, variable_name):
         """Return the named variable, supporting [] notation."""
@@ -1477,7 +1459,7 @@ def variable(variable_name, *args):
     An callable can use the model itself, instead of a variable
     in the model.
 
-    >>> Step = variable('Step', lambda md: md.TIME, '__model__')
+    >>> Time = variable('Time', lambda md: md.TIME, '__model__')
     """
     logging.info('Creating variable %s', variable_name)
     return _parse_and_create(variable_name, VariableInstance, 'Variable', args)

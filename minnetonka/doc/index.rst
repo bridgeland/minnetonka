@@ -6,7 +6,7 @@ Welcome to Minnetonka's documentation!
 	:members: model, variable, constant, stock, previous, accum, foreach
 
 .. autoclass:: Model
-	:members: step, reset, recalculate, variable 
+	:members: step, reset, recalculate, variable, TIME 
 
 .. autoclass:: Variable
 	:members: show, history, all
