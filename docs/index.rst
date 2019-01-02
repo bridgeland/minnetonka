@@ -2,7 +2,7 @@
 Welcome to Minnetonka's documentation!
 ======================================
 
-.. automodule:: minnetonka
+.. automodule:: minnetonka.minnetonka
 	:members: model, variable, constant, stock, previous, accum, foreach
 
 .. autoclass:: Model
