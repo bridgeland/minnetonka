@@ -1,7 +1,7 @@
 """minnetonka.py: value modeling in python"""
 
 __author__ = "Dave Bridgeland"
-__copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
+__copyright__ = "Copyright 2017-2019, Hanging Steel Productions LLC"
 __credits__ = ["Dave Bridgeland"]
 __version__ = "1"
 __maintainer__ = "Dave Bridgeland"
