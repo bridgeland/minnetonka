@@ -17,7 +17,7 @@ which SimLang is a good solution for modeling part of the problem, and an
 existing Python package is a good solution for modeling another part of the 
 problem. 
 
-For example, two years ago I built a model in SimLang that included some simple
+For example, in 2016 I built a model in SimLang that included some simple
 `graph logic <https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)>`__. 
 There are no graph primitives in SimLang, so I created the graphs using the
 primitives available: arrays
@@ -81,13 +81,13 @@ Contact
 License
 =======
 
-Apache License, Version 2. (Link to license here.)
+`Apache License, Version 2. <https://www.apache.org/licenses/LICENSE-2.0>`__
 
 Naming
 ======
 
 Minnetonks is named after 
 `Lake Minnetonka <https://en.wikipedia.org/wiki/Lake_Minnetonkalake>`__, the 
-ninth largest in the US state of Minnesota. 
+ninth largest lake in the US state of Minnesota. 
 
 

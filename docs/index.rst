@@ -1,6 +1,6 @@
 
-Welcome to Minnetonka's documentation!
-======================================
+Minnetonka API reference
+========================
 
 .. automodule:: minnetonka.minnetonka
 	:members: model, variable, constant, stock, previous, accum, foreach
@@ -39,6 +39,5 @@ Welcome to Minnetonka's documentation!
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
+* :ref:`genindex` 
 * :ref:`search`

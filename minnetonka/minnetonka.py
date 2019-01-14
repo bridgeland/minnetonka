@@ -3,10 +3,13 @@
 __author__ = "Dave Bridgeland"
 __copyright__ = "Copyright 2017-2019, Hanging Steel Productions LLC"
 __credits__ = ["Dave Bridgeland"]
-__version__ = "1"
+__version__ = "0.0.1"
 __maintainer__ = "Dave Bridgeland"
 __email__ = "dave@hangingsteel.com"
 __status__ = "Prototype"
+
+# Unless explicitly stated otherwise all files in this repository are licensed 
+# under the Apache Software License 2.0. 
 
 import warnings
 import copy
