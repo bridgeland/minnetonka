@@ -87,7 +87,7 @@ Naming
 ======
 
 Minnetonks is named after 
-`Lake Minnetonka <https://en.wikipedia.org/wiki/Lake_Minnetonkalake>`__, the 
+`Lake Minnetonka <https://en.wikipedia.org/wiki/Lake_Minnetonka>`__, the 
 ninth largest lake in the US state of Minnesota. 
 
 
