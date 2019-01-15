@@ -63,7 +63,7 @@ Getting Started
 ===============
 
 - `Building a model in Minnetonka <building_model.html>`__
-- `API reference <api_reference.html>`__
+- `API reference <docs/_build/html/index.html>`__
 
 Installation
 ============
