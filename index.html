@@ -1,0 +1,2181 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Minnetonka API reference &#8212; Minnetonka 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-minnetonka.minnetonka">
+<span id="minnetonka-api-reference"></span><h1>Minnetonka API reference<a class="headerlink" href="#module-minnetonka.minnetonka" title="Permalink to this headline">¶</a></h1>
+<p>minnetonka.py: value modeling in python</p>
+<dl class="function">
+<dt id="minnetonka.minnetonka.model">
+<code class="descname">model</code><span class="sig-paren">(</span><em>variables=[], treatments=[''], initialize=True, timestep=1, start_time=0, end_time=None</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and initialize a model, an instance of <a class="reference internal" href="#minnetonka.minnetonka.Model" title="minnetonka.minnetonka.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></p>
+<p>A model is a collection of variables, with one or more treatments. A
+model can be simulated, changing the value of variables with each simulated
+step.</p>
+<p>A model can be created via <a class="reference internal" href="#minnetonka.minnetonka.Model" title="minnetonka.minnetonka.Model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Model()</span></code></a>, after treatment objects have
+been explicitly created. But typically this function
+is used instead, as it is simpler.</p>
+<p>A model sets a context, so variables can be defined for
+the newly created model, as in the example below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>variables</strong> (list of <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a>, optional) – List of variables that are part of the model. If not specified,
+the default is [], no variables. An alternative to
+creating the variables first, then the model, is to define the
+variables within the model context, as in the example below.</li>
+<li><strong>treatments</strong> (<em>list of str</em><em>, or </em><em>list of tuple of</em><em> (</em><em>str</em><em>, </em><em>str</em><em>)</em><em>, </em><em>optional</em>) – List of treatment specs. Each treatment specs is a simulation scenario,
+simulated in parallel. Typical treatments might include ‘As is’,
+‘To be’, ‘At risk’, ‘Currently’, With minor intervention’,
+etc. A treatment can be either a string—the name of the
+treatment—or a tuple of two strings—the name and a short
+description. See examples below.
+If not specified, the default is <code class="docutils literal notranslate"><span class="pre">['']</span></code>, a single
+treatment named by the empty string.</li>
+<li><strong>initialize</strong> (<em>bool</em><em>, </em><em>optional</em>) – After the variables are added to the model, should all the variables
+be given their initial values? If more variables need to be added to
+the model, wait to initialize. Default: True</li>
+<li><strong>timestep</strong> (<em>int</em><em>, </em><em>optional</em>) – How much simulated time should elapse between each step? Default: 1
+time unit</li>
+<li><strong>start_time</strong> (<em>int</em><em>, </em><em>optional</em>) – At what time should the simulated clock start? Default: start at 0</li>
+<li><strong>end_time</strong> (<em>int</em><em>, </em><em>optional</em>) – At what simulated time should the simulatation end? Default: None,
+never end</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly created model</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Model" title="minnetonka.minnetonka.Model">Model</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Model" title="minnetonka.minnetonka.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code></a></dt>
+<dd>a model, once created</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a> to put in a model</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a> to put in a model</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.previous" title="minnetonka.minnetonka.previous"><code class="xref py py-func docutils literal notranslate"><span class="pre">previous()</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Previous" title="minnetonka.minnetonka.Previous"><code class="xref py py-class docutils literal notranslate"><span class="pre">Previous</span></code></a> to put in a model</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-func docutils literal notranslate"><span class="pre">stock()</span></code></a></dt>
+<dd>Create a system dynamics <a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stock</span></code></a>, to put in a model</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.accum" title="minnetonka.minnetonka.accum"><code class="xref py py-func docutils literal notranslate"><span class="pre">accum()</span></code></a></dt>
+<dd>Create an <a class="reference internal" href="#minnetonka.minnetonka.Accum" title="minnetonka.minnetonka.Accum"><code class="xref py py-class docutils literal notranslate"><span class="pre">Accum</span></code></a>, to put in a model</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Create a model with no variables and only the null treatment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>A model that defines two treatments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;As is&#39;</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>One of the treatments has a description:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;As is&#39;</span><span class="p">,</span> <span class="s1">&#39;The current situation&#39;</span><span class="p">),</span> <span class="s1">&#39;To be&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>A model with two variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span><span class="n">DischargeBegins</span><span class="p">,</span> <span class="n">DischargeEnds</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Variables can be defined when the model is created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span>
+<span class="gp">... </span>        <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">30.1</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">])),</span>
+<span class="gp">... </span>        <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">])),</span>
+<span class="gp">... </span>        <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+<span class="gp">... </span>   <span class="p">])</span>
+</pre></div>
+</div>
+<p>A model is a context, supporting variable addition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">30.1</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]))</span>
+<span class="gp">... </span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]))</span>
+<span class="gp">... </span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.variable">
+<code class="descname">variable</code><span class="sig-paren">(</span><em>variable_name</em>, <span class="optional">[</span><em>description</em>, <span class="optional">]</span><em>specifier</em>, <em>*dependencies</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a variable.</p>
+<p>A variable has a value—called an ‘amount’—that changes over simulated
+time. A single
+variable can have a different amount in each model treatment. The amount
+of a variable can be any Python object.  The amount of a variable in a
+particular treatmant can be found
+using subscription brackets, e.g. <strong>Earnings[‘as is’]</strong>.</p>
+<p>A variable differs from other variable-like objects (e.g.
+stocks) in that it keeps no state. At any timestep, its amount depends
+entirely on its specifier, and the amounts of dependencies.</p>
+<p>The <cite>specifier</cite> is a callable, and is called once at each timestep for each
+treatment, using as arguments the amounts of the dependencies in
+that treatment.</p>
+<p>The amount of a variable in a treatment can be changed explicitly, outside
+the model logic, e.g. <strong>Earnings[‘as is’] = 2.1</strong>. Once changed explicitly,
+the amount of
+the variable never changes again, until the simulation is reset or
+the amount is changed again explicitly. See examples below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>variable_name</strong> (<em>str</em>) – Name of the variable. The name is unique within a single model.</li>
+<li><strong>description</strong> (<em>str</em><em>, </em><em>optional</em>) – Docstring-like description of the variable.</li>
+<li><strong>specifier</strong> (<em>callable</em>) – The specifier is called at every timestep.  Zero or more
+<cite>dependencies</cite> are supplied.</li>
+<li><strong>dependencies</strong> (<em>list of str</em>) – Names of variables (or constants or stocks or …) used as arguments
+for the callable <cite>specifier</cite>.
+Might be empty, if callable requires no arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly-created variable</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable">Variable</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dt>
+<dd>a variable, once created</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a></dt>
+<dd>Create a variable whose amount does not change</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-func docutils literal notranslate"><span class="pre">stock()</span></code></a></dt>
+<dd>Create a system dynamics stock</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.previous" title="minnetonka.minnetonka.previous"><code class="xref py py-func docutils literal notranslate"><span class="pre">previous()</span></code></a></dt>
+<dd>Create a variable for the prior amount of some other variable</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a></dt>
+<dd>for defining how a variable has a different amount for each treatment</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>A variable can take a different amount every timestep, via a lambda …</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;RandomValue&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>… or via any Python callable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;RandomValue&#39;</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The callable can depend on the amount of another variable in the model …</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">DischargeProgress</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s1">&#39;DischargeProgress&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">db</span><span class="p">:</span> <span class="p">(</span><span class="n">current_step</span> <span class="o">-</span> <span class="n">db</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;DischargeBegins&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>… or depend on multiple variables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A variable can use different callables in different treatments.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">DischargeEnds</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;DischargeEnds&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">PerTreatment</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">db</span><span class="p">:</span> <span class="n">db</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">db</span><span class="p">:</span> <span class="n">db</span> <span class="o">+</span> <span class="mi">5</span><span class="p">}),</span>
+<span class="gp">... </span>    <span class="n">DischargeBegins</span><span class="s1">&#39;)</span>
+</pre></div>
+</div>
+<p>An callable can use the model itself, instead of a variable
+in the model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Time</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Time&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">md</span><span class="p">:</span> <span class="n">md</span><span class="o">.</span><span class="n">TIME</span><span class="p">,</span> <span class="s1">&#39;__model__&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.constant">
+<code class="descname">constant</code><span class="sig-paren">(</span><em>constant_name</em>, <span class="optional">[</span><em>description</em>, <span class="optional">]</span><em>specifier</em><span class="optional">[</span>, <em>*dependencies</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a constant.</p>
+<p>A constant is similar to a variable except that its amount does not vary.
+Its amount is set on
+initialization, and then does not change over the course of the
+simulation run. When the model is reset, the constant can take a
+new amount.</p>
+<p>The amount of a constant can be any Python object, except a string or
+a Python callable. It can be defined in terms of other variables,
+using a callable as the specifier. See examples below.</p>
+<p>A single constant can take a different amount in each
+model treatment. The amount of a constant in a particular treatment
+can be found using the subscription brackets, e.g. <strong>Interest[‘to be’]</strong>.
+See examples below.</p>
+<p>The amount of a constant can be changed explicitly, outside the model
+logic, e.g. <strong>Interest[‘to be’] = 0.07</strong>. Once changed, the amount of
+the constant remains the same, until the model is reset
+or the amount is again changed explicitly. See examples below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>constant_name</strong> (<em>str</em>) – Name of the constant. The name is unique within a single model.</li>
+<li><strong>description</strong> (<em>str</em><em>, </em><em>optional</em>) – Docstring-like description of the constant.</li>
+<li><strong>specifier</strong> (<em>callable</em><em> or </em><em>Any</em>) – The specifier can be a callable. If a callable, it is called once, at
+the beginning of the simulation run. Zero or more <cite>dependencies</cite>
+are supplied, names of variables whose amounts are provided when the
+callable is called. If not a callable, <cite>specifier</cite> can be any Python
+object except a string, but no <cite>dependencies</cite> are supplied. If
+not a callable, the specifier is provided as the amount at the beginning
+of the simulation run.</li>
+<li><strong>dependencies</strong> (<em>list of str</em>) – Names of variables (or stocks or constants or …) used as arguments
+for the callable <cite>specifier</cite>. Empty
+list unless <cite>specifier</cite> is a callable. See examples below.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly-created constant</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant">Constant</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a></dt>
+<dd>a constant, once created</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></dt>
+<dd>Create a variable whose amount might change over the simulation</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-func docutils literal notranslate"><span class="pre">stock()</span></code></a></dt>
+<dd>Create a system dynamics stock</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a></dt>
+<dd>for defining how a constant takes different (constant) amounts for each treatment</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Create a constant without a description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenCloses&#39;</span><span class="p">,</span> <span class="mi">22</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create constant with a description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenCloses&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="sd">&#39;&#39;&#39;What time is the kitchen scheduled to close?&#39;&#39;&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="mf">22.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a constant whose amount is a Python dictionary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenCloses&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span><span class="s1">&#39;Friday&#39;</span><span class="p">:</span> <span class="mf">23.5</span><span class="p">,</span> <span class="s1">&#39;Saturday&#39;</span><span class="p">:</span> <span class="mf">23.5</span><span class="p">,</span> <span class="s1">&#39;Sunday&#39;</span><span class="p">:</span> <span class="mf">21.0</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;Monday&#39;</span><span class="p">:</span> <span class="mf">22.0</span><span class="p">,</span> <span class="s1">&#39;Tuesday&#39;</span><span class="p">:</span> <span class="mf">22.0</span><span class="p">,</span> <span class="s1">&#39;Wednesday&#39;</span><span class="p">:</span> <span class="mf">22.0</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;Thursday&#39;</span><span class="p">:</span> <span class="mf">22.5</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Create a constant whose amount differs by treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenOpens&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mf">17.0</span><span class="p">,</span> <span class="s1">&#39;Open early&#39;</span><span class="p">:</span> <span class="mf">15.5</span><span class="p">}))</span>
+</pre></div>
+</div>
+<p>Create a constant whose (non-varying) amount is calculated from other
+variables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenDuration&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="sd">&#39;&#39;&#39;How many hours is the kitchen open each day?&#39;&#39;&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">o</span><span class="p">:</span> <span class="n">c</span> <span class="o">-</span> <span class="n">o</span><span class="p">,</span> <span class="s1">&#39;KitchenCloses&#39;</span><span class="p">,</span> <span class="s1">&#39;KitchenOpens&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a model with one variable and two constants.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">C1</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">V</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+<span class="gp">... </span>    <span class="n">C2</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>C2</strong> and <strong>V</strong> have the same amount, a random integer between 0 and 9.
+<strong>C1</strong> has a different amount.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">V</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C1</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>The simulation is advanced by one step. The variable <strong>V</strong> has a new
+amount, but the constants <strong>C1</strong> and <strong>C2</strong> remain the same.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">V</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">7</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C1</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>The simulation is reset. Now <strong>C2</strong> and <strong>V</strong> have the same value, again.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">V</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C1</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">8</span>
+</pre></div>
+</div>
+<p>The amount of <strong>C2</strong> is changed, outside of the model logic.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">99</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">99</span>
+</pre></div>
+</div>
+<p><strong>C2</strong> still stays constant, even after a step.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">99</span>
+</pre></div>
+</div>
+<p>But on reset, <strong>C2</strong>’s amount is once again changed to <strong>V</strong>’s amount.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">V</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Show the details of <strong>C2</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">C2</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Constant: C1</span>
+<span class="go">Amounts: {&#39;&#39;: 6}</span>
+<span class="go">Definition: C1 = constant(&#39;C1&#39;, lambda: random.randint(0, 9))</span>
+<span class="go">Depends on: []</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.stock">
+<code class="descname">stock</code><span class="sig-paren">(</span><em>stock_name</em>, <em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>stock(stock_name, [description,] increment [,[increment_dependencies,] initial [, initial_dependencies]])</p>
+<p>Create a system dynamics stock.</p>
+<p>In <a class="reference external" href="https://en.wikipedia.org/wiki/System_dynamics">system dynamics</a>,
+a stock is used to model something that accumulates or depletes over
+time. The stock defines both an initial amount and an increment.</p>
+<p>At any simulated period, the stock has an amount. The amount changes
+over time, incrementing or decrementing at each timestep. The amount
+can be a simple numeric like a Python integer or a Python float.
+Or it might be some more complex Python object: a list,
+a tuple, a numpy array, or an instance of a user-defined class. In
+any case, the stock’s amount must support addition and multiplication.
+(Addition and multiplication are supported
+for dicts, tuples, and named tuples via <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a>.)</p>
+<p>If the model in which the stock lives has multiple treatments,
+the stock may have several amounts, one for each treatment. The amount of
+a stock in a particular treatment can be accessed using subscription
+brackets, e.g. <strong>Savings[‘to be’]</strong>.</p>
+<p>A stock definition has two parts: an initial and an increment.
+The initial is either a callable or any non-callable Python object
+except a string. If a callable, the initial has a (possibly empty) tuple
+of dependencies. If a non-callable, <cite>initial_dependencies</cite> is an
+empty tuple.</p>
+<p>If <cite>initial</cite> is a callable,
+that callable is called once for each treatment, at model initialization,
+with the initial amount of each of the dependencies for that
+treatment. The names of
+the dependencies are provided: <cite>initial_dependencies</cite> is a tuple of strings.
+Each dependency named can either be a (plain) variable (i.e. an instance
+of <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a>) or a stock or a constant
+or any of the other variable elements of a model. The result of the
+execution of the callable becomes the initial amount of the stock, for
+that treatment.</p>
+<p>The stock increment is also either a callable or any non-callable Python
+object except a string. If a callable, the increment has a (possibly empty)
+tuple of dependencies. If a non-callable, <cite>increment_dependencies</cite> is an
+empty tuple.</p>
+<p>If <cite>increment</cite> is a callable, the callable is called once every
+period for each treatment, using as arguments the amounts of each of the
+dependencies in that treatment. Each
+dependency can be the name of a (plain) variable (i.e. an instance
+of <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a>) or a stock or a constant or any of the
+variable elements of a model. The callable is given the amounts of the
+variables at the previous timestep, not the current timestep, to
+determine the increment of the stock for this period.</p>
+<p>The increment is how much the stock’s amount changes in each unit of time.
+If the timestep of the model is 1.0, the stock’s amount will
+change by exactly that increment. If the timestep is not 1.0, the stock’s
+amount will change by a different quantity. For example, if the timestep
+is 0.5, the stock’s amount will change by half the increment, at
+every step. (For more on the timestep, see <a class="reference internal" href="#minnetonka.minnetonka.model" title="minnetonka.minnetonka.model"><code class="xref py py-func docutils literal notranslate"><span class="pre">model()</span></code></a>.)</p>
+<p>The initial amount and the increment amount may vary by treatment, either
+because one or more of the the dependencies vary by treatment,
+or because of an explicit <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a> expression. See examples
+below.</p>
+<p>The amount of a stock in a treatment can be changed explicitly, outside
+the model logic, e.g. <strong>Savings[‘to be’] = 1000</strong>. Once changed explicitly,
+the amount of the stock never changes again (in that treatment),
+until the simulation is reset or the amount is changed again explicitly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stock_name</strong> (<em>str</em>) – Name of the stock. The name must be unique within the model.</li>
+<li><strong>description</strong> (<em>str</em><em>, </em><em>optional</em>) – Docstring-like description of the stock.</li>
+<li><strong>increment</strong> (<em>callable</em><em> or </em><em>Any</em>) – <p>The increment can be either a callable or any Python object, except a
+string. If a callable, the increment is called once for each treatment
+at every timestep, with arguments the amounts of
+<cite>increment_dependencies</cite> in that treatment. The result of the callable
+execution for
+a single treatment is the unit time change in amount for that treatment.
+See examples below.</p>
+<p>If <cite>increment</cite> is not a callable, it is interpreted as the unit time
+change in amount, unchanging with each timestep.</p>
+<p>Using <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a>, a different amount or different callable
+can be provided for different treatments. See examples below.</p>
+</li>
+<li><strong>increment_dependencies</strong> (<em>tuple of str</em><em>, </em><em>optional</em>) – Names of dependencies—i.e. names of (plain) variables or constants or
+other stocks or …—
+used as arguments for the callable <cite>increment</cite>. Might be an empty tuple,
+the default, either
+if callable <cite>increment</cite> requires no arguments, or if <cite>increment</cite> is not
+a callable.</li>
+<li><strong>initial</strong> (<em>callable</em><em> or </em><em>Any</em><em>, </em><em>optional</em>) – <p>The initial can be either a callable or any Python object, except a
+string. If a callable, the initial is called once for each treatment
+at the beginning of the simulation, with arguments of the amounts of
+<cite>initial_dependencies</cite>. The results of the callable execution for a single
+treatment becomes the initial amount of the stock, for that treatment.</p>
+<p>If <cite>initial</cite> is not a callable, it is interpreted as the initial amount
+for the stock.</p>
+<p>Using <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a>, a different amount or different callable
+can be provided for different treatments. See examples below.</p>
+</li>
+<li><strong>initial_dependencies</strong> (<em>tuple of str</em><em>, </em><em>optional</em>) – Names of dependencies—i.e. names of (plain) variables or constants or
+other stocks or …—
+used as arguments for the callable <cite>initial</cite>. Might be an empty tuple,
+the default, either
+if callable <cite>initial</cite> requires no arguments, or if <cite>increment</cite> is not
+a callable.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly-created stock</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock">Stock</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></dt>
+<dd>Create a variable whose amount might change</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a></dt>
+<dd>Create a variable whose amount does not change</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.accum" title="minnetonka.minnetonka.accum"><code class="xref py py-func docutils literal notranslate"><span class="pre">accum()</span></code></a></dt>
+<dd>Create an accum, much like a stock except that it uses the amounts of the variables in the current period, instead of the previous period.</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a></dt>
+<dd>for defining how an increment or initial varies from treatment to treatment</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>A stock that starts with the amount 2018, and increments the amount
+by 1 at each period.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount defaults to zero.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Age&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A stock can take a docstring-like description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;&#39;the current year&#39;&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount can be different in each treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="mi">22</span><span class="p">}))</span>
+</pre></div>
+</div>
+<p>The increment can be different for each treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}),</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The increment can be a callable with no dependencies. Note the empty
+tuple of dependencies.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="p">(),</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount can be a callable. If the initial amount is a
+callable, the increment must also be a callable. Note the empty tuples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span>
+<span class="go">.,,     lambda: random.randint(15, 18), (),</span>
+<span class="gp">... </span>    <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="p">())</span>
+</pre></div>
+</div>
+<p>Dependencies can be provided for the increment callable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Savings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">interest</span><span class="p">:</span> <span class="n">interest</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,),</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Dependencies can be provided for the initial callable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Savings&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">interest</span><span class="p">,</span> <span class="n">additions</span><span class="p">:</span> <span class="n">interest</span> <span class="o">+</span> <span class="n">additions</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,</span> <span class="s1">&#39;AdditionsToSavings&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">initial</span><span class="p">:</span> <span class="n">initial</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;InitialSavings&#39;</span><span class="p">,))</span>
+</pre></div>
+</div>
+<p>Feedback is supported.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Savings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">interest</span><span class="p">:</span> <span class="n">interest</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,),</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Rate&#39;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">savings</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="n">savings</span> <span class="o">*</span> <span class="n">rate</span><span class="p">,</span> <span class="s1">&#39;Savings&#39;</span><span class="p">,</span> <span class="s1">&#39;Rate&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The amounts can be numpy arrays, or other Python objects.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+<span class="gp">... </span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]))</span>
+<span class="gp">... </span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.previous">
+<code class="descname">previous</code><span class="sig-paren">(</span><em>previous_name</em>, <span class="optional">[</span><em>description</em>, <span class="optional">]</span><em>prior</em><span class="optional">[</span>, <em>initial_amount</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.previous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a previous.</p>
+<p>Create a new previous, a variable whose amount is the amount of another
+variable—the one named by <cite>prior</cite>—in the previous timestep.</p>
+<p>If the model in which the previous lives has multiple treatments, and its
+prior has a different amount for each treatment, so will the previous.
+The amount of the previous in a particular treatment can be accessed
+using subscription brackets, e.g. <strong>YesterdaySales[‘as is’]</strong>.</p>
+<p>When the model is initialized, the amount of the previous is either set
+to <cite>initial_amount</cite>, or if no initial amount is provided, it is set to
+the amount of <cite>prior</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>variable_name</strong> (<em>str</em>) – Name of the previous. The name must be unique within a single model.</li>
+<li><strong>description</strong> (<em>str</em><em>, </em><em>optional</em>) – Docstring-like description of the previous.</li>
+<li><strong>prior</strong> (<em>str</em>) – The name of a variable (or constant or stock or …). The amount of
+the prior in the last timestep becomes the new amount of the previous
+in this timestep.</li>
+<li><strong>initial_amount</strong> (<em>Any</em><em>, </em><em>optional</em>) – Any non-string and non-callable Python object. But typically this is
+some kind of numeric: an int or a float or a numpy array of floats or
+the like. If provided, when the model is initialized, the initial
+amount of <cite>prior</cite> is set to <cite>initial_amount</cite>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly created previous</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Previous" title="minnetonka.minnetonka.Previous">Previous</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></dt>
+<dd>Create a variable whose amount might change</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a></dt>
+<dd>Create a variable whose amount does not change</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Finding yesterday’s sales, when the timestep is one day.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">previous</span><span class="p">(</span><span class="s1">&#39;YesterdaySales&#39;</span><span class="p">,</span> <span class="s1">&#39;Sales&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A previous might have a description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">previous</span><span class="p">(</span><span class="s1">&#39;YesterdaySales&#39;</span><span class="p">,</span>
+<span class="go">    &#39;&#39;&#39;Total sales in the prior day&#39;&#39;&#39;,</span>
+<span class="go">    &#39;Sales&#39;)</span>
+</pre></div>
+</div>
+<p>A previous might have an initial amount, if that amount needs to be
+different from the initial amount of the prior.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">previous</span><span class="p">(</span><span class="s1">&#39;YesterdaySales&#39;</span><span class="p">,</span>
+<span class="go">    &#39;&#39;&#39;Total sales in the prior day&#39;&#39;&#39;,</span>
+<span class="go">    &#39;Sales&#39;,</span>
+<span class="go">    3000)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.accum">
+<code class="descname">accum</code><span class="sig-paren">(</span><em>accum_name</em>, <em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>accum(accum_name, [description,] increment [,[increment_dependencies,] initial [, initial_dependencies]])</p>
+<p>Create a system dynamics accum.</p>
+<p>An accum is much like a <a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stock</span></code></a>, modeling something that
+accumulates or depletes over time. Like a stock, an accum defines
+both an initial amount and an increment.</p>
+<p>There is an important difference between a stock and an accum: an accum
+is incremented with the current amounts
+of its dependencies, not the amounts in the last period.
+This seemingly minor difference has a big impact: a circular dependency
+can be created with a stock, but not with an accum. The stock
+<strong>Savings</strong> can depend on <strong>Interest</strong>, which depends in turn on
+<strong>Savings</strong>. But this only works if <strong>Savings</strong> is a stock. If
+<strong>Savings</strong> is an accum, the same circular dependency is a model error.</p>
+<p>At any simulated period, the accum has an amount. The amount changes
+over time, incrementing or decrementing at each period. The amount
+can be a simple numeric like a Python integer or a Python float.
+Or it might be some more complex Python object: a list,
+a tuple, a numpy array, or an instance of a user-defined class. In
+any case, the accum’s amount must support addition.
+(Addition is supported
+for dicts, tuples, and named tuples via <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a>.)</p>
+<p>If the model in which the accum lives has multiple treatments, the
+accum may have several amounts, one for each treatment in the model. The
+amount of an accum in a particular treatment can be accessed using
+subscription brackets, e.g. <strong>RevenueYearToDate[‘as is’]</strong>.</p>
+<p>An accum definition has two parts: an initial and an increment.
+The initial is either a callable or any non-callable Python object
+except a string. If a callable, the initial has a (posssibly empty) tuple
+of dependencies. If a non-callable, <cite>iniitial_dependences</cite> is an
+empty tuple.</p>
+<p>If <cite>initial</cite> is a callable,
+that callable is called once for each treatment, at model initialization,
+with the initial amounts of each of the dependencies. The names of
+the dependencies are provided: <cite>initial_dependencies</cite> is a tuple of strings.
+Each dependency named can either be a (plain) variable (i.e. an instance
+of <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a>) or a stock or a constant
+or any of the other variable elements of a model. The result of the
+execution of the callable becomes the initial amount of the accum, for
+that treatment.</p>
+<p>The accum increment is also either a callable or any non-callable Python
+object except a string. If a callable, the increment has a (possibly empty)
+tuple of dependencies. If a non-callable, <cite>increment_dependencies</cite> is an
+empty tuple.</p>
+<p>If <cite>increment</cite> is a callable, the callable is called once every
+period for each treatment, using as arguments the amounts of each of the
+dependencies in that treatment. Each
+dependency can be the name of a (plain) variable (i.e. an instance
+of <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a>) or a stock or a constant or any of the
+variable elements of a model.  The callable is given the amounts of the
+variables at the current period, to
+determine the increment of the accume for this period.</p>
+<p>The increment is how much the accum’s amount changes in each period.
+Note that this is another difference between an accum and a stock:
+for a stock the amount incremented depends on the timestep; for an
+accum it does not. For example, if both a stock <strong>S</strong> and an accum <strong>A</strong>
+have an increment of 10, and the timestep is 0.5, <strong>S</strong> will increase
+by 5 every period but <strong>A</strong> will increase by 10.</p>
+<p>The initial amount and the increment amount may vary by treatment, either
+because one or more of the the dependencies vary by treatment,
+or because of an explicit <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a> expression.</p>
+<p>The amount of an accum in a treatment can be changed explicitly, outside
+the model logic, e.g. <strong>RevenueYearToDate[‘as is’] = 1000</strong>.
+Once changed explicitly,
+the amount of the accum never changes again (in that treatment),
+until the simulation is reset or the amount is changed again explicitly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>accum_name</strong> (<em>str</em>) – Name of the accum. The name must be unique within the model.</li>
+<li><strong>description</strong> (<em>str</em><em>, </em><em>optional</em>) – Docstring-like description of the accum.</li>
+<li><strong>increment</strong> (<em>callable</em><em> or </em><em>Any</em>) – <p>The increment can be either a callable or any Python object, except a
+string. If a callable, the increment is called once for each treatment
+at every timestep, with arguments the amounts of
+<cite>increment_dependencies</cite> in that treatment. The result of the callable
+execution for
+a single treatment is the change in amount for that treatment.
+See examples below.</p>
+<p>If <cite>increment</cite> is not a callable, it is interpreted as the
+change in amount, unchanging with each timestep.</p>
+<p>Using <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a>, a different amount or different callable
+can be provided for different treatments. See examples below.</p>
+</li>
+<li><strong>increment_dependencies</strong> (<em>tuple of str</em><em>, </em><em>optional</em>) – Names of dependencies—i.e. names of (plain) variables or constants or
+other stocks or …—
+used as arguments for the callable <cite>increment</cite>. Might be an empty tuple,
+the default, either
+if callable <cite>increment</cite> requires no arguments, or if <cite>increment</cite> is not
+a callable.</li>
+<li><strong>initial</strong> (<em>callable</em><em> or </em><em>Any</em><em>, </em><em>optional</em>) – <p>The initial can be either a callable or any Python object, except a
+string. If a callable, the initial is called once for each treatment
+at the beginning of the simulation, with arguments of the amounts of
+<cite>initial_dependencies</cite>. The results of the callable execution for a single
+treatment becomes the initial amount of the stock, for that treatment.</p>
+<p>If <cite>initial</cite> is not a callable, it is interpreted as the initial amount
+for the stock.</p>
+<p>Using <a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a>, a different amount or different callable
+can be provided for different treatments. See examples below.</p>
+</li>
+<li><strong>initial_dependencies</strong> (<em>tuple of str</em><em>, </em><em>optional</em>) – Names of dependencies—i.e. names of (plain) variables or constants or
+other stocks or …—
+used as arguments for the callable <cite>initial</cite>. Might be an empty tuple,
+the default, either
+if callable <cite>initial</cite> requires no arguments, or if <cite>increment</cite> is not
+a callable.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the newly-created accum</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#minnetonka.minnetonka.Accum" title="minnetonka.minnetonka.Accum">Accum</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></dt>
+<dd>Create a non-stock variable</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a></dt>
+<dd>Create a non-stock variable whose amount does not change</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-func docutils literal notranslate"><span class="pre">stock()</span></code></a></dt>
+<dd>Create an stock, much like a stock except that it uses the amounts of the variables in the prior period, instead of the current period</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.PerTreatment" title="minnetonka.minnetonka.PerTreatment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerTreatment</span></code></a></dt>
+<dd>for defining how an increment or initial varies from treatment to treatment</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>An accum that collects all the revenue to date.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount defaults to zero.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;Age&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>An accum can take a docstring-like description.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;&#39;the current year&#39;&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount can be different in each treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="mi">22</span><span class="p">}))</span>
+</pre></div>
+</div>
+<p>The increment can be different for each treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}),</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The increment can be a callable that uses no variables. Note the empty
+tuple of variables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="p">(),</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initial amount can be a callable. If the initial amount is a
+callable, the increment must also be a callable. Note the empty tuples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">18</span><span class="p">),</span> <span class="p">(),</span>
+<span class="gp">... </span>    <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="p">())</span>
+</pre></div>
+</div>
+<p>Variables can be provided for the increment callable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;Savings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">interest</span><span class="p">:</span> <span class="n">interest</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,),</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Variables can be provided for the initial callable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accum</span><span class="p">(</span><span class="s1">&#39;Savings&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">interest</span><span class="p">,</span> <span class="n">additions</span><span class="p">:</span> <span class="n">interest</span> <span class="o">+</span> <span class="n">additions</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;Interest&#39;</span><span class="p">,</span> <span class="s1">&#39;AdditionsToSavings&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="k">lambda</span> <span class="n">initial</span><span class="p">:</span> <span class="n">initial</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s1">&#39;InitialSavings&#39;</span><span class="p">,))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="minnetonka.minnetonka.foreach">
+<code class="descname">foreach</code><span class="sig-paren">(</span><em>by_item_callable</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.foreach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new callable iterates across dicts or tuples.</p>
+<p>Variables often take simple values: ints or floats. But sometimes they
+take more complex values: dicts or tuples. Consider a business model
+of a group of five restaurants, all owned by the same company. Each
+individual restaurant is managed differently, with its own opening
+and closing hours, its own table count, its own daily revenue, its own
+mix of party sizes.
+But although the variables take different values for each restaurant, they
+participate in the same structure. Earnings is always revenue minus cost.
+(This restaurant example is borrowed from <a class="reference external" href="https://www.amazon.com/Business-Modeling-Practical-Guide-Realizing/dp/0123741513">a book on business modeling</a>.)</p>
+<p>A good approach to model the restaurants is to have each variable take a
+Python dict as a value, with the name of the restaurant as the key and a
+numeric value for each key. For example the variable <strong>DailyRevenue</strong> might
+take a value of <code class="docutils literal notranslate"><span class="pre">{'Portia':</span> <span class="pre">7489,</span> <span class="pre">'Nola':</span> <span class="pre">7136,</span> <span class="pre">'Viola':</span> <span class="pre">4248,</span>
+<span class="pre">'Zona':</span> <span class="pre">6412,</span> <span class="pre">'Adelina':</span> <span class="pre">4826}</span></code>, assuming the restaurants are named
+Portia, Nola, etc.</p>
+<p>But how should the <cite>specifier</cite> of variable <strong>DailyEarnings</strong> be modeled if
+both <strong>DailyRevenue</strong> and <strong>DailyCosts</strong> are dicts? Although earnings is
+revenue minus cost, the specifier cannot be
+<code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">revenue,</span> <span class="pre">cost:</span> <span class="pre">revenue</span> <span class="pre">-</span> <span class="pre">cost</span></code> because revenue and cost are both
+dicts, and subtraction is unsupported for dicts in Python.</p>
+<p>One approach is to write a custom specifier for <strong>DailyEarnings</strong>, a Python
+custom function that takes the two dicts, and returns a third dict,
+subtracting each restaurant’s cost from its revenues. A better approach
+is to use foreach: <code class="docutils literal notranslate"><span class="pre">foreach(lambda</span> <span class="pre">revenue,</span> <span class="pre">cost:</span> <span class="pre">revenue</span> <span class="pre">-</span> <span class="pre">cost)</span></code>. See
+example below.</p>
+<p><a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> takes a single callable that operates on individual
+values (e.g. the revenue and cost of a single restaurant), and returns a
+callable that operates on dicts as a whole (e.g. the revenue of all the
+restaurants as a dict, the costs of all the restaurants as a dict).</p>
+<p>The dict that is the amount of the second variable must contain the
+same keys as the dict that is the amount of the first variable, or else the
+foreach-generated callable raises a <code class="xref py py-class docutils literal notranslate"><span class="pre">MinnetonkaError</span></code>. The second
+dict can contain additional keys, not present in the first dict. Those
+additional keys are ignored. Similarly, the third dict (if present) must
+contain the same keys as the first dict. And so on.</p>
+<p><a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> also works on tuples. For example, suppose instead of a
+dict,
+the revenue of the restaurants were represented as a tuple, with the first
+element of the tuple being Portia’s revenue, the second element Nola’s
+revenue and so on. The cost of the restaurants are also
+represented as a tuple. Then the specifier of <strong>DailyEarnings</strong> could
+be provided as <code class="docutils literal notranslate"><span class="pre">foreach(lambda</span> <span class="pre">revenue,</span> <span class="pre">cost:</span> <span class="pre">revenue</span> <span class="pre">-</span> <span class="pre">cost)</span></code>, the
+same <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> expression as with dicts.</p>
+<p>The tuple that is the amount of the second variable can be shorter (of
+lessor length) than the dict that is the amount of the first variable. The
+foreach-generated callable uses the shortest of the tuples as the length
+of the resultant tuple.</p>
+<p>If the first variable has an amount that is a tuple, the second
+variable can be a scalar, as can the third variable, etc. When encountering
+a scalar in subsequent amounts, the foreach-generated callable interprets
+the scalar as if an iterator repeated the scalar, as often as
+needed for the length of the first tuple.</p>
+<p><a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> works on Python named tuples as well. The result of the
+foreach-generated specifier is a named tuple of the same type as the first
+dependency.</p>
+<p><a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> can be nested, if the amounts of the dependencies are
+nested dicts, or nested tuples, or nested named tuples, or some nested
+combination of dicts, tuples, or named tuples. See example below.</p>
+<p><a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a> can be used in defining variables, stocks, accums, or
+constants, anywhere that a callable can be provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>by_item_callable</strong> (<em>callable</em>) – A callable that is to be called on individual elements, either elements
+of a tuple or elements of a named tuple or values of a dict.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A new callable that can be called on dicts or tuples or named tuples,
+calling <cite>by_item_callable</cite> as on each element of the dict or tuple or
+named tuple.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">callable</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Suppose there are five restaurants. Each of the restaurants has a weekly
+cost and a weekly revenue. (In practice the cost and revenue would
+themselves be variables, not constants, and dependent on other variables,
+like weekly customers, order mix, number of cooks, number of waitstaff,
+etc.)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">,</span> <span class="s1">&#39;to be&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">Revenue</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;Portia&#39;</span><span class="p">:</span> <span class="mi">44929</span><span class="p">,</span> <span class="s1">&#39;Nola&#39;</span><span class="p">:</span> <span class="mi">42798</span><span class="p">,</span> <span class="s1">&#39;Viola&#39;</span><span class="p">:</span> <span class="mi">25490</span><span class="p">,</span> <span class="s1">&#39;Zona&#39;</span><span class="p">:</span> <span class="mi">38477</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="s1">&#39;Adelina&#39;</span><span class="p">:</span> <span class="mi">28956</span><span class="p">})</span>
+<span class="gp">... </span>    <span class="n">Cost</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;Portia&#39;</span><span class="p">:</span> <span class="mi">40440</span><span class="p">,</span> <span class="s1">&#39;Nola&#39;</span><span class="p">:</span> <span class="mi">42031</span><span class="p">,</span> <span class="s1">&#39;Viola&#39;</span><span class="p">:</span> <span class="mi">28819</span><span class="p">,</span> <span class="s1">&#39;Zona&#39;</span><span class="p">:</span> <span class="mi">41103</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="s1">&#39;Adelina&#39;</span><span class="p">:</span> <span class="mi">25770</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Earnings is revenue minus cost, for each restaurant.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">Earnings</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">revenue</span><span class="p">,</span> <span class="n">cost</span><span class="p">:</span> <span class="n">revenue</span> <span class="o">-</span> <span class="n">cost</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">{&#39;Portia&#39;: 4489,</span>
+<span class="go"> &#39;Nola&#39;: 767,</span>
+<span class="go"> &#39;Viola&#39;: -3329,</span>
+<span class="go"> &#39;Zona&#39;: -2626,</span>
+<span class="go"> &#39;Adelina&#39;: 3186}</span>
+</pre></div>
+</div>
+<p>Stocks can also use <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a>. Suppose each restaurant has a stock
+of regular customers. Every week, some customers are delighted with the
+restaurant and become regulars. Every week some of the regulars attrit,
+growing tired with the restaurant they once frequented, or move away
+to somewhere else, and are no longer able to enjoy the restaurant regularly.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">,</span> <span class="s1">&#39;to be&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">Regulars</span> <span class="o">=</span> <span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Regulars&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">add</span><span class="p">,</span> <span class="n">lost</span><span class="p">:</span> <span class="n">add</span> <span class="o">-</span> <span class="n">lost</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="p">(</span><span class="s1">&#39;NewRegulars&#39;</span><span class="p">,</span> <span class="s1">&#39;LostRegulars&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;Portia&#39;</span><span class="p">:</span> <span class="mi">420</span><span class="p">,</span> <span class="s1">&#39;Nola&#39;</span><span class="p">:</span> <span class="mi">382</span><span class="p">,</span> <span class="s1">&#39;Viola&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Zona&#39;</span><span class="p">:</span> <span class="mi">294</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="s1">&#39;Adelina&#39;</span><span class="p">:</span> <span class="mi">23</span><span class="p">})</span>
+<span class="gp">... </span>    <span class="n">NewRegulars</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;NewRegulars&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;Portia&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Nola&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Viola&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Zona&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Adelina&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">})</span>
+<span class="gp">... </span>    <span class="n">LostRegulars</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;LostRegulars&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">regulars</span><span class="p">,</span> <span class="n">lossage_prop</span><span class="p">:</span> <span class="n">regulars</span> <span class="o">*</span> <span class="n">lossage_prop</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="s1">&#39;Regulars&#39;</span><span class="p">,</span> <span class="s1">&#39;LossageProportion&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">LossageProportion</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;LossageProportion&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;as is&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span> <span class="s1">&#39;to be&#39;</span><span class="p">:</span> <span class="mf">0.0075</span><span class="p">}))</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Regulars</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">{&#39;Portia&#39;: 420, &#39;Nola&#39;: 382, &#39;Viola&#39;: 0, &#39;Zona&#39;: 294, &#39;Adelina&#39;: 23}</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Regulars</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">{&#39;Portia&#39;: 419.8, &#39;Nola&#39;: 379.18, &#39;Viola&#39;: 1.0, &#39;Zona&#39;: 293.06,</span>
+<span class="go"> &#39;Adelina&#39;: 26.77}</span>
+</pre></div>
+</div>
+<p>A variable can take an amount that is a dict of named tuples (or any
+other combination of dicts, named tuples, and tuples). Nested foreach
+calls can work on these nested variables.</p>
+<p>In this example, menu items change over time, as items are added or
+removed for each restaurant. Note that <strong>Shape</strong> serves only to give
+other variables the right shape: a dict of restaurants with values that
+are instances of <strong>Course</strong> named tuples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">collections</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Course</span><span class="o">=</span><span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s1">&#39;Course&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;appetizer&#39;</span><span class="p">,</span> <span class="s1">&#39;salad&#39;</span><span class="p">,</span> <span class="s1">&#39;entree&#39;</span><span class="p">,</span> <span class="s1">&#39;desert&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">MenuItemCount</span> <span class="o">=</span> <span class="n">stock</span><span class="p">(</span><span class="s1">&#39;MenuItemCount&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">new</span><span class="p">,</span> <span class="n">old</span><span class="p">:</span> <span class="n">new</span> <span class="o">-</span> <span class="n">old</span><span class="p">)),</span>
+<span class="gp">... </span>        <span class="p">(</span><span class="s1">&#39;AddedMenuItem&#39;</span><span class="p">,</span> <span class="s1">&#39;RemovedMenuItem&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;Portia&#39;</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+<span class="gp">... </span>         <span class="s1">&#39;Nola&#39;</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+<span class="gp">... </span>         <span class="s1">&#39;Viola&#39;</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span>
+<span class="gp">... </span>         <span class="s1">&#39;Zona&#39;</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+<span class="gp">... </span>         <span class="s1">&#39;Adelina&#39;</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">)})</span>
+<span class="gp">... </span>    <span class="n">AddedMenuItem</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;AddedMenuItem&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)),</span>
+<span class="gp">... </span>        <span class="s1">&#39;Shape&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">RemovedMenuItem</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;RemovedMenuItem&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">foreach</span><span class="p">(</span><span class="n">foreach</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.08</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)),</span>
+<span class="gp">... </span>        <span class="s1">&#39;Shape&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">Shape</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Shape&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="n">r</span><span class="p">:</span> <span class="n">Course</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">... </span>            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Portia&#39;</span><span class="p">,</span> <span class="s1">&#39;Nola&#39;</span><span class="p">,</span> <span class="s1">&#39;Viola&#39;</span><span class="p">,</span> <span class="s1">&#39;Zona&#39;</span><span class="p">,</span> <span class="s1">&#39;Adelina&#39;</span><span class="p">]})</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">MenuItemCount</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">{&#39;Portia&#39;: Course(appetizer=6, salad=4, entree=12, desert=7),</span>
+<span class="go"> &#39;Nola&#39;: Course(appetizer=3, salad=3, entree=8, desert=4),</span>
+<span class="go"> &#39;Viola&#39;: Course(appetizer=17, salad=8, entree=9, desert=12),</span>
+<span class="go"> &#39;Zona&#39;: Course(appetizer=10, salad=4, entree=20, desert=6),</span>
+<span class="go"> &#39;Adelina&#39;: Course(appetizer=6, salad=9, entree=9, desert=3)}</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MenuItemCount</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">{&#39;Portia&#39;: Course(appetizer=7, salad=3, entree=12, desert=4),</span>
+<span class="go"> &#39;Nola&#39;: Course(appetizer=4, salad=4, entree=8, desert=4),</span>
+<span class="go"> &#39;Viola&#39;: Course(appetizer=18, salad=6, entree=8, desert=13),</span>
+<span class="go"> &#39;Zona&#39;: Course(appetizer=12, salad=5, entree=18, desert=9),</span>
+<span class="go"> &#39;Adelina&#39;: Course(appetizer=4, salad=8, entree=7, desert=3)}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Model">
+<em class="property">class </em><code class="descname">Model</code><span class="sig-paren">(</span><em>treatments</em>, <em>timestep=1</em>, <em>start_time=0</em>, <em>end_time=None</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>A collection of variables, that can be simulated.</p>
+<p>A model is a self-contained collection of variables and treatments.
+A model can be simulated, perhaps running one step at a time, perhaps
+multiple steps, perhaps until the end.</p>
+<p>Typically a model is defined as a context using <a class="reference internal" href="#minnetonka.minnetonka.model" title="minnetonka.minnetonka.model"><code class="xref py py-func docutils literal notranslate"><span class="pre">model()</span></code></a>,
+with variables and stocks within the model context. See example below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatments</strong> (list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Treatment</span></code>) – The treatments defined for the model. Each treatment is a different
+simulated scenario, run in parallel.</li>
+<li><strong>timestep</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – The simulated duration of each call to <a class="reference internal" href="#minnetonka.minnetonka.Model.step" title="minnetonka.minnetonka.Model.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">step()</span></code></a>. The default is
+1.</li>
+<li><strong>start_time</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – The first time period, before the first call to <a class="reference internal" href="#minnetonka.minnetonka.Model.step" title="minnetonka.minnetonka.Model.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">step()</span></code></a>. Default:
+0</li>
+<li><strong>end_time</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – The last time period, after a call to <a class="reference internal" href="#minnetonka.minnetonka.Model.step" title="minnetonka.minnetonka.Model.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">step()</span></code></a>
+with <code class="docutils literal notranslate"><span class="pre">to_end=True</span></code>. Default: None, meaning never end</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.model" title="minnetonka.minnetonka.model"><code class="xref py py-func docutils literal notranslate"><span class="pre">model()</span></code></a></dt>
+<dd>the typical way to create a model</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Create a model with two treatments and three variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;As is&#39;</span><span class="p">,</span> <span class="s1">&#39;To be&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">30.1</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]))</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]),</span>
+<span class="gp">... </span>                     <span class="p">{</span><span class="s1">&#39;To be&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">])})</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="minnetonka.minnetonka.Model.TIME">
+<code class="descname">TIME</code><em class="property"> = None</em><a class="headerlink" href="#minnetonka.minnetonka.Model.TIME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current time in the model, accessible in a specifier. See
+example detailed in <a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Model.recalculate">
+<code class="descname">recalculate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Model.recalculate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recalculate all variables, without advancing the step.</p>
+<p>Recalculation is only necessary when the amount of a variable (or
+constant or stock) is changed
+explicitly, outside of the model logic. The variables that depend on
+that changed variable will take amounts that do not reflect the changes,
+at least until the model is stepped. If that is not appropriate, a
+call to <strong>recalculate()</strong> will calculate new updated amounts for all
+those dependent variables.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="n">Foo</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Foo&#39;</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="gp">... </span>   <span class="n">Bar</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Bar&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Bar</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">11</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Foo</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">7</span>
+</pre></div>
+</div>
+<p><strong>Bar</strong> still takes the amount based on the previous amount of <strong>Foo</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Bar</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">11</span>
+</pre></div>
+</div>
+<p>Recalculating updates the amounts.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">recalculate</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Bar</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">9</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Model.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><em>reset_external_vars=True</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Model.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset simulation, back to the begining.</p>
+<p>Reset simulation time back to the beginning time, and reset the
+amounts of all variables back to their initial amounts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>reset_external_vars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Sometimes variables are set to amounts outside the model logic.
+(See example below, and more examples with <a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">constant()</span></code></a>,
+<a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-func docutils literal notranslate"><span class="pre">variable()</span></code></a>, and <a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-func docutils literal notranslate"><span class="pre">stock()</span></code></a>.)
+Should these externally-defined variables be reset to their initial amounts
+when the model as a whole is reset? Default: True, reset those
+externally-defined variables.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Create a simple model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2019</span>
+</pre></div>
+</div>
+<p>Step the model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2020</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2021</span>
+</pre></div>
+</div>
+<p>Reset the model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2019</span>
+</pre></div>
+</div>
+<p>Change the amount of year. <strong>Year</strong> is now externally defined.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1955</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">1955</span>
+</pre></div>
+</div>
+<p>Reset the model again.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">reset_external_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">1955</span>
+</pre></div>
+</div>
+<p>Reset one more time.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2019</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Model.step">
+<code class="descname">step</code><span class="sig-paren">(</span><em>n=1</em>, <em>to_end=False</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Model.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate the model <strong>n</strong> steps.</p>
+<p>Simulate the model, either one step (default), or <code class="docutils literal notranslate"><span class="pre">n</span></code> steps,
+or until the model’s end.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>n</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of steps to advance. The default is 1, one step at a time.</li>
+<li><strong>to_end</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, simulate the model until its end time</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">None</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">MinnetonkaError</span></code> – If <code class="docutils literal notranslate"><span class="pre">to_end</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> but the model has no end time.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>A model can simulate one step at a time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2020</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2021</span>
+</pre></div>
+</div>
+<p>A model can simulate several steps at a time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m2</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m2</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m2</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2029</span>
+</pre></div>
+</div>
+<p>A model can simulate until the end:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m3</span> <span class="o">=</span> <span class="n">model</span><span class="p">([</span><span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)],</span> <span class="n">end_time</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m3</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">to_end</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m3</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2039</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Model.variable">
+<code class="descname">variable</code><span class="sig-paren">(</span><em>variable_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Model.variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a single variable from the model, by name.</p>
+<p>Return a single variable—or stock or constant or accum or previous—
+from the model, by providing the variable’s name.</p>
+<p>A variable is typically accessed from a model by subscription, like a
+dictionary value from a dictionary, e.g. <code class="docutils literal notranslate"><span class="pre">modl['var']</span></code>. The
+subscription syntax is syntactic sugar for <a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">variable()</span></code></a>.</p>
+<p>Note that <a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">variable()</span></code></a> returns a variable object, not the current
+amount of the variable. To find the variable’s current amount
+in a particular treatment, use a further subscription with the
+treatment name, e.g. <code class="docutils literal notranslate"><span class="pre">modl['var']['']</span></code>. See examples below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>variable_name</strong> (<em>str</em>) – The name of the variable. The variable might be a plain variable,
+a stock, an accum, a constant, or any of the variable-like objects
+known by the model.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Variable</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">newly-defined variable with name <code class="docutils literal notranslate"><span class="pre">variable_name</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">MinnetonkaError</span></code> – If no variable named <code class="docutils literal notranslate"><span class="pre">variable_name</span></code> exists in the model</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Create a model <strong>m</strong> with three variables, and only the default
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Earnings&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">c</span><span class="p">,</span> <span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Find the variable <strong>Cost</strong> …</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">)</span>
+<span class="go">variable(&#39;Cost&#39;)</span>
+</pre></div>
+</div>
+<p>… or use subscription syntax to do the same thing</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Cost&#39;</span><span class="p">]</span>
+<span class="go">variable(&#39;Cost&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Cost&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;Cost&#39;</span><span class="p">]</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Find the current amount of <strong>Cost</strong> in the default treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;Cost&#39;</span><span class="p">][</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">10</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Variable">
+<em class="property">class </em><code class="descname">Variable</code><a class="headerlink" href="#minnetonka.minnetonka.Variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>A variable whose amount is calculated from amounts of other variables.</p>
+<p>A variable has a value—called an ‘amount’—that changes over simulated
+time. A single
+variable can take a different amount in each model treatment. The amount
+of a variable can be any Python object. A variable can be defined in terms
+of the amounts of other variables.</p>
+<p>A variable differs from other variable-like objects (e.g.
+stocks) in that it keeps no state. Its amount depends entirely on its
+definition, and the amounts of other variables used in the definition.</p>
+<p>A single variable can take a different amount in each model treatment.
+The amount of a variable in a particular treatmant can be found using
+subscription brackets, e.g. <strong>Earnings[‘as is’]</strong>. See examples below.</p>
+<p>The amount of a variable can be changed explicitly, outside the model
+logic, e.g. <strong>Earnings[‘as is’] = 2.1</strong>. Once changed explicitly,
+the amount of
+the variable never changes again, until the simulation is reset or
+the amount is changed again explicitly. See examples below.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.variable" title="minnetonka.minnetonka.variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">variable</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a></dt>
+<dd>a variable that does not vary</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Find the current amount of the variable <strong>Earnings</strong>, in the <strong>as is</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">2.0</span>
+</pre></div>
+</div>
+<p>Change the current amount of the variable <strong>Earnings</strong> in the <strong>as is</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.1</span>
+</pre></div>
+</div>
+<p>Show everything important about the variable <strong>Earnings</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Variable: Earnings</span>
+<span class="go">Amounts: {&#39;as is&#39;: 2.1, &#39;To be&#39;: 4.0}</span>
+<span class="go">Definition: Earnings = variable(&#39;Earnings&#39;, lambda r, c: r - c, &#39;Revenue&#39;, &#39;Cost&#39;)</span>
+<span class="go">Depends on: [&#39;Revenue&#39;, &#39;Cost&#39;]</span>
+<span class="go">[Variable(&#39;Revenue&#39;), Variable(&#39;Cost&#39;)]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="minnetonka.minnetonka.Variable.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>treatment_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Variable.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current amount of the variable in the treatment with
+the name <strong>treatment_name</strong>.</p>
+<p class="rubric">Example</p>
+<p>Find the current amount of the variable <strong>Earnings</strong>, in the <strong>as is</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">2.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Variable.__setitem__">
+<code class="descname">__setitem__</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>amount</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Variable.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the current amount of the variable in the treatment with the
+name <strong>treatment_name</strong>.</p>
+<p class="rubric">Examples</p>
+<p>Change the current amount of the variable <strong>Earnings</strong> in the <strong>as is</strong>
+treatment to <strong>2.1</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.1</span>
+</pre></div>
+</div>
+<p>Change the current amount of the variable <strong>Taxes</strong> in all treatments
+at once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="p">[</span><span class="s1">&#39;__all__&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Variable.all">
+<code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Variable.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of all current amounts, one for each treatment.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="go">{&#39;as is&#39;: 2.1, &#39;to be&#39;: 4.0}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Variable.history">
+<code class="descname">history</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>step</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Variable.history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the amount at a past timestep for a particular treatment.</p>
+<p>Minnetonka tracks the past amounts of a variable
+over the course of a single simulation run,
+accessible with this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatment_name</strong> (<em>str</em>) – the name of some treatment defined in the model</li>
+<li><strong>step</strong> (<em>int</em>) – the step number in the past</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Create a model with a single variable RandomVariable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">RandomValue</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="s1">&#39;RandomValue&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">0.4292118957243861</span>
+</pre></div>
+</div>
+<p>Advance the simulation. RandomVariable changes value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">0.39110555756064735</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">0.23809270739004534</span>
+</pre></div>
+</div>
+<p>Find the old values of RandomVarable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">0.4292118957243861</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RandomValue</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">0.39110555756064735</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Variable.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Variable.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show everything important about the variable.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Earnings</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Variable: Earnings</span>
+<span class="go">Amounts: {&#39;as is&#39;: 2.1, &#39;To be&#39;: 4.0}</span>
+<span class="go">Definition: Earnings = variable(&#39;Earnings&#39;, lambda r, c: r - c, &#39;Revenue&#39;, &#39;Cost&#39;)</span>
+<span class="go">Depends on: [&#39;Revenue&#39;, &#39;Cost&#39;]</span>
+<span class="go">[Variable(&#39;Revenue&#39;), Variable(&#39;Cost&#39;)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Constant">
+<em class="property">class </em><code class="descname">Constant</code><a class="headerlink" href="#minnetonka.minnetonka.Constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>A constant, whose amount does not change.</p>
+<p>A constant is similar to a variable except that its amount does not vary.
+Its amount is set on
+initialization, and then does not change over the course of the
+simulation. When the model is reset, the constant can take a
+new amount.</p>
+<p>The amount of a constant can be any Python object, except a string or
+a Python callable. It can be defined in terms of other variables,
+using a callable in the definition.</p>
+<p>A single constant can take a different amount in each
+model treatment. The amount of a constant in a particular treatment
+can be found using the subscription brackets, e.g. <strong>InterestRate[‘to be’]</strong>.
+See examples below.</p>
+<p>The amount of a constant can be changed explicitly, outside the model
+logic, e.g. <strong>InterestRate[‘to be’] = 0.07</strong>. Once changed, the amount of
+the constant remains the same, until the model is reset
+or the amount is again changed explicitly. See examples below.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.constant" title="minnetonka.minnetonka.constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">constant</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a></dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dt>
+<dd>a variable whose amount might vary</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Find the current amount of the constant <strong>InterestRate</strong>, in the <strong>to be</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">0.08</span>
+</pre></div>
+</div>
+<p>Change the current amount of the constant <strong>InterestRate</strong> in the <strong>to be</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.075</span>
+</pre></div>
+</div>
+<p>Show everything important about the constant <strong>InterestRate</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Constant: InterestRate</span>
+<span class="go">Amounts: {&#39;as is&#39;: 0.09, &#39;to be&#39;: 0.075}</span>
+<span class="go">Definition: PerTreatment({&quot;as is&quot;: 0.09, &quot;to be&quot;: 0.08})</span>
+<span class="go">Depends on: []</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="minnetonka.minnetonka.Constant.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>treatment_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Constant.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current amount of the constant in the treatment with
+the name <strong>treatment_name</strong>.</p>
+<p class="rubric">Example</p>
+<p>Find the current amount of the constant <strong>InterestRate</strong>, in the <strong>to be</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">0.08</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Constant.__setitem__">
+<code class="descname">__setitem__</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>amount</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Constant.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the current amount of the variable in the treatment with the
+name <strong>treatment_name</strong>.</p>
+<p class="rubric">Examples</p>
+<p>Change the current amount of the constant <strong>InterestRate</strong> in the <strong>to be</strong>
+treatment to <strong>0.075</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.075</span>
+</pre></div>
+</div>
+<p>Change the current amount of the constant <strong>InterestRate</strong> in all treatments
+at once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;__all__&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.06</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Constant.all">
+<code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Constant.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of all current amounts, one for each treatment.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="go">{&#39;as is&#39;: 0.09, &#39;to be&#39;: 0.08}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Constant.history">
+<code class="descname">history</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>step</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Constant.history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the amount at a past timestep for a particular treatment.</p>
+<p>Minnetonka tracks the past amounts of a constant
+over the course of a single simulation run,
+accessible with this function.  Of course, constants do not change
+value, except by explicit setting, outside of model logic. So
+<strong>history()</strong> serves to return the history of those extra-model
+changes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatment_name</strong> (<em>str</em>) – the name of some treatment defined in the model</li>
+<li><strong>step</strong> (<em>int</em>) – the step number in the past</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Create a model with a single constant InterestRate.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">,</span> <span class="s1">&#39;to be&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">InterestRate</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;InterestRate&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">PerTreatment</span><span class="p">({</span><span class="s2">&quot;as is&quot;</span><span class="p">:</span> <span class="mf">0.09</span><span class="p">,</span> <span class="s2">&quot;to be&quot;</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">}))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">0.08</span>
+</pre></div>
+</div>
+<p>Advance the simulation. InterestRate stays the same</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">0.08</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">0.08</span>
+</pre></div>
+</div>
+<p>Change the amount of InterestRate explicitly.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.075</span>
+</pre></div>
+</div>
+<p>Find the old values of RandomVarable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;to be&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">0.08</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;to be&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">0.08</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;to be&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">0.075</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Constant.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Constant.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show everything important about the constant.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">InterestRate</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Constant: InterestRate</span>
+<span class="go">Amounts: {&#39;as is&#39;: 0.09, &#39;to be&#39;: 0.075}</span>
+<span class="go">Definition: PerTreatment({&quot;as is&quot;: 0.09, &quot;to be&quot;: 0.08})</span>
+<span class="go">Depends on: []</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Previous">
+<em class="property">class </em><code class="descname">Previous</code><a class="headerlink" href="#minnetonka.minnetonka.Previous" title="Permalink to this definition">¶</a></dt>
+<dd><p>A previous.</p>
+<p>A previous is a variable whose amount is that of some other variable in
+the prior timestep. A previous allows a reach into the past from within
+the model.</p>
+<p>If the model in which the previous lives has multiple treatments, and its
+prior has a different amount for each treatment, so will the previous.
+The amount of the previous in a particular treatment can be accessed
+using subscription brackets, e.g. <strong>YesterdaySales[‘as is’]</strong>.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.previous" title="minnetonka.minnetonka.previous"><code class="xref py py-class docutils literal notranslate"><span class="pre">previous</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Previous" title="minnetonka.minnetonka.Previous"><code class="xref py py-class docutils literal notranslate"><span class="pre">Previous</span></code></a></dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dt>
+<dd>a variable whose amount is calculated from other vars</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Find yesterday’s sales, when the timestep is one day.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">YesterdaySales</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">13</span>
+</pre></div>
+</div>
+<p>Show everything important about the previous <strong>YesterdaySales</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">YesterdaySales</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Previous: YesterdaySales</span>
+<span class="go">Amounts: {&#39;as is&#39;: 13, &#39;to be&#39;: 9}</span>
+<span class="go">Previous variable: Sales</span>
+<span class="go">[variable(&#39;Sales&#39;)]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="minnetonka.minnetonka.Previous.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>treatment_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Previous.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current amount of the previous in the treatment with
+the name <strong>treatment_name</strong>.</p>
+<p class="rubric">Example</p>
+<p>Find the current amount of the variable <strong>PriorEarnings</strong>, in the
+<strong>as is</strong> treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PriorEarnings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">1.9</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Previous.all">
+<code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Previous.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of all current amounts, one for each treatment.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PreviousEarnings</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="go">{&#39;as is&#39;: 1.9, &#39;to be&#39;: 2.4}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Previous.history">
+<code class="descname">history</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>step</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Previous.history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the amount at a past timestep for a particular treatment.</p>
+<p>Minnetonka tracks the past amounts of a previous
+over the course of a single simulation run,
+accessible with this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatment_name</strong> (<em>str</em>) – the name of some treatment defined in the model</li>
+<li><strong>step</strong> (<em>int</em>) – the step number in the past</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Create a model with a stock <strong>Year</strong>, and a previous <strong>LastYear</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">Year</span> <span class="o">=</span> <span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">LastYear</span> <span class="o">=</span> <span class="n">previous</span><span class="p">(</span><span class="s1">&#39;LastYear&#39;</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Advance the simulation ten years.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Find the value of both <strong>Year</strong> and <strong>LastYear</strong> in year 5.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="go">2024</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LastYear</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="go">2023</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Previous.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Previous.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show everything important about the previous.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">YesterdaySales</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Previous: YesterdaySales</span>
+<span class="go">Amounts: {&#39;as is&#39;: 13, &#39;to be&#39;: 9}</span>
+<span class="go">Previous variable: Sales</span>
+<span class="go">[variable(&#39;Sales&#39;)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Stock">
+<em class="property">class </em><code class="descname">Stock</code><a class="headerlink" href="#minnetonka.minnetonka.Stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>A system dynamics stock.</p>
+<p>In <a class="reference external" href="https://en.wikipedia.org/wiki/System_dynamics">system dynamics</a>,
+a stock is used to model something that accumulates or depletes over
+time.</p>
+<p>At any simulated period, the stock has an amount. The amount changes
+over time, incrementing or decrementing at each timestep. The amount
+can be a simple numeric like a Python integer or a Python float.
+Or it might be some more complex Python object: a list,
+a tuple, a numpy array, or an instance of a user-defined class. In
+any case, the stock’s amount must support addition and multiplication.
+(Addition and multiplication are supported
+for dicts, tuples, and named tuples via <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a>.)</p>
+<p>If the model in which the stock lives has multiple treatments,
+the stock may have several amounts, one for each treatment. The amount of
+a stock in a particular treatment can be accessed using subscription
+brackets, e.g. <strong>Savings[‘to be’]</strong>.</p>
+<p>The amount of a stock in a treatment can be changed explicitly, outside
+the model logic, e.g. <strong>Savings[‘to be’] = 16000</strong>. Once changed explicitly,
+the amount of the stock never changes again (in that treatment),
+until the simulation is reset or the amount is changed again explicitly.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.stock" title="minnetonka.minnetonka.stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">stock</span></code></a></dt>
+<dd>Create a <a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stock</span></code></a></dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dt>
+<dd>a variable whose amount is calculated from other vars</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a></dt>
+<dd>a variable that does not vary</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Previous" title="minnetonka.minnetonka.Previous"><code class="xref py py-class docutils literal notranslate"><span class="pre">Previous</span></code></a></dt>
+<dd>a variable that has the previous amount of some other variable</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Accum" title="minnetonka.minnetonka.Accum"><code class="xref py py-class docutils literal notranslate"><span class="pre">Accum</span></code></a></dt>
+<dd>a stock-like variable that uses current amounts</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Find the current amount of the stock <strong>Savings</strong>, in the <strong>to be</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span>
+<span class="go">16288.94</span>
+</pre></div>
+</div>
+<p>Change the current amount of the stock <strong>Savings</strong> in the <strong>to be</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="p">[</span><span class="s1">&#39;to be&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16000</span>
+</pre></div>
+</div>
+<p>Show everything important about the stock <strong>Savings</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Stock: Savings</span>
+<span class="go">Amounts: {&#39;as is&#39;: 14802.442849183435, &#39;to be&#39;: 16000}</span>
+<span class="go">Initial definition: 10000.0</span>
+<span class="go">Initial depends on: []</span>
+<span class="go">Incremental definition: Savings = stock(&#39;Savings&#39;, lambda i: i, (&#39;Interest&#39;,), 10000.0)</span>
+<span class="go">Incremental depends on: [&#39;Interest&#39;]</span>
+<span class="go">[variable(&#39;Interest&#39;)]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="minnetonka.minnetonka.Stock.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>treatment_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Stock.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current amount of the stock in the treatment with
+the name <strong>treatment_name</strong>.</p>
+<p class="rubric">Example</p>
+<p>Find the current amount of the stock <strong>Savings</strong>, in the <strong>as is</strong>
+treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">14802.442849183435</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Stock.__setitem__">
+<code class="descname">__setitem__</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>amount</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Stock.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the current amount of the stock in the treatment with the
+name <strong>treatment_name</strong>.</p>
+<p class="rubric">Examples</p>
+<p>Change the current amount of the stock <strong>Savings</strong> in the <strong>as is</strong>
+treatment to <strong>2.1</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">14000</span>
+</pre></div>
+</div>
+<p>Change the current amount of the stock <strong>Taxes</strong> in all treatments
+at once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="p">[</span><span class="s1">&#39;__all__&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Stock.all">
+<code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Stock.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of all current amounts, one for each treatment.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="go">{&#39;as is&#39;: 14090, &#39;to be&#39;: 16000}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Stock.history">
+<code class="descname">history</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>step</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Stock.history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the amount at a past timestep for a particular treatment.</p>
+<p>Minnetonka tracks the past amounts of a stock
+over the course of a single simulation run,
+accessible with this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatment_name</strong> (<em>str</em>) – the name of some treatment defined in the model</li>
+<li><strong>step</strong> (<em>int</em>) – the step number in the past</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Create a model with a single stock <strong>Year</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">()</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">Year</span> <span class="o">=</span> <span class="n">stock</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2019</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2019</span>
+</pre></div>
+</div>
+<p>Advance the simulation. <strong>Year</strong> changes value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2020</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span>
+<span class="go">2021</span>
+</pre></div>
+</div>
+<p>Find the old values of <strong>Year</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">2019</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Year</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">2020</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Stock.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Stock.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show everything important about the stock.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Savings</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Stock: Savings</span>
+<span class="go">Amounts: {&#39;as is&#39;: 14802.442849183435, &#39;to be&#39;: 16000}</span>
+<span class="go">Initial definition: 10000.0</span>
+<span class="go">Initial depends on: []</span>
+<span class="go">Incremental definition: Savings = stock(&#39;Savings&#39;, lambda i: i, (&#39;Interest&#39;,), 10000.0)</span>
+<span class="go">Incremental depends on: [&#39;Interest&#39;]</span>
+<span class="go">[variable(&#39;Interest&#39;)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.Accum">
+<em class="property">class </em><code class="descname">Accum</code><a class="headerlink" href="#minnetonka.minnetonka.Accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>A stock-like incrementer, with a couple of differences from a stock.</p>
+<p>An accum is much like a <a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stock</span></code></a>, modeling something that
+accumulates or depletes over time. Like a stock, an accum defines
+both an initial amount and an increment.</p>
+<p>There is an important difference between a stock and an accum: an accum
+is incremented with the current amounts
+of its dependencies, not the amounts in the last period.
+This seemingly minor difference has a big impact: a circular dependency
+can be created with a stock, but not with an accum. The stock
+<strong>Savings</strong> can depend on <strong>Interest</strong>, which depends in turn on
+<strong>Savings</strong>. But this only works if <strong>Savings</strong> is a stock. If
+<strong>Savings</strong> is an accum, the same circular dependency is a model error.</p>
+<p>At any simulated period, the accum has an amount. The amount changes
+over time, incrementing or decrementing at each period. The amount
+can be a simple numeric like a Python integer or a Python float.
+Or it might be some more complex Python object: a list,
+a tuple, a numpy array, or an instance of a user-defined class. In
+any case, the accum’s amount must support addition.
+(Addition is supported
+for dicts, tuples, and named tuples via <a class="reference internal" href="#minnetonka.minnetonka.foreach" title="minnetonka.minnetonka.foreach"><code class="xref py py-func docutils literal notranslate"><span class="pre">foreach()</span></code></a>.)</p>
+<p>If the model in which the accum lives has multiple treatments, the
+accum may have several amounts, one for each treatment in the model. The
+amount of an accum in a particular treatment can be accessed using
+subscription brackets, e.g. <strong>RevenueYearToDate[‘as is’]</strong>.</p>
+<p>The amount of an accum in a treatment can be changed explicitly, outside
+the model logic, e.g. <strong>RevenueYearToDate[‘as is’] = 1000</strong>.
+Once changed explicitly,
+the amount of the accum never changes again (in that treatment),
+until the simulation is reset or the amount is changed again explicitly.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="#minnetonka.minnetonka.accum" title="minnetonka.minnetonka.accum"><code class="xref py py-class docutils literal notranslate"><span class="pre">accum</span></code></a></dt>
+<dd>Create an <a class="reference internal" href="#minnetonka.minnetonka.Accum" title="minnetonka.minnetonka.Accum"><code class="xref py py-class docutils literal notranslate"><span class="pre">Accum</span></code></a></dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Stock" title="minnetonka.minnetonka.Stock"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stock</span></code></a></dt>
+<dd>a system dynamics stock</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Variable" title="minnetonka.minnetonka.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></dt>
+<dd>a variable whose amount is calculated from other vars</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Constant" title="minnetonka.minnetonka.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a></dt>
+<dd>a variable that does not vary</dd>
+<dt><a class="reference internal" href="#minnetonka.minnetonka.Previous" title="minnetonka.minnetonka.Previous"><code class="xref py py-class docutils literal notranslate"><span class="pre">Previous</span></code></a></dt>
+<dd>a variable that has the previous amount of some other variable</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Find the current amount of the accum <strong>RevenueYearToDate</strong> in the
+<strong>cautious</strong> treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;cautious&#39;</span><span class="p">]</span>
+<span class="go">224014.87326935912</span>
+</pre></div>
+</div>
+<p>Change the current amount of the accum <strong>RevenueYearToDate</strong> in the
+<strong>cautious</strong> treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;cautious&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200000</span>
+</pre></div>
+</div>
+<p>Show everything important about the accum <strong>RevenueYearToDate</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Accum: RevenueYearToDate</span>
+<span class="go">Amounts: {&#39;as is&#39;: 186679.06105779926, &#39;cautious&#39;: 200000, &#39;aggressive&#39;: 633395.3052889963}</span>
+<span class="go">Initial definition: 0</span>
+<span class="go">Initial depends on: []</span>
+<span class="go">Incremental definition: RevenueYearToDate = accum(&#39;RevenueYearToDate&#39;, lambda x: x, (&#39;Revenue&#39;,), 0)</span>
+<span class="go">Incremental depends on: [&#39;Revenue&#39;]</span>
+<span class="go">[variable(&#39;Revenue&#39;)]</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="minnetonka.minnetonka.Accum.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>treatment_name</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Accum.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current amount of the accum in the treatment with
+the name <strong>treatment_name</strong>.</p>
+<p class="rubric">Example</p>
+<p>Find the current amount of the accum <strong>RevenueYearToDate</strong>,
+in the <strong>as is</strong> treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span>
+<span class="go">186679.06105779926</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Accum.__setitem__">
+<code class="descname">__setitem__</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>amount</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Accum.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the current amount of the accum in the treatment with the
+name <strong>treatment_name</strong>.</p>
+<p class="rubric">Examples</p>
+<p>Change the current amount of the accum <strong>RevenueYearToDate</strong>
+in the <strong>as is</strong> treatment to <strong>2.1</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">190000</span>
+</pre></div>
+</div>
+<p>Change the current amount of the accum <strong>RevenueYearToDate</strong>
+in all treatments at once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;__all__&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Accum.all">
+<code class="descname">all</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Accum.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict of all current amounts, one for each treatment.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="go">{&#39;as is&#39;: 186679.06105779926,</span>
+<span class="go"> &#39;cautious&#39;: 224014.87326935912,</span>
+<span class="go"> &#39;aggressive&#39;: 633395.3052889963}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Accum.history">
+<code class="descname">history</code><span class="sig-paren">(</span><em>treatment_name</em>, <em>step</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Accum.history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the amount at a past timestep for a particular treatment.</p>
+<p>Minnetonka tracks the past amounts of an accum
+over the course of a single simulation run,
+accessible with this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>treatment_name</strong> (<em>str</em>) – the name of some treatment defined in the model</li>
+<li><strong>step</strong> (<em>int</em>) – the step number in the past</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Create a model with an accum and three treatments</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">model</span><span class="p">(</span><span class="n">treatments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;as is&#39;</span><span class="p">,</span> <span class="s1">&#39;cautious&#39;</span><span class="p">,</span> <span class="s1">&#39;aggressive&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">m</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">RevenueYearToDate</span> <span class="o">=</span> <span class="n">accum</span><span class="p">(</span><span class="s1">&#39;RevenueYearToDate&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">Revenue</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Revenue&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="k">lambda</span> <span class="n">lst</span><span class="p">,</span> <span class="n">mst</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">lst</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">mst</span> <span class="o">-</span> <span class="n">lst</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="s1">&#39;Least&#39;</span><span class="p">,</span> <span class="s1">&#39;Most&#39;</span><span class="p">,</span> <span class="s1">&#39;Weather&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">Weather</span> <span class="o">=</span> <span class="n">variable</span><span class="p">(</span><span class="s1">&#39;Weather&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="k">lambda</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+<span class="gp">... </span>    <span class="n">Least</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Least&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">PerTreatment</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="p">{</span><span class="s1">&#39;as is&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;cautious&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;aggressive&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">100000</span><span class="p">}))</span>
+<span class="gp">... </span>    <span class="n">Most</span> <span class="o">=</span> <span class="n">constant</span><span class="p">(</span><span class="s1">&#39;Most&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">PerTreatment</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="p">{</span><span class="s1">&#39;as is&#39;</span><span class="p">:</span> <span class="mi">100000</span><span class="p">,</span> <span class="s1">&#39;cautious&#39;</span><span class="p">:</span> <span class="mi">120000</span><span class="p">,</span>
+<span class="gp">... </span>             <span class="s1">&#39;aggressive&#39;</span><span class="p">:</span> <span class="mi">400000</span><span class="p">}))</span>
+</pre></div>
+</div>
+<p>Advance the simulation. <strong>RevenueYearToDate</strong> changes value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;aggressive&#39;</span><span class="p">]</span>
+<span class="go">240076.8319119932</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;aggressive&#39;</span><span class="p">]</span>
+<span class="go">440712.80369068065</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="p">[</span><span class="s1">&#39;aggressive&#39;</span><span class="p">]</span>
+<span class="go">633395.3052889963</span>
+</pre></div>
+</div>
+<p>Find the old values of <strong>RevenueYearToDate</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;aggressive&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">240076.8319119932</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="s1">&#39;aggressive&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">440712.80369068065</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="minnetonka.minnetonka.Accum.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.Accum.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show everything important about the accum.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RevenueYearToDate</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">Accum: RevenueYearToDate</span>
+<span class="go">Amounts: {&#39;as is&#39;: 186679.06105779926, &#39;cautious&#39;: 200000, &#39;aggressive&#39;: 633395.3052889963}</span>
+<span class="go">Initial definition: 0</span>
+<span class="go">Initial depends on: []</span>
+<span class="go">Incremental definition: RevenueYearToDate = accum(&#39;RevenueYearToDate&#39;, lambda x: x, (&#39;Revenue&#39;,), 0)</span>
+<span class="go">Incremental depends on: [&#39;Revenue&#39;]</span>
+<span class="go">[variable(&#39;Revenue&#39;)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="minnetonka.minnetonka.PerTreatment">
+<em class="property">class </em><code class="descname">PerTreatment</code><span class="sig-paren">(</span><em>treatments_and_amounts</em><span class="sig-paren">)</span><a class="headerlink" href="#minnetonka.minnetonka.PerTreatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify different amounts for each treatment.</p>
+<p>A variable’s amount can be any Python object, except a string or a callable.
+But how to indicate that the amount differs across the treatments? Use this
+class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>treatments_and_amounts</strong> (<em>dict</em>) – The keys of the dict are treatment names and the value are amounts</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Create a constant whose amount differs by treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;KitchenOpens&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">PerTreatment</span><span class="p">({</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="mf">17.0</span><span class="p">,</span> <span class="s1">&#39;Open early&#39;</span><span class="p">:</span> <span class="mf">15.5</span><span class="p">}))</span>
+</pre></div>
+</div>
+<p>Create a variable whose amount is calculated from different expressions
+in each treatment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">variable</span><span class="p">(</span><span class="s1">&#39;KitchenCloses&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">PerTreatment</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="p">{</span><span class="s1">&#39;As is&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">lst</span><span class="p">:</span> <span class="n">lst</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span>
+<span class="gp">... </span>         <span class="s1">&#39;Open early&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">lst</span><span class="p">:</span> <span class="n">lst</span><span class="p">}),</span>
+<span class="gp">... </span>    <span class="s1">&#39;LastCustomerOrders&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Minnetonka</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Hanging Steel Productions LLC.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
