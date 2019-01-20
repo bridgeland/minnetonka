@@ -63,7 +63,7 @@ Getting Started
 ===============
 
 - `Building a model in Minnetonka <building_model.html>`__
-- `API reference <docs/_build/html/index.html>`__
+- `API reference <https://bridgeland.github.io/minnetonka/>`__
 
 Installation
 ============
