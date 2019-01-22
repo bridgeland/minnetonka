@@ -1,25 +1,18 @@
 """setup.py: setuptools setup for minnetonka"""
 
+import os
+from setuptools import setup 
 
-from setuptools import setup, find_packages
 
-def read(*filenames, **kwargs):
-    encoding = kwargs.get('encoding', 'utf-8')
-    sep = kwargs.get('sep', '\n')
-    buf = []
-    for filename in filenames:
-        with io.open(filename, encoding=encoding) as f:
-            buf.append(f.read())
-    return sep.join(buf)
-
-long_description = read('README.txt')
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
 	name="minnetonka",
 	version=minnetonka.__version__,
 	packages=['minnetonka', 'minnetonka.test'],
 	description="A Python package for business modeling and simulation",
-	long_description=long_description,
+	long_description=read('README'),
     author='David Bridgeland',
     author_email='dave@hangingsteel.com',
     python_requires='>=3.6',
