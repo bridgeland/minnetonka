@@ -21,6 +21,7 @@ setup(
         'numpy>=1.15.2',
         'scipy>=1.1.0'
         ],
+    url='https://github.com/bridgeland/minnetonka',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: Apache License, Version 2.0 (Apache-2.0)'
