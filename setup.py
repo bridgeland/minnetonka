@@ -10,7 +10,7 @@ def read(fname):
 setup(
 	name="minnetonka",
 	version='0.0.1',
-	packages=['minnetonka', 'minnetonka.test'],
+    py_modules=['minnetonka', 'minnetonka.test'],
 	description="A Python package for business modeling and simulation",
 	long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
