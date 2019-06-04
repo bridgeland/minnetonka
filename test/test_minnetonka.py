@@ -760,6 +760,21 @@ class StartAndEndTest(unittest.TestCase):
         self.assertEqual(err.exception.message,
                          'End time 2017 is before start time 2018')
 
+    def test_STARTTIME_and_ENDTIME(self):
+        """Test access of start and end variables."""
+        with model(start_time=2019, end_time=2022) as m:
+            Start = variable('Start', lambda md: md.STARTTIME, '__model__')
+            End = variable('End', lambda md: md.ENDTIME, '__model__')
+
+        self.assertEqual(Start[''], 2019)
+        self.assertEqual(End[''], 2022)
+        m.step()
+        self.assertEqual(Start[''], 2019)
+        self.assertEqual(End[''], 2022)
+        m.reset()
+        self.assertEqual(Start[''], 2019)
+        self.assertEqual(End[''], 2022)
+
 
 class ConstantTest(unittest.TestCase):
     """Test constants, that are initiallized and then don't change"""

@@ -91,6 +91,13 @@ class Model:
         #: example detailed in :func:`variable`
         self.TIME = start_time
 
+    @property
+    def STARTTIME(self):
+        return self._start_time
+    @property
+    def ENDTIME(self):
+        return self._end_time
+    
     def __getitem__(self, variable_name):
         """Return the named variable, supporting [] notation."""
         return self._variables.variable(variable_name)
