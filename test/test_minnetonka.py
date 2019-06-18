@@ -3593,3 +3593,50 @@ Previous variable: Interest
 """,
             [Interest])
 
+
+class ValidateAndSet(unittest.TestCase):
+    """Test Model.validate_and_set()."""
+    def test_no_validator(self):
+        """Test Model.validate_and_set() when no validator is defined."""
+        with model() as m:
+            InterestRate = constant('InterestRate', 0.04)
+        self.assertEqual(
+            m.validate_and_set('InterestRate', '', 0.05),
+            {
+                'success': True, 
+                'variable': 'InterestRate',
+                'treatment': '',
+                'amount': 0.05
+            })
+        self.assertEqual(InterestRate[''], 0.05)
+
+    def test_bad_variable(self):
+        """Test Model.validate_and_set() with a bad variable."""
+        with model() as m:
+            InterestRate = constant('InterestRate', 0.04)
+        self.assertEqual(
+            m.validate_and_set('InterestRat', '', 0.05),
+            {
+                'success': False, 
+                'variable': 'InterestRat',
+                'treatment': '',
+                'amount': 0.05,
+                'error_code': 'UnknownVariable',
+                'error_message': 'Variable InterestRat not known.',
+            })
+
+    def test_bad_treatment(self):
+        """Test Model.validate_and_set() with a bad treatment."""
+        with model(treatments=['foo']) as m:
+            InterestRate = constant('InterestRate', 0.04)
+        self.assertEqual(
+            m.validate_and_set('InterestRate', 'bar', 0.05),
+            {
+                'success': False, 
+                'variable': 'InterestRate',
+                'treatment': 'bar',
+                'amount': 0.05,
+                'error_code': 'UnknownTreatment',
+                'error_message': 'Treatment bar not known.',
+            })
+

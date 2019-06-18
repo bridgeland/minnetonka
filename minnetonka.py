@@ -262,6 +262,10 @@ class Model:
         """Return an iterator of the treatments."""
         return self._treatments.values()
 
+    def _is_valid_treatment(self, treatment):
+        """Is the treatment valid?"""
+        return treatment == '__all__' or treatment in self._treatments
+
     def treatment(self, treatment_name):
         """Return a particular treatment from the model."""
         try:
@@ -408,6 +412,21 @@ class Model:
             return self._pseudo_variable
         else:
             return self.variable(variable_name).by_treatment(treatment_name)
+
+    def validate_and_set(self, variable_name, treatment_name, new_amount):
+        """Validate the new_amount and if valid set the variable to it."""
+        res = _Result(
+            variable=variable_name, amount=new_amount, treatment=treatment_name)
+        try: 
+            var = self.variable(variable_name)
+        except MinnetonkaError:
+            return res.fail(
+                'UnknownVariable', f'Variable {variable_name} not known.')
+        if self._is_valid_treatment(treatment_name):
+            return var.validate_and_set(treatment_name, new_amount, res)
+        else:
+            return res.fail(
+                'UnknownTreatment', f'Treatment {treatment_name} not known.')
 
 
 def model(variables=[], treatments=[''], initialize=True, timestep=1, 
@@ -949,6 +968,29 @@ class CommonVariable(type):
         """Show the amounts for all the instances of the variable."""
         # maybe I should show whether it is unitary
         print('Amounts: {}\n'.format(self.all()))
+
+    def validate_and_set(self, treatment_name, new_amount, res):
+        """Validate the new_amount and if valid set the variable to it."""
+        valid, error_code, error_msg, suggested_amount = self._validate_amount(
+            new_amount)
+        if valid:
+            self.set(treatment_name, new_amount)
+            return res.succeed()
+        elif suggested_amount:
+            return res.fail(
+                error_code, error_message, suggested_amount=suggested_amount)
+        else:
+            return res.fail(error_code, error_message)
+
+    def _validate_amount(self, new_amount):
+        """Attempt to validate the amount, using all known validators."""
+        for v in self._validators:
+            valid, error_code, error_msg, suggested_amount = v.validate(
+                new_amount)
+            if not valid:
+                return valid, error_code, error_msg, suggested_amount
+        return True, None, None, None 
+
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
     """
@@ -1506,7 +1548,12 @@ def _create_variable(
     """Create a new variable of this name and with this definition."""
     calc = create_calculator(definition, depends_on_variables)
     newvar = type(variable_name, (variable_class,),
-                  {'__doc__': docstring, '_calculator': calc})
+                  {
+                    '__doc__': docstring, 
+                    '_calculator': calc, 
+                    '_validators': list()
+                  }
+            )
     Model.add_variable_to_current_context(newvar)
     return newvar
 
@@ -3544,6 +3591,26 @@ def isnamedtuple(x):
     return all(type(n)==str for n in f)
 
 #
+# Constructing results to send across network
+#
+
+class _Result:
+    def __init__(self, **kwargs):
+        self._result_in_progress = kwargs
+
+    def add(self, **kwargs):
+        self._result_in_progress = {**self._result_in_progress, **kwargs}
+
+    def fail(self, error_code, error_message, **kwargs):
+        self.add(
+            success=False, error_code=error_code, error_message=error_message,
+            **kwargs)
+        return self._result_in_progress 
+
+    def succeed(self):
+        self.add(success=True) 
+        return self._result_in_progress
+#
 # mn_namedtuple: a variant of namedtuple in which the named tuples support
 # some basic operations
 #
@@ -3691,7 +3758,6 @@ def array_graph_yx(y, XYs):
 # Errors and warnings
 #
 
-
 class MinnetonkaError(Exception):
     """An error for some problem in Minnetonka."""
 
@@ -3710,7 +3776,6 @@ class MinnetonkaWarning(Warning):
 #
 # Logging
 #
-
 
 class JsonSafeFormatter(logging.Formatter):
     """An alternative formatter, based on bit.ly/2ruBlL5."""
