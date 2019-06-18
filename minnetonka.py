@@ -788,18 +788,7 @@ class CommonVariable(type):
         Change the current amount of the variable in the treatment with the
         name **treatment_name**.
         """
-        if treatment_name == '__all__':
-            self.set_amount_all(amount)
-        elif len(self._model.treatments()) == 1:
-            self.set_amount_all(amount)
-        elif self.tary == 'unitary':
-            warnings.warn(
-                'Setting amount of unitary variable {} '.format(self.name()) +
-                'in only one treatment',
-                MinnetonkaWarning)
-            self.set_amount_all(amount)
-        else:
-            self.by_treatment(treatment_name).set_amount(amount)
+        self.set(treatment_name, amount)
 
     def __repr__(self):
         return "{}('{}')".format(self._kind().lower(), self.name())
@@ -875,6 +864,24 @@ class CommonVariable(type):
     def calculate_all_increments(self, ignore):
         """Ignore this in general. Only meaningful for stocks."""
         pass
+
+    def set(self, treatment_name, amount):
+        """
+        Change the current amount of the variable in the treatment with the name
+        **treatment_name**.
+        """
+        if treatment_name == '__all__':
+            self.set_amount_all(amount)
+        elif len(self._model.treatments()) == 1:
+            self.set_amount_all(amount)
+        elif self.tary == 'unitary':
+            warnings.warn(
+                'Setting amount of unitary variable {} '.format(self.name()) +
+                'in only one treatment',
+                MinnetonkaWarning)
+            self.set_amount_all(amount)
+        else:
+            self.by_treatment(treatment_name).set_amount(amount)
 
     def set_amount_all(self, amount):
         """Set the amount for all treatments."""
