@@ -3613,7 +3613,7 @@ class ValidateAndSet(unittest.TestCase):
     def test_bad_variable(self):
         """Test Model.validate_and_set() with a bad variable."""
         with model() as m:
-            InterestRate = constant('InterestRate', 0.04)
+            constant('InterestRate', 0.04)
         self.assertEqual(
             m.validate_and_set('InterestRat', '', 0.05),
             {
@@ -3628,7 +3628,7 @@ class ValidateAndSet(unittest.TestCase):
     def test_bad_treatment(self):
         """Test Model.validate_and_set() with a bad treatment."""
         with model(treatments=['foo']) as m:
-            InterestRate = constant('InterestRate', 0.04)
+            constant('InterestRate', 0.04)
         self.assertEqual(
             m.validate_and_set('InterestRate', 'bar', 0.05),
             {
@@ -3639,4 +3639,77 @@ class ValidateAndSet(unittest.TestCase):
                 'error_code': 'UnknownTreatment',
                 'error_message': 'Treatment bar not known.',
             })
+
+    def test_one_validator(self):
+        """Test Model.validate_and_set() with a validator defined."""
+        with model(treatments=['current', 'possible']) as m:
+            constant('InterestRate', 0.04).validator(
+                lambda amt: amt > 0,
+                "TooSmall",
+                lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
+                0.01)
+        self.assertEqual(
+            m.validate_and_set('InterestRate', '__all__', 0.05),
+            {
+                'success': True,
+                'variable': 'InterestRate',
+                'treatment': '__all__',
+                'amount': 0.05
+            })
+        self.assertEqual(
+            m.validate_and_set('InterestRate', 'possible', 0.0),
+            {
+                'success': False, 
+                'variable': 'InterestRate',
+                'treatment': 'possible',
+                'amount': 0,
+                'error_code': 'TooSmall',
+                'error_message': 'InterestRate is 0.0; must be greater than 0.',
+                'suggested_amount': 0.01
+            })
+
+    def test_two_validators(self):
+        """Test Model.validate_and_set() with two validators defined."""
+        with model(treatments=['current', 'possible']) as m:
+            constant('InterestRate', 0.04).validator(
+                lambda amt: amt > 0,
+                "TooSmall",
+                lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
+                0.01
+            ).validator(
+                lambda amt: amt <= 1.0,
+                "TooLarge",
+                lambda amt, nm: f'{nm} is {amt}; should be less than 100%.'
+            )
+        self.assertEqual(
+            m.validate_and_set('InterestRate', '__all__', 0.05),
+            {
+                'success': True,
+                'variable': 'InterestRate',
+                'treatment': '__all__',
+                'amount': 0.05
+            })
+        self.assertEqual(
+            m.validate_and_set('InterestRate', 'possible', 0.0),
+            {
+                'success': False, 
+                'variable': 'InterestRate',
+                'treatment': 'possible',
+                'amount': 0,
+                'error_code': 'TooSmall',
+                'error_message': 'InterestRate is 0.0; must be greater than 0.',
+                'suggested_amount': 0.01
+            })
+        self.assertEqual(
+            m.validate_and_set('InterestRate', 'current', 2.5),
+            {
+                'success': False, 
+                'variable': 'InterestRate',
+                'treatment': 'current',
+                'amount': 2.5,
+                'error_code': 'TooLarge',
+                'error_message': 'InterestRate is 2.5; should be less than 100%.'
+            })
+
+
 

@@ -969,6 +969,12 @@ class CommonVariable(type):
         # maybe I should show whether it is unitary
         print('Amounts: {}\n'.format(self.all()))
 
+    def validator(self, test, error_code, msg_gen, suggested_amount=None):
+        """Add validator to the common variable."""
+        self._validators.append(_Validator(
+            test, error_code, msg_gen, suggested_amount))
+        return self 
+
     def validate_and_set(self, treatment_name, new_amount, res):
         """Validate the new_amount and if valid set the variable to it."""
         valid, error_code, error_msg, suggested_amount = self._validate_amount(
@@ -978,15 +984,15 @@ class CommonVariable(type):
             return res.succeed()
         elif suggested_amount:
             return res.fail(
-                error_code, error_message, suggested_amount=suggested_amount)
+                error_code, error_msg, suggested_amount=suggested_amount)
         else:
-            return res.fail(error_code, error_message)
+            return res.fail(error_code, error_msg)
 
     def _validate_amount(self, new_amount):
         """Attempt to validate the amount, using all known validators."""
         for v in self._validators:
             valid, error_code, error_msg, suggested_amount = v.validate(
-                new_amount)
+                new_amount, self.name())
             if not valid:
                 return valid, error_code, error_msg, suggested_amount
         return True, None, None, None 
@@ -2042,6 +2048,7 @@ class Incrementer(Variable):
         """Returns whether the variable has a unitary definition."""
         return (self._initial.has_unitary_definition() and
                 self._incremental.has_unitary_definition())
+
 
 class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
     """A variable instance with internal state, that increments every step."""
@@ -3589,6 +3596,28 @@ def isnamedtuple(x):
     f = getattr(t, '_fields', None)
     if not isinstance(f, tuple): return False
     return all(type(n)==str for n in f)
+
+#
+# Validating new values
+#
+
+class _Validator:
+    """For validating proposed new value for a common variable."""
+    def __init__(self, test, error_code, error_message_gen, 
+                 suggested_amount):
+        self._test = test
+        self._error_code = error_code
+        self._error_message_gen = error_message_gen
+        self._suggested_amount = suggested_amount
+
+    def validate(self, amount, name):
+        """Is this amount valid?"""
+        if self._test(amount):
+            return True, None, None, None
+        else: 
+            return (
+                False, self._error_code, self._error_message_gen(amount, name),
+                self._suggested_amount)
 
 #
 # Constructing results to send across network
