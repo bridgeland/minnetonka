@@ -3711,5 +3711,39 @@ class ValidateAndSet(unittest.TestCase):
                 'error_message': 'InterestRate is 2.5; should be less than 100%.'
             })
 
+    def test_alternative_validator(self):
+        """Test something that implements the validate()."""
+        class _FakeValidator:
+            @classmethod
+            def validate(cls, amount, name):
+                if amount > 0:
+                    return True, None, None, None
+                else:
+                    return False, "Bad", "Really bad", None 
+
+        with model(treatments=['current', 'possible']) as m:
+            constant('InterestRate', 0.04).validator(_FakeValidator)
+
+        self.assertEqual(
+            m.validate_and_set('InterestRate', '__all__', 0.5),
+            {
+                'success': True,
+                'variable': 'InterestRate',
+                'treatment': '__all__',
+                'amount': 0.5
+            })
+
+        self.assertEqual(
+            m.validate_and_set('InterestRate', '__all__', -99),
+            {
+                'success': False,
+                'variable': 'InterestRate',
+                'treatment': '__all__',
+                'amount': -99,
+                'error_code': 'Bad',
+                'error_message': 'Really bad'
+            })
+
+
 
 

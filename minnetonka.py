@@ -969,10 +969,13 @@ class CommonVariable(type):
         # maybe I should show whether it is unitary
         print('Amounts: {}\n'.format(self.all()))
 
-    def validator(self, test, error_code, msg_gen, suggested_amount=None):
+    def validator(self, *args, **kwargs):
         """Add validator to the common variable."""
-        self._validators.append(_Validator(
-            test, error_code, msg_gen, suggested_amount))
+        if len(args) == 1:
+            validator = args[0]
+            self._validators.append(validator)
+        else:
+            self._validators.append(_Validator(*args, **kwargs))
         return self 
 
     def validate_and_set(self, treatment_name, new_amount, res):
@@ -3604,7 +3607,7 @@ def isnamedtuple(x):
 class _Validator:
     """For validating proposed new value for a common variable."""
     def __init__(self, test, error_code, error_message_gen, 
-                 suggested_amount):
+                 suggested_amount=None):
         self._test = test
         self._error_code = error_code
         self._error_message_gen = error_message_gen
