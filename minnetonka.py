@@ -550,6 +550,11 @@ def model(variables=[], treatments=[''], derived_treatments=None,
         except ValueError:
             return Treatment(spec)
 
+    derived_treatments={} if derived_treatments is None else derived_treatments
+    for dt in derived_treatments.keys():
+        if dt in treatments:
+            raise MinnetonkaError(f'Derived treatment {dt} is also a treatment')
+
     if end_time is not None and end_time < start_time:
         raise MinnetonkaError('End time {} is before start time {}'.format(
             end_time, start_time))
@@ -557,8 +562,7 @@ def model(variables=[], treatments=[''], derived_treatments=None,
     m = Model(
         {t.name: t for t in [
             _create_treatment_from_spec(spec) for spec in treatments]},
-        derived_treatments=(
-            {} if derived_treatments is None else derived_treatments),
+        derived_treatments=derived_treatments,
         timestep=timestep,
         start_time=start_time, 
         end_time=end_time)
@@ -933,6 +937,10 @@ class CommonVariable(type):
         """
         if treatment_name == '__all__':
             self.set_amount_all(amount)
+        elif self._model.derived_treatment_exists(treatment_name):
+            raise MinnetonkaError(
+                'Cannot set {} in derived treatment {}.'.format(
+                    self.name(), treatment_name))
         elif len(self._model.treatments()) == 1:
             self.set_amount_all(amount)
         elif self.tary == 'unitary':

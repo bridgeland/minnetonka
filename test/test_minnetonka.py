@@ -3752,7 +3752,7 @@ class DerivedTreatmentTest(unittest.TestCase):
         """Test simple application of derived treatment."""
         with model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at_risk': AmountBetter('possible', 'current')}
+                        'at-risk': AmountBetter('possible', 'current')}
         ) as m:
             Revenue = constant('Revenue', 
                 PerTreatment({'current': 20, 'possible': 25}))
@@ -3762,8 +3762,30 @@ class DerivedTreatmentTest(unittest.TestCase):
                 lambda r, c: r-c,
                 'Revenue', 'Cost')
 
-        self.assertEqual(Revenue['at_risk'], 5)
-        self.assertEqual(Cost['at_risk'], 1)
-        self.assertEqual(Earnings['at_risk'], 6)
+        self.assertEqual(Revenue['at-risk'], 5)
+        self.assertEqual(Cost['at-risk'], 1)
+        self.assertEqual(Earnings['at-risk'], 6)
+
+    def test_derived_treatment_name_dupes_treatment(self):
+        """Test derived treatment with name that is already treatemnt."""
+        with self.assertRaisesRegex(MinnetonkaError, 
+                'Derived treatment possible is also a treatment'):
+            model(treatments=['current', 'possible'], 
+                  derived_treatments={
+                    'possible': AmountBetter('possible', 'current')})
+
+    def test_setting_derived_treatment(self):
+        with model(treatments=['current', 'possible'], 
+                   derived_treatments={
+                        'at-risk': AmountBetter('possible', 'current')}
+        ) as m:
+            Revenue = constant('Revenue', 
+                PerTreatment({'current': 20, 'possible': 25}))
+
+        with self.assertRaisesRegex(MinnetonkaError, 
+                'Cannot set Revenue in derived treatment at-risk.'):
+            Revenue['at-risk'] = 2.7
+
+
 
 
