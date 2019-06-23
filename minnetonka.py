@@ -13,7 +13,6 @@ __status__ = "Prototype"
 
 import warnings
 import copy
-import pdb
 import collections 
 import itertools
 import logging
@@ -985,7 +984,7 @@ class CommonVariable(type):
         if valid:
             self.set(treatment_name, new_amount)
             return res.succeed()
-        elif suggested_amount:
+        elif suggested_amount is not None:
             return res.fail(
                 error_code, error_msg, suggested_amount=suggested_amount)
         else:

@@ -3719,7 +3719,7 @@ class ValidateAndSet(unittest.TestCase):
                 if amount > 0:
                     return True, None, None, None
                 else:
-                    return False, "Bad", "Really bad", None 
+                    return False, "Bad", "Really bad", 1 
 
         with model(treatments=['current', 'possible']) as m:
             constant('InterestRate', 0.04).validator(_FakeValidator)
@@ -3741,7 +3741,8 @@ class ValidateAndSet(unittest.TestCase):
                 'treatment': '__all__',
                 'amount': -99,
                 'error_code': 'Bad',
-                'error_message': 'Really bad'
+                'error_message': 'Really bad',
+                'suggested_amount': 1
             })
 
 
