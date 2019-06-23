@@ -3746,5 +3746,24 @@ class ValidateAndSet(unittest.TestCase):
             })
 
 
+class DerivedTreatmentTest(unittest.TestCase):
+    """Test derived treatments."""
+    def test_simple(self):
+        """Test simple application of derived treatment."""
+        with model(treatments=['current', 'possible'], 
+                   derived_treatments={
+                        'at_risk': AmountBetter('possible', 'current')}
+        ) as m:
+            Revenue = constant('Revenue', 
+                PerTreatment({'current': 20, 'possible': 25}))
+            Cost = constant('Cost',
+                PerTreatment({'current': 19, 'possible': 18})).scored_as_golf()
+            Earnings = variable('Earnings',
+                lambda r, c: r-c,
+                'Revenue', 'Cost')
+
+        self.assertEqual(Revenue['at_risk'], 5)
+        self.assertEqual(Cost['at_risk'], 1)
+        self.assertEqual(Earnings['at_risk'], 6)
 
 

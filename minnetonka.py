@@ -73,10 +73,11 @@ class Model:
     # is a model being defined in a context manager? which one?
     _model_context = None
 
-    def __init__(self, treatments, timestep=1, start_time=0, end_time=None):
+    def __init__(self, treatments, derived_treatments, timestep=1, 
+                 start_time=0, end_time=None):
         """Initialize the model, with treatments and optional timestep."""
-
-        self._treatments = {t.name: t for t in treatments}
+        self._treatments = treatments 
+        self._derived_treatments = derived_treatments
         # prior to m.initialize(), this is a regular dict. It is
         # converted to an OrderedDict on initialization, ordered with
         # dependent variables prior to independent variables
@@ -273,6 +274,19 @@ class Model:
             raise MinnetonkaError('Model has no treatment {}'.format(
                 treatment_name))
 
+    def derived_treatment_exists(self, treatment_name):
+        """Does the derived treatment exist on the model?"""
+        return treatment_name in self._derived_treatments
+
+    def derived_treatment(self, treatment_name):
+        """Return a particular derived treatment from the model."""
+        try:
+            return self._derived_treatments[treatment_name]
+        except KeyError:
+            raise MinnetonkaError('Model has no derived treatment {}'.format(
+                treatment_name))
+
+
     def variable(self, variable_name):
         """
         Return a single variable from the model, by name.
@@ -428,8 +442,8 @@ class Model:
                 'UnknownTreatment', f'Treatment {treatment_name} not known.')
 
 
-def model(variables=[], treatments=[''], initialize=True, timestep=1, 
-          start_time=0, end_time=None):
+def model(variables=[], treatments=[''], derived_treatments=None,
+          initialize=True, timestep=1, start_time=0, end_time=None):
     """
     Create and initialize a model, an instance of :class:`Model`
 
@@ -539,9 +553,15 @@ def model(variables=[], treatments=[''], initialize=True, timestep=1,
     if end_time is not None and end_time < start_time:
         raise MinnetonkaError('End time {} is before start time {}'.format(
             end_time, start_time))
+
     m = Model(
-        [_create_treatment_from_spec(spec) for spec in treatments], timestep,
-        start_time, end_time)
+        {t.name: t for t in [
+            _create_treatment_from_spec(spec) for spec in treatments]},
+        derived_treatments=(
+            {} if derived_treatments is None else derived_treatments),
+        timestep=timestep,
+        start_time=start_time, 
+        end_time=end_time)
     m.add_variables(*variables)
     if initialize and variables:
         m.initialize()
@@ -744,6 +764,9 @@ class ModelVariables:
             var.recalculate_all()
 
 
+#
+# Treatments and derived treatments
+#
 class Treatment:
     """A treatment applied to a model."""
 
@@ -780,11 +803,27 @@ def treatment(spec):
     """Create a new treatment, with the specification."""
     return Treatment(spec)
 
-
 def treatments(*treatment_names):
     """Create a bunch of treatments, and return them as a tuple."""
     return tuple(
         Treatment(treatment_name) for treatment_name in treatment_names)
+
+class AmountBetter:
+    """A derived treatment to calculate how much better in A vs B"""
+    def __init__(self, better_treatment, worse_treatment):
+        self._better_treatment = better_treatment
+        self._worse_treatemnt = worse_treatment
+
+    def deriver(self, is_scored_as_golf, better_amount, worse_amount):
+        """How much better is better_amount than worse_amount?"""
+        if is_scored_as_golf:
+            return worse_amount - better_amount
+        else:
+            return better_amount - worse_amount
+
+    def depends_on(self):
+        """What treatments does this amount better depend on?"""
+        return [self._better_treatment, self._worse_treatemnt]
 
 #
 # Variable classes
@@ -793,13 +832,18 @@ def treatments(*treatment_names):
 
 class CommonVariable(type):
     """The common superclass for all Minnetonka variables and variable-like things."""
-
     def __getitem__(self, treatment_name):
         """
         Retrieve the current amount of the variable in the treatment with
         the name **treatment_name**.
         """
-        return self.by_treatment(treatment_name).amount()
+        if self._treatment_exists(treatment_name):
+            return self.by_treatment(treatment_name).amount()
+        elif self._derived_treatment_exists(treatment_name):
+            return self._derived_amount(treatment_name)
+        else:
+            raise MinnetonkaError('Unknown treatment {} for variable {}'.
+                format(treament_name, self.name()))
 
     def __setitem__(self, treatment_name, amount):
         """
@@ -832,14 +876,13 @@ class CommonVariable(type):
         """Keep track of the model, for future reference."""
         self._model = model
 
+    def _treatment_exists(self, treatment_name):
+        """Does this treatment exist for this variable?"""
+        return treatment_name in self._by_treatment
+
     def by_treatment(self, treatment_name):
         """Return the variable instance associated with this treatment."""
-        try:
-            return self._by_treatment[treatment_name]
-        except (KeyError, AttributeError):
-            raise MinnetonkaError(
-                'Variable {} not initialized with treatment {}'.format(
-                    self.name(), treatment_name))
+        return self._by_treatment[treatment_name]
 
     def all_instances(self):
         """Return all the instances of this variable."""
@@ -940,6 +983,26 @@ class CommonVariable(type):
     def all(self):
         """Return a dict of all current amounts, one for each treatment."""
         return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()}
+
+    def _derived_treatment_exists(self, treatment_name):
+        """Does this derived treatment exist for this variable?"""
+        return self._model.derived_treatment_exists(treatment_name)
+
+    def _derived_amount(self, treatment_name):
+        """Treatment is known to be a derived treatment. Use it to calc amt."""
+        treatment = self._model.derived_treatment(treatment_name)
+        return treatment.deriver(
+            self._is_scored_as_golf(), 
+            *[self[d] for d in treatment.depends_on()])
+
+    def _is_scored_as_golf(self):
+        """Is this variable scored as golf, with lower scores better?"""
+        return self._scored_as_golf
+
+    def scored_as_golf(self):
+        """This variables is declared to be scored like golf."""
+        self._scored_as_golf = True 
+        return self
 
     def show(self):
         """Show everything important about the variable."""
@@ -1559,7 +1622,8 @@ def _create_variable(
                   {
                     '__doc__': docstring, 
                     '_calculator': calc, 
-                    '_validators': list()
+                    '_validators': list(),
+                    '_scored_as_golf': False 
                   }
             )
     Model.add_variable_to_current_context(newvar)
@@ -3852,3 +3916,4 @@ def initialize_logging_errors_to_console(logger):
     ch.setLevel(logging.ERROR)
     ch.setFormatter(logging.Formatter('Error: %(asctime)s - %(message)s'))
     logger.addHandler(ch)
+
