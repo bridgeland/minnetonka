@@ -86,6 +86,7 @@ class Model:
         self._timestep = timestep
         self._start_time = start_time 
         self._end_time = end_time
+        self._constraints = []
 
         #: Current time in the model, accessible in a specifier. See
         #: example detailed in :func:`variable`
@@ -363,6 +364,13 @@ class Model:
         if cls._model_context is not None:
             cls._model_context._variables_not_yet_added.append(var_object)
 
+
+    @classmethod
+    def add_constraint_to_current_context(cls, constraint):
+        """If context is currently open, add this constraint."""
+        if cls._model_context is not None:
+            cls._model_context._constraints.append(constraint)
+
     def _add_variables_and_initialize(self, *variables):
         """Add variables and initialize. The model may already be inited."""
         logging.info('enter on variables {}'.format(variables))
@@ -440,6 +448,21 @@ class Model:
         else:
             return res.fail(
                 'UnknownTreatment', f'Treatment {treatment_name} not known.')
+
+    def validate_all(self):
+        """Validate against all cross-variable constraints. Return results."""
+        errors = self._validate_errors()
+        if len(errors) == 0:
+            return {'success': True}
+        else:
+            return {'success': False, 'errors': errors}
+
+    def _validate_errors(self):
+        """Return all validation errors from all the constraints."""
+        errors = (constraint.fails(self) for constraint in self._constraints)
+        return [err for err in errors if err]
+
+
 
 
 def model(variables=[], treatments=[''], derived_treatments=None,
@@ -3692,6 +3715,38 @@ class _Validator:
             return (
                 False, self._error_code, self._error_message_gen(amount, name),
                 self._suggested_amount)
+
+
+def constraint(var_names, test, error_code, error_message_gen):
+    """Define a new constraint among variables with var_names."""
+    new_constraint = _Constraint(var_names, test, error_code, error_message_gen)
+    Model.add_constraint_to_current_context(new_constraint)
+    return new_constraint
+
+
+class _Constraint:
+    """A constraint among multiple variables, tested by Model.validate_all()."""
+    def __init__(self, var_names, test, error_code, error_message_gen):
+        self._var_names = var_names
+        self._test = test
+        self._error_code = error_code
+        self._error_message_gen = error_message_gen
+
+    def fails(self, model):
+        """Validate constraint against all treatments. Return error or None."""
+        for treatment in model.treatments():
+            amounts = [model[v][treatment.name] for v in self._var_names]
+            if not self._test(*amounts):
+                err_message = self._error_message_gen(
+                    self._var_names, amounts, treatment.name)
+                return {
+                    'error_code': self._error_code,
+                    'inconsistent_variables': self._var_names,
+                    'error_message': err_message,
+                    'treatment': treatment.name
+                }
+        return None
+
 
 #
 # Constructing results to send across network

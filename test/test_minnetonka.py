@@ -3594,7 +3594,7 @@ Previous variable: Interest
             [Interest])
 
 
-class ValidateAndSet(unittest.TestCase):
+class ValidateAndSetTest(unittest.TestCase):
     """Test Model.validate_and_set()."""
     def test_no_validator(self):
         """Test Model.validate_and_set() when no validator is defined."""
@@ -3745,6 +3745,134 @@ class ValidateAndSet(unittest.TestCase):
                 'suggested_amount': 1
             })
 
+class ValidateAllTest(unittest.TestCase):
+    """Test validate_all()."""
+    def test_nothing_to_validate(self):
+        """Test validate_all() when no constraints are defined."""
+        with model() as m:
+            constant('X7Allowed', False)
+            constant('X5Allowed', False)
+            constant('X4Allowed', False)
+
+        self.assertEqual(m.validate_all(), {'success': True})
+
+    def test_simple(self):
+        """Test validate_all() with a simple constraint."""
+        with model() as m:
+            constant('X7Allowed', False)
+            constant('X5Allowed', False)
+            X4 = constant('X4Allowed', False)
+
+            constraint(
+                ['X7Allowed', 'X5Allowed', 'X4Allowed'],
+                lambda *machines: any(machines),
+                "AtLeastOneTruthy",
+                lambda names, amounts, trt: 
+                    f'All machines are disabled: {", ".join(names)}')
+
+        self.assertEqual(
+            m.validate_all(),
+            {
+                'success': False,
+                'errors': [
+                    {
+                        'error_code': 'AtLeastOneTruthy',
+                        'inconsistent_variables': [
+                            'X7Allowed', 'X5Allowed', 'X4Allowed'],
+                        'error_message': 'All machines are disabled: X7Allowed, X5Allowed, X4Allowed',
+                        'treatment': ''
+                    }
+
+                ]
+            })
+
+        X4[''] = True
+        self.assertEqual(m.validate_all(), {'success': True})
+
+    def test_one_treatment(self):
+        """Test validate_all() that fails in one treatment only."""
+        with model(treatments=['current', 'future']) as m:
+            constant('X7Allowed', False)
+            constant('X5Allowed', False)
+            X4 = constant(
+                'X4Allowed', PerTreatment({'current': True, 'future': True}))
+
+            constraint(
+                ['X7Allowed', 'X5Allowed', 'X4Allowed'],
+                lambda *machines: any(machines),
+                "AtLeastOneTruthy",
+                lambda names, amounts, trt: 
+                    f'All machines are disabled: {", ".join(names)}')
+
+
+        self.assertEqual(m.validate_all(), {'success': True})
+        X4['future'] = False
+        self.assertEqual(
+            m.validate_all(),
+            {
+                'success': False,
+                'errors': [
+                    {
+                        'error_code': 'AtLeastOneTruthy',
+                        'inconsistent_variables': [
+                            'X7Allowed', 'X5Allowed', 'X4Allowed'],
+                        'error_message': 'All machines are disabled: X7Allowed, X5Allowed, X4Allowed',
+                        'treatment': 'future'
+                    }
+
+                ]
+            })
+
+    def test_two_constraints(self):
+        """Test validate_all() with two different constraints."""
+        with model() as m:
+            constant('X7Allowed', False)
+            X5 = constant('X5Allowed', False)
+            constant('X4Allowed', False)
+
+            constraint(
+                ['X7Allowed', 'X5Allowed', 'X4Allowed'],
+                lambda *machines: any(machines),
+                "AtLeastOneTruthy",
+                lambda names, amounts, trt: 
+                    f'All machines are disabled: {", ".join(names)}')
+
+            constant('Small', 0.4)
+            constant('Medium', 0.5)
+            Large = constant('Large', 0.05)
+
+            constraint(
+                ['Small', 'Medium', 'Large'],
+                lambda *sizes: sum(sizes) == 1.0,
+                'InvalidDistribution',
+                lambda names, amounts, treatment: 
+                    'Distribution of {} sums to {}, not 1.0, in {}'.format(
+                        ", ".join(names), round(sum(amounts), 3), treatment))
+
+        vresult = m.validate_all()
+        self.assertEqual(vresult['success'], False)
+        self.assertEqual(len(vresult['errors']), 2)
+        self.assertIn(
+            {
+                'error_code': 'AtLeastOneTruthy',
+                'inconsistent_variables': [
+                    'X7Allowed', 'X5Allowed', 'X4Allowed'],
+                'error_message': 'All machines are disabled: X7Allowed, X5Allowed, X4Allowed',
+                'treatment': ''
+            },
+            vresult['errors'])
+        self.assertIn(
+            {
+                'error_code': 'InvalidDistribution',
+                'inconsistent_variables': ['Small', 'Medium', 'Large'],
+                'error_message': 'Distribution of Small, Medium, Large sums to 0.95, not 1.0, in ',
+                'treatment': ''
+            },
+            vresult['errors'])
+
+        X5[''] = True
+        Large[''] = 0.1
+        self.assertEqual(m.validate_all(), {'success': True})
 
 class DerivedTreatmentTest(unittest.TestCase):
     """Test derived treatments."""
