@@ -3643,7 +3643,7 @@ class ValidateAndSetTest(unittest.TestCase):
     def test_one_validator(self):
         """Test Model.validate_and_set() with a validator defined."""
         with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).validator(
+            constant('InterestRate', 0.04).constraint(
                 lambda amt: amt > 0,
                 "TooSmall",
                 lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
@@ -3671,12 +3671,12 @@ class ValidateAndSetTest(unittest.TestCase):
     def test_two_validators(self):
         """Test Model.validate_and_set() with two validators defined."""
         with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).validator(
+            constant('InterestRate', 0.04).constraint(
                 lambda amt: amt > 0,
                 "TooSmall",
                 lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
                 0.01
-            ).validator(
+            ).constraint(
                 lambda amt: amt <= 1.0,
                 "TooLarge",
                 lambda amt, nm: f'{nm} is {amt}; should be less than 100%.'
@@ -3722,7 +3722,7 @@ class ValidateAndSetTest(unittest.TestCase):
                     return False, "Bad", "Really bad", 1 
 
         with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).validator(_FakeValidator)
+            constant('InterestRate', 0.04).constraint(_FakeValidator)
 
         self.assertEqual(
             m.validate_and_set('InterestRate', '__all__', 0.5),

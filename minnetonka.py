@@ -1062,7 +1062,7 @@ class CommonVariable(type):
         # maybe I should show whether it is unitary
         print('Amounts: {}\n'.format(self.all()))
 
-    def validator(self, *args, **kwargs):
+    def constraint(self, *args, **kwargs):
         """Add validator to the common variable."""
         if len(args) == 1:
             validator = args[0]
