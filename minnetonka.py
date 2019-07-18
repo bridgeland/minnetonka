@@ -1022,7 +1022,7 @@ class CommonVariable(type):
     def _derived_amount(self, treatment_name):
         """Treatment is known to be a derived treatment. Use it to calc amt."""
         treatment = self._model.derived_treatment(treatment_name)
-        if self._is_scored_as_mix():
+        if self._is_scored_as_combo():
             return self._calculator.calculate(
                 treatment_name, 
                 [self._model.variable(vname)[treatment_name] 
@@ -1039,17 +1039,6 @@ class CommonVariable(type):
     def scored_as_golf(self):
         """This variable is to be scored like golf."""
         self._scored_as_golf = True 
-        return self
-
-    def _is_scored_as_mix(self):
-        """Is this variable scored as a mix of golf and basketball?"""
-        # some dependencies are scored as golf, some dependencies scored
-        # as basketball
-        return self._scored_as_mix
-
-    def scored_as_mix(self):
-        """This variable is to be scored as a mix of golf and basketball."""
-        self._scored_as_mix = True 
         return self
 
     def show(self):
@@ -1216,6 +1205,8 @@ class SimpleVariableInstance(CommonVariableInstance):
         # ignore for_init and for_sort since behavior is the same for simple 
         #variable
         return cls._calculator.depends_on(ignore_pseudo)
+
+
 
 
 class Variable(CommonVariable):
@@ -1396,6 +1387,17 @@ class Variable(CommonVariable):
         >>> Earnings['__all__'] = 2.1
         """
         super().__setitem__(treatment_name, amount)
+
+    def _is_scored_as_combo(self):
+        """Is this variable scored as a combo of golf and basketball?"""
+        # some dependencies are scored as golf, some dependencies scored
+        # as basketball
+        return self._scored_as_combo
+
+    def scored_as_combo(self):
+        """This variable is to be scored as a combo of golf and basketball."""
+        self._scored_as_combo = True 
+        return self
 
 
 class VariableInstance(SimpleVariableInstance, metaclass=Variable):
@@ -1672,7 +1674,7 @@ def _create_variable(
                     '_calculator': calc, 
                     '_validators': list(),
                     '_scored_as_golf': False,
-                    '_scored_as_mix': False,
+                    '_scored_as_combo': False,
                   }
             )
     Model.add_variable_to_current_context(newvar)
@@ -2163,6 +2165,11 @@ class Incrementer(Variable):
         """Returns whether the variable has a unitary definition."""
         return (self._initial.has_unitary_definition() and
                 self._incremental.has_unitary_definition())
+
+    def _is_scored_as_combo(self):
+        """Is this variable scored as a combo of golf and basketball?""" 
+        # Incrementers cannot be scored as a combo because they keep state
+        return False
 
 
 class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):

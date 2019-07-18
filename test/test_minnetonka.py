@@ -3926,7 +3926,7 @@ class DerivedTreatmentTest(unittest.TestCase):
                 PerTreatment({'current': 19, 'possible': 18})).scored_as_golf()
             Summary = variable('Summary',
                 lambda r, c: {'revenue':r, 'cost':c},
-                'Revenue', 'Cost').scored_as_mix()
+                'Revenue', 'Cost').scored_as_combo()
 
         self.assertEqual(Revenue['at-risk'], 5)
         self.assertEqual(Cost['at-risk'], 1)
