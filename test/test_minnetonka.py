@@ -3914,6 +3914,29 @@ class DerivedTreatmentTest(unittest.TestCase):
                 'Cannot set Revenue in derived treatment at-risk.'):
             Revenue['at-risk'] = 2.7
 
+    def test_mix(self):
+        """Test a variable that is scored as a mix."""
+        with model(treatments=['current', 'possible'], 
+                   derived_treatments={
+                        'at-risk': AmountBetter('possible', 'current')}
+        ) as m:
+            Revenue = constant('Revenue', 
+                PerTreatment({'current': 20, 'possible': 25}))
+            Cost = constant('Cost',
+                PerTreatment({'current': 19, 'possible': 18})).scored_as_golf()
+            Summary = variable('Summary',
+                lambda r, c: {'revenue':r, 'cost':c},
+                'Revenue', 'Cost').scored_as_mix()
+
+        self.assertEqual(Revenue['at-risk'], 5)
+        self.assertEqual(Cost['at-risk'], 1)
+        self.assertEqual(Summary['at-risk'], {'revenue': 5, 'cost': 1})
+
+
+
+
+
+
 
 
 

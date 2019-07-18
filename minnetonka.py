@@ -1022,17 +1022,34 @@ class CommonVariable(type):
     def _derived_amount(self, treatment_name):
         """Treatment is known to be a derived treatment. Use it to calc amt."""
         treatment = self._model.derived_treatment(treatment_name)
-        return treatment.deriver(
-            self._is_scored_as_golf(), 
-            *[self[d] for d in treatment.depends_on()])
+        if self._is_scored_as_mix():
+            return self._calculator.calculate(
+                treatment_name, 
+                [self._model.variable(vname)[treatment_name] 
+                 for vname in self.depends_on()])
+        else:
+            return treatment.deriver(
+                self._is_scored_as_golf(), 
+                *[self[d] for d in treatment.depends_on()])
 
     def _is_scored_as_golf(self):
         """Is this variable scored as golf, with lower scores better?"""
         return self._scored_as_golf
 
     def scored_as_golf(self):
-        """This variables is declared to be scored like golf."""
+        """This variable is to be scored like golf."""
         self._scored_as_golf = True 
+        return self
+
+    def _is_scored_as_mix(self):
+        """Is this variable scored as a mix of golf and basketball?"""
+        # some dependencies are scored as golf, some dependencies scored
+        # as basketball
+        return self._scored_as_mix
+
+    def scored_as_mix(self):
+        """This variable is to be scored as a mix of golf and basketball."""
+        self._scored_as_mix = True 
         return self
 
     def show(self):
@@ -1654,7 +1671,8 @@ def _create_variable(
                     '__doc__': docstring, 
                     '_calculator': calc, 
                     '_validators': list(),
-                    '_scored_as_golf': False 
+                    '_scored_as_golf': False,
+                    '_scored_as_mix': False,
                   }
             )
     Model.add_variable_to_current_context(newvar)
