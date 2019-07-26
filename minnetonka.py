@@ -434,17 +434,22 @@ class Model:
         else:
             return self.variable(variable_name).by_treatment(treatment_name)
 
-    def validate_and_set(self, variable_name, treatment_name, new_amount):
+    def validate_and_set(self, variable_name, treatment_name, new_amount,
+                         excerpt=''):
         """Validate the new_amount and if valid set the variable to it."""
         res = _Result(
-            variable=variable_name, amount=new_amount, treatment=treatment_name)
+            variable=variable_name, 
+            amount=new_amount, 
+            treatment=treatment_name,
+            excerpt=excerpt)
         try: 
             var = self.variable(variable_name)
         except MinnetonkaError:
             return res.fail(
                 'UnknownVariable', f'Variable {variable_name} not known.')
         if self._is_valid_treatment(treatment_name):
-            return var.validate_and_set(treatment_name, new_amount, res)
+            return var.validate_and_set(
+                treatment_name, new_amount, res, excerpt)
         else:
             return res.fail(
                 'UnknownTreatment', f'Treatment {treatment_name} not known.')
@@ -1077,12 +1082,53 @@ class CommonVariable(type):
             self._validators.append(_Validator(*args, **kwargs))
         return self 
 
-    def validate_and_set(self, treatment_name, new_amount, res):
-        """Validate the new_amount and if valid set the variable to it."""
+    def validate_and_set(self, treatment_name, amount, res, excerpt):
+        """Validate the amount and if valid, make a change."""
+        if excerpt:
+            return self._validate_and_set_excerpt(
+                treatment_name, amount, res, excerpt)
+        else:
+            return self._validate_and_set(treatment_name, amount, res)
+
+    def _validate_and_set_excerpt(self, treatment_name, amount, res, excerpt):
+        """Validate the amount and if valid, set some excerpt."""
+        val, attr = self._isolate_excerpt(treatment_name, excerpt)
+        if hasattr(val, 'validate'):
+            try:
+                valid, error_code, error_msg, suggestion = val.validate(
+                    attr, amount)
+            except:
+                return res.fail(
+                    'Invalid', f'Unknown validation issue with {val}')
+            if not valid:
+                return res.fail(
+                    error_code, error_msg, suggested_amount=suggestion)
+        try:
+            setattr(val, attr, amount)
+            return res.succeed()
+        except:
+            return res.fail(
+                'Unsettable', 
+                f'Cannot set amount of {val.__class__.__name__} to {amount}')
+
+    def _isolate_excerpt(self, treatment_name, excerpt):
+        """Find the object and attribute to be validated and set."""
+        attrs = excerpt.split('.')
+        if attrs[0] == '':
+            attrs.pop(0)
+
+        val = self[treatment_name]
+        for attr in attrs[:-1]:
+            val = getattr(val, attr)
+
+        return val, attrs[-1]
+
+    def _validate_and_set(self, treatment_name, amount, res):
+        """Validate the amount and if valid set the variable to it."""
         valid, error_code, error_msg, suggested_amount = self._validate_amount(
-            new_amount)
+            amount)
         if valid:
-            self.set(treatment_name, new_amount)
+            self.set(treatment_name, amount)
             return res.succeed()
         elif suggested_amount is not None:
             return res.fail(
@@ -3778,8 +3824,10 @@ class _Constraint:
 #
 
 class _Result:
-    def __init__(self, **kwargs):
+    def __init__(self, excerpt=None, **kwargs):
         self._result_in_progress = kwargs
+        if excerpt:
+            self._result_in_progress['excerpt'] = excerpt
 
     def add(self, **kwargs):
         self._result_in_progress = {**self._result_in_progress, **kwargs}

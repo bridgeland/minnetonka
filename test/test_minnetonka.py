@@ -3745,6 +3745,149 @@ class ValidateAndSetTest(unittest.TestCase):
                 'suggested_amount': 1
             })
 
+class ValidateAndSetAttributeTest(unittest.TestCase):
+    """Test seeting and validating attributes of variables."""
+    def test_attribute_without_validator(self):
+        """Test setting an atribute without a validator."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        with model() as m:
+            Size = constant('Size', _Size(18, 16, 14))
+        self.assertEqual(Size[''].length, 18)
+        self.assertEqual(
+            m.validate_and_set('Size', '', 17, excerpt='.length'),
+            {
+                'success': True,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': '',
+                'amount': 17
+            })
+        self.assertEqual(Size[''].length, 17)
+
+    def test_valid_attribute(self):
+        """Test setting an atribute with a validator."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+            def validate(self, attr, amount):
+                return True, '', '', None
+
+        with model() as m:
+            Size = constant('Size', _Size(18, 16, 14))
+        self.assertEqual(Size[''].length, 18)
+        self.assertEqual(
+            m.validate_and_set('Size', '', 17, excerpt='.length'),
+            {
+                'success': True,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': '',
+                'amount': 17
+            })
+        self.assertEqual(Size[''].length, 17)
+
+    def test_invalid_attribute(self):
+        """Test setting an attribute that does not pass validation."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+            def validate(self, attr, amount):
+                return False, 'Bad', 'Really quite bad', None
+
+        with model() as m:
+            Size = constant('Size', _Size(18, 16, 14))
+        self.assertEqual(Size[''].length, 18)
+        self.assertEqual(
+            m.validate_and_set('Size', '', 17, excerpt='.length'),
+            {
+                'success': False,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': '',
+                'error_code': 'Bad',
+                'error_message': 'Really quite bad',
+                'suggested_amount': None,
+                'amount': 17
+
+            })
+        self.assertEqual(Size[''].length, 18)
+
+    def test_unsettable_property(self):
+        """Test setting a property that cannot be set."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self._length = length
+                self._width = width
+                self._height = height
+
+            @property
+            def length(self):
+                return self._length
+
+        with model() as m:
+            Size = constant('Size', _Size(18, 16, 14))
+        self.assertEqual(Size[''].length, 18)
+        self.assertEqual(
+            m.validate_and_set('Size', '', 17, excerpt='.length'),
+            {
+                'success': False,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': '',
+                'error_code': 'Unsettable',
+                'error_message': 'Cannot set amount of _Size to 17', 
+                'amount': 17
+
+            })
+        self.assertEqual(Size[''].length, 18)
+
+    def test_attribute_chain_without_validator(self):
+        """Test setting a chain of atributes without a validator."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        class _Measure:
+            def __init__(self, metric, customary):
+                self.metric = metric
+                self.customary = customary
+
+        class _Interval:
+            def __init__(self, begin, end):
+                self.begin = begin 
+                self.end = end 
+
+
+        with model() as m:
+            Size = constant('Size', 
+                _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
+        self.assertEqual(Size[''].length.customary.begin, 1.0)
+        self.assertEqual(
+            m.validate_and_set(
+                'Size', '', 1.3, excerpt='.length.customary.begin'),
+            {
+                'success': True,
+                'variable': 'Size',
+                'excerpt': '.length.customary.begin',
+                'treatment': '',
+                'amount': 1.3
+            })
+        self.assertEqual(Size[''].length.customary.begin, 1.3)
+
+
 class ValidateAllTest(unittest.TestCase):
     """Test validate_all()."""
     def test_nothing_to_validate(self):
