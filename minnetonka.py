@@ -1097,19 +1097,20 @@ class CommonVariable(type):
             try:
                 valid, error_code, error_msg, suggestion = val.validate(
                     attr, amount)
-            except:
+            except Exception as e:
                 return res.fail(
-                    'Invalid', f'Unknown validation issue with {val}')
+                    'Invalid', f'Validation error {str(e)} with {val}')
             if not valid:
                 return res.fail(
                     error_code, error_msg, suggested_amount=suggestion)
         try:
             setattr(val, attr, amount)
             return res.succeed()
-        except:
+        except Exception as e:
             return res.fail(
                 'Unsettable', 
-                f'Cannot set amount of {val.__class__.__name__} to {amount}')
+                'Error {} raised when setting amount of {} to {}'.format(
+                    str(e), val.__class__.__name__, amount))
 
     def _isolate_excerpt(self, treatment_name, excerpt):
         """Find the object and attribute to be validated and set."""
