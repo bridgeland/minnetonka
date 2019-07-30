@@ -1117,11 +1117,21 @@ class CommonVariable(type):
         if attrs[0] == '':
             attrs.pop(0)
 
-        val = self[treatment_name]
+        val = self._variable_value(treatment_name)
         for attr in attrs[:-1]:
             val = getattr(val, attr)
 
         return val, attrs[-1]
+
+    def _variable_value(self, treatment_name):
+        if treatment_name != '__all__':
+            return self[treatment_name]
+        elif self.tary == 'unitary':
+            for treatment in self._model.treatments():
+                return self[treatment.name]
+        else:
+            raise MinnetonkaError(
+                f'validate_and_set for {self.name()} on multiple treatments')
 
     def _validate_and_set(self, treatment_name, amount, res):
         """Validate the amount and if valid set the variable to it."""

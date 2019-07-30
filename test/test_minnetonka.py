@@ -3745,8 +3745,24 @@ class ValidateAndSetTest(unittest.TestCase):
                 'suggested_amount': 1
             })
 
+    def test_multiple_treatments(self):
+        """Test Model.validate_and_set() when with multiple treatments."""
+        with model(treatments=['current', 'imagined']) as m:
+            InterestRate = constant('InterestRate', 
+                PerTreatment({'current': 0.04, 'imagined': 0.04}))
+        self.assertEqual(
+            m.validate_and_set('InterestRate', 'current', 0.05),
+            {
+                'success': True, 
+                'variable': 'InterestRate',
+                'treatment': 'current',
+                'amount': 0.05
+            })
+        self.assertEqual(InterestRate['current'], 0.05)
+        self.assertEqual(InterestRate['imagined'], 0.04)
+
 class ValidateAndSetAttributeTest(unittest.TestCase):
-    """Test seeting and validating attributes of variables."""
+    """Test setting and validating attributes of variables."""
     def test_attribute_without_validator(self):
         """Test setting an atribute without a validator."""
         class _Size:
@@ -3768,6 +3784,53 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 'amount': 17
             })
         self.assertEqual(Size[''].length, 17)
+
+    def test_attribute_without_validator_multiple_treatments(self):
+        """Test setting attribute without validaotr in multiple treatments."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        with model(treatments=['current', 'imagined']) as m:
+            Size = constant('Size', 
+                PerTreatment(
+                    {'current': _Size(18, 16, 14),'imagined': _Size(18, 16, 14)}
+                ))
+        self.assertEqual(Size['current'].length, 18)
+        self.assertEqual(Size['imagined'].length, 18)
+        self.assertEqual(
+            m.validate_and_set('Size', 'current', 17, excerpt='.length'),
+            {
+                'success': True,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': 'current',
+                'amount': 17
+            })
+        self.assertEqual(Size['current'].length, 17)
+        self.assertEqual(Size['imagined'].length, 18)
+        with self.assertRaisesRegex(MinnetonkaError,
+                'validate_and_set for Size on multiple treatments'):
+            m.validate_and_set('Size', '__all__', 20, excerpt='.length')
+
+        with model(treatments=['current', 'imagined']) as m:
+            Size = constant('Size', _Size(18, 16, 14))
+
+        self.assertEqual(
+            m.validate_and_set('Size', '__all__', 17, excerpt='.length'),
+            {
+                'success': True,
+                'variable': 'Size',
+                'excerpt': '.length',
+                'treatment': '__all__',
+                'amount': 17
+            })
+
+        self.assertEqual(Size['current'].length, 17)
+        self.assertEqual(Size['imagined'].length, 17)
+
 
     def test_valid_attribute(self):
         """Test setting an atribute with a validator."""
