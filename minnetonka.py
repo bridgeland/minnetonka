@@ -875,7 +875,7 @@ class CommonVariable(type):
             return self._derived_amount(treatment_name)
         else:
             raise MinnetonkaError('Unknown treatment {} for variable {}'.
-                format(treament_name, self.name()))
+                format(treatment_name, self.name()))
 
     def __setitem__(self, treatment_name, amount):
         """
