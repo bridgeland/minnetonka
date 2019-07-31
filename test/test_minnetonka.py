@@ -3761,6 +3761,20 @@ class ValidateAndSetTest(unittest.TestCase):
         self.assertEqual(InterestRate['current'], 0.05)
         self.assertEqual(InterestRate['imagined'], 0.04)
 
+    def test_reset_model(self):
+        """Test change value then, then Model.reset())"""
+        with model() as m:
+            InterestRate = constant('InterestRate', 0.04)
+
+        self.assertEqual(InterestRate[''], 0.04)
+        m.validate_and_set('InterestRate', '', 0.05)
+        self.assertEqual(InterestRate[''], 0.05) 
+        m.reset(reset_external_vars=False)
+        self.assertEqual(InterestRate[''], 0.05)  
+        m.reset()
+        self.assertEqual(InterestRate[''], 0.04)
+           
+
 class ValidateAndSetAttributeTest(unittest.TestCase):
     """Test setting and validating attributes of variables."""
     def test_attribute_without_validator(self):
@@ -3933,7 +3947,6 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 self.begin = begin 
                 self.end = end 
 
-
         with model() as m:
             Size = constant('Size', 
                 _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
@@ -3949,6 +3962,25 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 'amount': 1.3
             })
         self.assertEqual(Size[''].length.customary.begin, 1.3)
+
+    def test_reset_model(self):
+        """Test change attribute, then Model.reset())"""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        with model() as m:
+            Size = constant('Size', lambda: _Size(18, 16, 14))
+
+        self.assertEqual(Size[''].length, 18)
+        m.validate_and_set('Size', '', 19, excerpt='.length')
+        self.assertEqual(Size[''].length, 19)
+        m.reset(reset_external_vars=False)
+        self.assertEqual(Size[''].length, 19)
+        m.reset()
+        self.assertEqual(Size[''].length, 18)
 
 
 class ValidateAllTest(unittest.TestCase):
@@ -4029,6 +4061,7 @@ class ValidateAllTest(unittest.TestCase):
                 ]
             })
 
+
     def test_two_constraints(self):
         """Test validate_all() with two different constraints."""
         with model() as m:
@@ -4079,6 +4112,7 @@ class ValidateAllTest(unittest.TestCase):
         X5[''] = True
         Large[''] = 0.1
         self.assertEqual(m.validate_all(), {'success': True})
+ 
 
 class DerivedTreatmentTest(unittest.TestCase):
     """Test derived treatments."""

@@ -469,7 +469,6 @@ class Model:
 
 
 
-
 def model(variables=[], treatments=[''], derived_treatments=None,
           initialize=True, timestep=1, start_time=0, end_time=None):
     """
@@ -960,9 +959,7 @@ class CommonVariable(type):
 
     def set(self, treatment_name, amount):
         """
-        Change the current amount of the variable in the treatment with the name
-        **treatment_name**.
-        """
+        Change the current amount of the variable in the treatment named."""
         if treatment_name == '__all__':
             self.set_amount_all(amount)
         elif self._model.derived_treatment_exists(treatment_name):
@@ -1105,6 +1102,7 @@ class CommonVariable(type):
                     error_code, error_msg, suggested_amount=suggestion)
         try:
             setattr(val, attr, amount)
+            self._mark_externally_changed(treatment_name)
             return res.succeed()
         except Exception as e:
             return res.fail(
@@ -1123,6 +1121,10 @@ class CommonVariable(type):
             val = getattr(val, attr)
 
         return val, attrs[-1]
+
+    def _mark_externally_changed(self, treatment_name):
+        """Mark this variable as changed, even though its amount is same obj."""
+        self.set(treatment_name, self._variable_value(treatment_name))
 
     def _variable_value(self, treatment_name):
         if treatment_name != '__all__':
