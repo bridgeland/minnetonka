@@ -83,6 +83,7 @@ class Model:
         # dependent variables prior to independent variables
         self._variables = ModelVariables()
         self._pseudo_variable = ModelPseudoVariable(self)
+        self._user_actions = UserActions()
         self._timestep = timestep
         self._start_time = start_time 
         self._end_time = end_time
@@ -435,7 +436,7 @@ class Model:
             return self.variable(variable_name).by_treatment(treatment_name)
 
     def validate_and_set(self, variable_name, treatment_name, new_amount,
-                         excerpt=''):
+                         excerpt='', record=True):
         """Validate the new_amount and if valid set the variable to it."""
         res = _Result(
             variable=variable_name, 
@@ -448,8 +449,11 @@ class Model:
             return res.fail(
                 'UnknownVariable', f'Variable {variable_name} not known.')
         if self._is_valid_treatment(treatment_name):
-            return var.validate_and_set(
-                treatment_name, new_amount, res, excerpt)
+            res = var.validate_and_set(treatment_name, new_amount, res, excerpt)
+            if res['success'] and record:
+                self._user_actions.add(
+                    variable_name, treatment_name, new_amount, excerpt)
+            return res
         else:
             return res.fail(
                 'UnknownTreatment', f'Treatment {treatment_name} not known.')
@@ -466,6 +470,14 @@ class Model:
         """Return all validation errors from all the constraints."""
         errors = (constraint.fails(self) for constraint in self._constraints)
         return [err for err in errors if err]
+
+    def recording(self):
+        """Return a string of all the user actions, for persistance."""
+        return self._user_actions.recording()
+
+    def replay(self, recording, rewind_actions_first=True):
+        """Replay a bunch of previous actions."""
+        self._user_actions.replay(recording, self, rewind_actions_first)
 
 
 
@@ -597,6 +609,77 @@ def model(variables=[], treatments=[''], derived_treatments=None,
     if initialize and variables:
         m.initialize()
     return m
+
+
+class UserActions:
+    """Manage the list of user actions."""
+    def __init__(self):
+        self._actions = [] 
+
+    def add(self, varname, treatment_name, new_amount, excerpt):
+        """Add a single user action (e.g. set variable) to record.""" 
+        new_action = Action(varname, treatment_name, excerpt, new_amount)
+        if (new_action.matches(action) for action in self._actions):
+            self._actions = [action for action in self._actions 
+                             if not new_action.matches(action)]
+        self._actions.append(new_action)
+ 
+    def recording(self):
+        """Record a string of all user actions, for persistance.""" 
+        return json.dumps([action.freeze() for action in self._actions]) 
+
+    def replay(self, recording, mod, rewind_first=True):
+        """Replay a previous recording."""
+        if rewind_first:
+            self.rewind()
+        for frozen_action in json.loads(recording):
+            variable = frozen_action['variable']
+            treatment = frozen_action['treatment']
+            amount = frozen_action['amount']
+            excerpt = frozen_action['excerpt']
+            res = mod.validate_and_set(variable, treatment, amount, excerpt)
+            if not res['success']:
+                raise MinnetonkaError(
+                    'Failed to replay action {}["{}"]{} = {},'.format(
+                        variable, treatment, excerpt, amount) +
+                    'Result: {}'.format(res))
+
+    def rewind(self):
+        """Set the action list back to no actions."""
+        self._actions = []
+
+
+class Action:
+    """A single user action"""
+    def __init__(self, variable_name, treatment_name, excerpt, amount):
+        self.variable = variable_name
+        self.treatment = treatment_name
+        self.excerpt = excerpt
+        try:
+            json.dumps(amount)
+            self.amount = amount 
+        except TypeError:
+            raise MinnetonkaError(
+                f'Cannot save amount for later playback: {amount}')
+
+
+    def matches(self, other_action):
+        """Does this action match the other? Note that amounts do not matter."""
+        return (
+            self.variable == other_action.variable and
+            self.treatment == other_action.treatment and
+            self.excerpt == other_action.excerpt)
+
+    def freeze(self):
+        """Freeze this to simple json."""
+        return {
+            'variable': self.variable, 
+            'treatment': self.treatment, 
+            'excerpt': self.excerpt,
+            'amount': self.amount
+          }
+
+
 
 
 class ModelVariables:

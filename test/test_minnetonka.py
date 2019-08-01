@@ -4173,6 +4173,122 @@ class DerivedTreatmentTest(unittest.TestCase):
         self.assertEqual(Summary['at-risk'], {'revenue': 5, 'cost': 1})
 
 
+class ReplayTest(unittest.TestCase):
+    """Test replaying a model."""
+    def test_simple_replay(self):
+        """Test Model.recording() and Model.replay() of simple variables."""
+        def create_model():
+            with model(treatments=['then', 'now']) as m:
+                constant('Foo', PerTreatment({'then': 9, 'now': 10}))
+                constant('Bar', 2)
+                variable('Baz', lambda a, b: a+b, 'Foo', 'Bar')
+                constant('Quz', 99)
+            return m
+
+        m = create_model() 
+        m.validate_and_set('Foo', 'then', 99)
+        m.validate_and_set('Bar', '__all__', 3)
+        m.validate_and_set('Baz', 'now', 15) 
+        m.validate_and_set('Foo', 'then', 11)
+        m.recalculate()
+        self.assertEqual(m['Foo']['then'], 11)
+        self.assertEqual(m['Foo']['now'], 10)
+        self.assertEqual(m['Bar']['then'], 3)
+        self.assertEqual(m['Bar']['now'], 3)
+        self.assertEqual(m['Baz']['then'], 14)
+        self.assertEqual(m['Baz']['now'], 15) 
+
+        recording = m.recording()
+        m2 = create_model()
+        m2.replay(recording)
+        m2.recalculate()
+        self.assertEqual(m2['Foo']['then'], 11)
+        self.assertEqual(m2['Foo']['now'], 10)
+        self.assertEqual(m2['Bar']['then'], 3)
+        self.assertEqual(m2['Bar']['now'], 3)
+        self.assertEqual(m2['Baz']['then'], 14)
+        self.assertEqual(m2['Baz']['now'], 15) 
+
+    def test_replay_excerpts(self):
+        """Test Model.recording() and Model.replay, including excerpts."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        class _Measure:
+            def __init__(self, metric, customary):
+                self.metric = metric
+                self.customary = customary
+
+        class _Interval:
+            def __init__(self, begin, end):
+                self.begin = begin 
+                self.end = end 
+
+        def create_model():
+            with model() as m:
+                constant('Size', 
+                    _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
+            return m
+
+        m = create_model()
+        m.validate_and_set('Size', '', 99, excerpt='.width')
+        m.validate_and_set('Size', '', 19, excerpt='.length.metric')
+        m.validate_and_set('Size', '', 15, excerpt='.length.customary.begin')
+        m.validate_and_set('Size', '', 17, excerpt='.length.metric')
+        self.assertEqual(m['Size'][''].width, 99)
+        self.assertEqual(m['Size'][''].length.metric, 17)
+        self.assertEqual(m['Size'][''].length.customary.begin, 15)
+        self.assertEqual(m['Size'][''].height, 14)
+
+
+        self.assertEqual(m['Size'][''].width, 99)
+        self.assertEqual(m['Size'][''].length.metric, 17)
+        self.assertEqual(m['Size'][''].length.customary.begin, 15)
+        self.assertEqual(m['Size'][''].height, 14)
+
+    def test_complex_amount(self):
+        """Test Model.recording() on amount that cannot be recorded."""
+        class _Size:
+            def __init__(self, length, width, height):
+                self.length = length
+                self.width = width
+                self.height = height
+
+        class _Measure:
+            def __init__(self, metric, customary):
+                self.metric = metric
+                self.customary = customary
+
+        class _Interval:
+            def __init__(self, begin, end):
+                self.begin = begin 
+                self.end = end 
+
+        def create_model():
+            with model() as m:
+                constant('Size', 
+                    _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
+            return m
+
+        m = create_model()
+        with self.assertRaisesRegex(MinnetonkaError,
+                'Cannot save amount for later playback'):
+            m.validate_and_set('Size', '', _Measure(10, 12), excerpt='.width')
+        
+        m.validate_and_set(
+            'Size', '', _Measure(10, 12), excerpt='.width', record=False)
+        m.validate_and_set('Size', '', 19, excerpt='.length.metric')
+
+        m2 = create_model()
+        m2.replay(m.recording())
+
+        self.assertEqual(m2['Size'][''].length.metric, 19)
+        self.assertEqual(m2['Size'][''].width, 16)
+
+
 
 
 
