@@ -2312,6 +2312,21 @@ class UserSetAmount(unittest.TestCase):
         m.reset()
         self.assertEqual(Bar[''], 9)
 
+    def test_update_amount_depends_constants(self):
+        """Can a constant with constant dependencies take a new value?"""
+        with model() as m:
+            Foo = constant('Foo', 9)
+            Bar = constant('Bar', lambda f: f, 'Foo')
+
+        self.assertEqual(Bar[''], 9)
+        Foo[''] = 2.4
+        m.recalculate()
+        self.assertEqual(Bar[''], 2.4)
+        m.reset(reset_external_vars=False)
+        self.assertEqual(Bar[''], 2.4)
+        m.reset()
+        self.assertEqual(Bar[''], 9)
+
     def test_stock_with_user_setting_amount(self):
         """Test stock with user setting amount"""
         with model() as m:

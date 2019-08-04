@@ -2261,7 +2261,8 @@ class ConstantInstance(VariableInstance, metaclass=Constant):
         pass
 
     def _recalculate(self):
-        pass
+        # recalculation has to happen, even for a constant
+        self._amount = self._calculate_amount()
 
     def _history(self, _):
         """No history for a constant. Everything is the current value."""
