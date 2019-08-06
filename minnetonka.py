@@ -2314,6 +2314,11 @@ class Incrementer(Variable):
         # Incrementers cannot be scored as a combo because they keep state
         return False
 
+    def recalculate_all(self):
+        """Recalculdate all the variable instances, without changing step."""
+        not_yet_stepped = self._model.STEP == 0
+        for var in self._by_treatment.values():
+            var._recalculate(not_yet_stepped)
 
 class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
     """A variable instance with internal state, that increments every step."""
@@ -2339,10 +2344,13 @@ class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
         """Set a new amount, outside the logic of the model."""
         self._amount = new_amount
 
-    def _recalculate(self):
+    def _recalculate(self, not_yet_stepped):
         """Recalculate without advancing a step."""
-        # For incrementer recalcs only happen on increment time
-        pass
+        if not_yet_stepped:
+            self._set_initial_amount(self._treatment.name)
+        else:
+            # For incrementer recalcs only happen on increment time
+            pass
 
     def wire_instance(self, model, treatment_name):
         """Set the variables this instance depends on."""
