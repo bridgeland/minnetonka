@@ -1033,7 +1033,7 @@ class CommonVariable(type):
 
     def recalculate_all(self):
         """Recalculate all the variable instances, without changing step."""
-        for var in self._by_treatment.values():
+        for var in self.all_instances():
             var._recalculate()
 
     def calculate_all_increments(self, ignore):
@@ -1322,7 +1322,8 @@ class SimpleVariableInstance(CommonVariableInstance):
 
     def _recalculate(self):
         """Recalculate this simple variagble."""
-        self._amount = self._calculate_amount()
+        if self._extra_model_amount is None: 
+            self._amount = self._calculate_amount()
 
     def _set_initial_amount(self, treatment=None):
         """Set the step 0 amount for this simple variable."""
@@ -2259,10 +2260,6 @@ class ConstantInstance(VariableInstance, metaclass=Constant):
 
     def _step(self):
         pass
-
-    def _recalculate(self):
-        # recalculation has to happen, even for a constant
-        self._amount = self._calculate_amount()
 
     def _history(self, _):
         """No history for a constant. Everything is the current value."""

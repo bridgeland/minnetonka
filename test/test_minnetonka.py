@@ -2309,6 +2309,9 @@ class UserSetAmount(unittest.TestCase):
         self.assertEqual(Bar[''], 2.4)
         m.reset(reset_external_vars=False)
         self.assertEqual(Bar[''], 2.4)
+        Bar[''] = 8
+        m.recalculate()
+        self.assertEqual(Bar[''], 8)
         m.reset()
         self.assertEqual(Bar[''], 9)
 
