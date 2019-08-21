@@ -479,6 +479,9 @@ class Model:
         """Replay a bunch of previous actions."""
         self._user_actions.replay(recording, self, rewind_actions_first)
 
+    def history(self):
+        """Return history of all amounts of all variables in all treatments."""
+        return self._variables.history()
 
 
 def model(variables=[], treatments=[''], derived_treatments=None,
@@ -877,6 +880,10 @@ class ModelVariables:
         for var in self._variables_ordered_for_step.values():
             var.recalculate_all()
 
+    def history(self):
+        """Return history of all amounts of all variables in all treatments."""
+        return {variable.name(): variable.history()
+                for variable in self._variable_iterator()}
 
 #
 # Treatments and derived treatments
@@ -1071,8 +1078,21 @@ class CommonVariable(type):
             v._treatment.remove_variable(v)
         self._by_treatment = {}
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """Return the amount at a past timestep for a particular treatment. """
+        if treatment_name is None and step is None:
+            return {trt_name:self._history_of_treatment(trt_name)
+                    for trt_name in self._by_treatment.keys()}
+        elif step is None:
+            return self._history_of_treatment(treatment_name)
+        else: 
+            return self._history_at_treatment_step(treatment_name, step)
+
+    def _history_of_treatment(self, treatment_name):
+        """Return all the historical amounts for a particular treatment."""
+        return self.by_treatment(treatment_name)._history()
+
+    def _history_at_treatment_step(self, treatment_name, step):
         return self.by_treatment(treatment_name)._history(step)
 
     def wire_instances(self):
@@ -1287,9 +1307,11 @@ class CommonVariableInstance(object, metaclass=CommonVariable):
         """Record the current amount of the variable, prior to a step."""
         self._old_amounts.append(self._amount)
 
-    def _history(self, step):
+    def _history(self, step=None):
         """Return the amount at timestep step."""
-        if step == len(self._old_amounts):
+        if step is None:
+            return self._old_amounts + [self.amount()]
+        elif step == len(self._old_amounts):
             return self.amount()
         elif step == -1:
             return None
@@ -1436,7 +1458,7 @@ class Variable(CommonVariable):
         """
         return super().all()
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """
         Return the amount at a past timestep for a particular treatment.
 
@@ -2151,7 +2173,7 @@ class Constant(Variable):
         """
         return super().all()
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """
         Return the amount at a past timestep for a particular treatment.
 
@@ -2261,9 +2283,12 @@ class ConstantInstance(VariableInstance, metaclass=Constant):
     def _step(self):
         pass
 
-    def _history(self, _):
+    def _history(self, step=None):
         """No history for a constant. Everything is the current value."""
-        return self.amount()
+        if step is None:
+            return [self.amount()]
+        else:
+            return self.amount()
 
     def _clear_history(self):
         """No history for a constant. Everything is the current value."""
@@ -2447,7 +2472,7 @@ class Stock(Incrementer):
         """
         return super().all()
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """
         Return the amount at a past timestep for a particular treatment.
 
@@ -2920,7 +2945,7 @@ class Accum(Incrementer):
         """
         return super().all()
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """
         Return the amount at a past timestep for a particular treatment.
 
@@ -3339,7 +3364,7 @@ class Previous(CommonVariable):
         """
         return super().all()
 
-    def history(self, treatment_name, step):
+    def history(self, treatment_name=None, step=None):
         """
         Return the amount at a past timestep for a particular treatment.
 

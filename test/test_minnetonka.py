@@ -3243,6 +3243,46 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Quz.history('Baz', 99), 10)
         
 
+class ModelHistory(unittest.TestCase):
+    """Testing history of the whole model."""
+    def test_history(self):
+        """Test history of several variables and two treatments."""
+        with model(treatments=['Bar', 'Baz']) as m:
+            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Quz = variable('Quz', lambda x: x, 'Foo')
+            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Grault = constant('Grault', PerTreatment({'Bar': 9, 'Baz':10}))
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {'Bar': [0], 'Baz': [0]},
+                'Quz': {'Bar': [0], 'Baz': [0]},
+                'Corge': {'Bar': [0], 'Baz': [0]},
+                'Grault': {'Bar': [9], 'Baz': [10]},
+            })
+
+        m.step(10)
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    },
+                'Quz': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    },
+                'Corge': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    },
+                'Grault': {'Bar': [9], 'Baz': [10]}
+            })
+
+
 class Unitary(unittest.TestCase):
     """For testing variables that do not differ by treatment."""
 
