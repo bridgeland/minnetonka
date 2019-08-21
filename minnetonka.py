@@ -883,7 +883,8 @@ class ModelVariables:
     def history(self):
         """Return history of all amounts of all variables in all treatments."""
         return {variable.name(): variable.history()
-                for variable in self._variable_iterator()}
+                for variable in self._variable_iterator()
+                if variable.has_history()}
 
 #
 # Treatments and derived treatments
@@ -1260,6 +1261,10 @@ class CommonVariable(type):
             if not valid:
                 return valid, error_code, error_msg, suggested_amount
         return True, None, None, None 
+
+    def has_history(self):
+        """Has a history, unless overridded by a subclass."""
+        return True
 
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -2275,6 +2280,10 @@ class Constant(Variable):
         >>> InterestRate['__all__'] = 0.06
         """
         super().__setitem__(treatment_name, amount)
+
+    def has_history(self):
+        """A constant has no history."""
+        return False
 
 
 class ConstantInstance(VariableInstance, metaclass=Constant):

@@ -3258,8 +3258,7 @@ class ModelHistory(unittest.TestCase):
             {
                 'Foo': {'Bar': [0], 'Baz': [0]},
                 'Quz': {'Bar': [0], 'Baz': [0]},
-                'Corge': {'Bar': [0], 'Baz': [0]},
-                'Grault': {'Bar': [9], 'Baz': [10]},
+                'Corge': {'Bar': [0], 'Baz': [0]} 
             })
 
         m.step(10)
@@ -3278,8 +3277,7 @@ class ModelHistory(unittest.TestCase):
                 'Corge': {
                     'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-                    },
-                'Grault': {'Bar': [9], 'Baz': [10]}
+                    }
             })
 
 
