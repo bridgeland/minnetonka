@@ -3252,6 +3252,7 @@ class ModelHistory(unittest.TestCase):
             Quz = variable('Quz', lambda x: x, 'Foo')
             Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
             Grault = constant('Grault', PerTreatment({'Bar': 9, 'Baz':10}))
+            Thud = variable('Thud', lambda x: x, 'Foo').no_history()
 
         self.assertEqual(
             m.history(),

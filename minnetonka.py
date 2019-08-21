@@ -1262,9 +1262,13 @@ class CommonVariable(type):
                 return valid, error_code, error_msg, suggested_amount
         return True, None, None, None 
 
+    def no_history(self):
+        """Mark this variable as not having history."""
+        self._has_history = False 
+
     def has_history(self):
         """Has a history, unless overridded by a subclass."""
-        return True
+        return self._has_history 
 
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -1845,6 +1849,7 @@ def _create_variable(
                     '_validators': list(),
                     '_scored_as_golf': False,
                     '_scored_as_combo': False,
+                    '_has_history': True
                   }
             )
     Model.add_variable_to_current_context(newvar)
@@ -2848,8 +2853,16 @@ def _create_stock(stock_name, docstring,
     initial = create_calculator(initial_definition, initial_dependencies)
     incr = create_calculator(increment_definition, increment_dependencies)
     newstock = type(stock_name, (StockInstance,),
-                    {'__doc__': docstring, '_initial': initial,
-                     '_incremental': incr})
+                    {
+                        '__doc__': docstring, 
+                        '_initial': initial,
+                        '_incremental': incr,
+                        '_validators': list(),
+                        '_scored_as_golf': False,
+                        '_scored_as_combo': False,
+                        '_has_history': True
+                    }
+                )
     Model.add_variable_to_current_context(newstock)
     return newstock
 
@@ -3299,8 +3312,16 @@ def _create_accum(accum_name, docstring,
     initial = create_calculator(initial_definition, initial_dependencies)
     increment = create_calculator(increment_definition, increment_dependencies)
     new_accum = type(accum_name, (AccumInstance,),
-                     {'__doc__': docstring, '_initial': initial,
-                      '_incremental': increment})
+                     {
+                        '__doc__': docstring, 
+                        '_initial': initial,
+                        '_incremental': increment,
+                        '_validators': list(),
+                        '_scored_as_golf': False,
+                        '_scored_as_combo': False,
+                        '_has_history': True
+                    }
+                )
     Model.add_variable_to_current_context(new_accum)
     return new_accum
 
@@ -3584,8 +3605,16 @@ def _create_previous(
     variable.
     """
     newvar = type(latter_var_name, (PreviousInstance,),
-                  {'__doc__': docstring, '_earlier': earlier_var_name,
-                   '_init_amount': init_amount})
+                  {
+                    '__doc__': docstring, 
+                    '_earlier': earlier_var_name,
+                    '_init_amount': init_amount,
+                    '_validators': list(),
+                    '_scored_as_golf': False,
+                    '_scored_as_combo': False,
+                    '_has_history': True
+                    }
+                )
     Model.add_variable_to_current_context(newvar)
     return newvar
 
