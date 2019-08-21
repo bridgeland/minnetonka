@@ -1264,7 +1264,8 @@ class CommonVariable(type):
 
     def no_history(self):
         """Mark this variable as not having history."""
-        self._has_history = False 
+        self._has_history = False
+        return self  
 
     def has_history(self):
         """Has a history, unless overridded by a subclass."""
