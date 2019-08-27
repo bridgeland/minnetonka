@@ -3602,6 +3602,9 @@ class ShowVariable(unittest.TestCase):
             AccumInterest = accum('AccumInterest', 
                 lambda i: i,
                 ('Interest',), 0)
+            NoFutureSavings = variable(
+                'NoFutureSavings', lambda s: s, 'Savings'
+            ).undefined_in('To be')
 
         self.assert_show(
             Savings, 
@@ -3616,6 +3619,17 @@ Incremental definition: lambda interest: interest
 Incremental depends on: ['Interest']
 """,
             [Interest])
+
+        self.assert_show(
+            NoFutureSavings, 
+            bolded("Variable: NoFutureSavings") + """
+
+Amounts: {'As is': 1000}
+
+Definition: 'NoFutureSavings', lambda s: s, 'Savings'
+Depends on: ['Savings']
+""",
+            [Savings])
 
         self.assert_show(
             Rate, 

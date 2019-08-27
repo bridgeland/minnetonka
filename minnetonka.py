@@ -1119,7 +1119,8 @@ class CommonVariable(type):
 
     def all(self):
         """Return a dict of all current amounts, one for each treatment."""
-        return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()}
+        return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()
+                if tmt not in self._exclude_treatments}
 
     def _derived_treatment_exists(self, treatment_name):
         """Does this derived treatment exist for this variable?"""
@@ -1270,6 +1271,12 @@ class CommonVariable(type):
     def has_history(self):
         """Has a history, unless overridded by a subclass."""
         return self._has_history 
+
+    def undefined_in(self, *treatment_names):
+        """Mark the variable as not defined for some treatments."""
+        # for now, this only affects show()
+        self._exclude_treatments = treatment_names
+        return self
 
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -1850,7 +1857,8 @@ def _create_variable(
                     '_validators': list(),
                     '_scored_as_golf': False,
                     '_scored_as_combo': False,
-                    '_has_history': True
+                    '_has_history': True,
+                    '_exclude_treatments': []
                   }
             )
     Model.add_variable_to_current_context(newvar)
@@ -2861,7 +2869,8 @@ def _create_stock(stock_name, docstring,
                         '_validators': list(),
                         '_scored_as_golf': False,
                         '_scored_as_combo': False,
-                        '_has_history': True
+                        '_has_history': True,
+                        '_exclude_treatments': []
                     }
                 )
     Model.add_variable_to_current_context(newstock)
@@ -3320,7 +3329,8 @@ def _create_accum(accum_name, docstring,
                         '_validators': list(),
                         '_scored_as_golf': False,
                         '_scored_as_combo': False,
-                        '_has_history': True
+                        '_has_history': True,
+                        '_exclude_treatments': []
                     }
                 )
     Model.add_variable_to_current_context(new_accum)
@@ -3613,7 +3623,8 @@ def _create_previous(
                     '_validators': list(),
                     '_scored_as_golf': False,
                     '_scored_as_combo': False,
-                    '_has_history': True
+                    '_has_history': True,
+                    '_exclude_treatments': []
                     }
                 )
     Model.add_variable_to_current_context(newvar)
