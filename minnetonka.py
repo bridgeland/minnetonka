@@ -425,7 +425,10 @@ class Model:
         >>> Bar['']
         9
         """
-        self._variables.recalculate()
+        if self.STEP==0:
+            self._variables.recalculate(at_start=True)
+        else:
+            self._variables.recalculate(at_start=False)
 
     def variable_instance(self, variable_name, treatment_name):
         """Find or create right instance for this variable and treatment."""
@@ -875,10 +878,14 @@ class ModelVariables:
         for var in self._variables_ordered_for_step.values():
             var.step_all()
 
-    def recalculate(self):
+    def recalculate(self, at_start=False):
         """Recalculate all the variables without advancing step."""
-        for var in self._variables_ordered_for_step.values():
-            var.recalculate_all()
+        if at_start:
+            for var in self._variables_ordered_for_init.values():
+                var.recalculate_all()
+        else:
+            for var in self._variables_ordered_for_step.values():
+                var.recalculate_all()
 
     def history(self):
         """Return history of all amounts of all variables in all treatments."""

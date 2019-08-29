@@ -2343,6 +2343,20 @@ class UserSetAmount(unittest.TestCase):
         m.step()
         self.assertEqual(m['Foo'][''], 91)
 
+    def test_update_depends_stock_chain(self):
+        """Can a stock with change of constant dependencies take a new value?"""
+        with model() as m:
+            Foo = stock('Foo', lambda: 1, (), lambda x: x, ('Bar',))
+            Bar = constant('Bar', lambda x: x, 'Baz')
+            Baz = constant('Baz', 99)
+
+        self.assertEqual(m['Foo'][''], 99)
+        m['Baz'][''] = 90
+        m.recalculate()
+        self.assertEqual(m['Foo'][''], 90)
+        m.step()
+        self.assertEqual(m['Foo'][''], 91)
+
     def test_stock_with_user_setting_amount(self):
         """Test stock with user setting amount"""
         with model() as m:
