@@ -4387,6 +4387,37 @@ class ReplayTest(unittest.TestCase):
         self.assertEqual(m2['Size'][''].width, 16)
 
 
+class CrossTreatmentTest(unittest.TestCase):
+    """Test replaying a model."""
+    def test_cross_constant(self):
+        with model(treatments=['As is', 'To be']) as m: 
+            Bar = constant('Bar', PerTreatment({'As is': 1, 'To be': 2}))
+            Foo = cross('Foo', 'Bar', 'As is')
+
+        self.assertEqual(Foo['As is'], 1)
+        self.assertEqual(Foo['To be'], 1)
+
+    def test_cross_variable(self):
+        with model(treatments=['As is', 'To be']) as m: 
+            Bar = constant('Bar', PerTreatment({'As is': 1, 'To be': 2}))
+            Baz = variable('Baz', lambda x: x+2, 'Bar')
+            Foo = cross('Foo', 'Baz', 'As is')
+
+        self.assertEqual(Foo['As is'], 3)
+        self.assertEqual(Foo['To be'], 3)
+
+    def test_cross_model_variable(self):
+        with model(treatments=['As is', 'To be']) as m: 
+            S = stock('S', PerTreatment({'As is': 1, 'To be': 2}))
+            Foo = cross('Foo', 'S', 'As is')
+
+        m.step()
+        self.assertEqual(Foo['As is'], 1)
+        self.assertEqual(Foo['To be'], 1)
+        m.step()
+        self.assertEqual(Foo['As is'], 2)
+        self.assertEqual(Foo['To be'], 2)
+
 
 
 

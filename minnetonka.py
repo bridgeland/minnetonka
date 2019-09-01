@@ -3637,6 +3637,76 @@ def _create_previous(
     Model.add_variable_to_current_context(newvar)
     return newvar
 
+#
+# cross: a variable that takes the amount of another variable in another 
+# treatment
+#
+
+class Cross(CommonVariable):
+    """A variable that takes the amount of another in a particular treatment"""
+    def _check_for_cycle_in_depends_on(self, checked_already, dependents):
+        """Check for cycles among the depends on for this cross"""
+        reference = self._model.variable(self._referenced_variable)
+        reference.check_for_cycle(checked_already, dependents=dependents)
+
+    def _show_definition_and_dependencies(self):
+        """Print the definition and the variables it depends on."""
+        print('Cross variable: {} in treatment {}'.format(
+            self._referenced_variable, self._referenced_treatment))
+
+    def antecedents(self, ignore_pseudo=False):
+        """Return all the depends_on_variables."""
+        return [self._model[self._referenced_variable]]
+
+    def has_unitary_definition(self):
+        """Return whether the cross has a unitary definition."""
+        return True
+
+    def __setitem__(self, treatment_name, amount):
+        """An error. Should not set a cross"""
+        raise MinnetonkaError(
+            'Amount of {} cannot be changed outside model logic'.format(
+                self))
+
+class CrossInstance(SimpleVariableInstance, metaclass=Cross):
+    """A variable that takes the amount of another var in a particular trtmt"""
+    def wire_instance(self, model, treatment_name):
+        """Set the variable this instances depends on."""
+        del(treatment_name)
+        self._cross_instance = model.variable_instance(
+            self._referenced_variable, self._referenced_treatment)
+
+    def _calculate_amount(self):
+        """Calculate the current amount of this cross."""
+        return self._cross_instance.amount()
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return the variables this variable depends on."""
+        return [cls._referenced_variable]
+
+
+
+def cross(variable_name, referenced_variable_name, treatment):
+    """For pulling the amount from a different treatment."""
+    return _create_cross(variable_name, '', referenced_variable_name, treatment)
+
+def _create_cross(
+        variable_name, docstring, referenced_variable_name, treatment):
+    newvar = type(variable_name, (CrossInstance,), {
+            '__doc__': docstring,
+            '_referenced_variable': referenced_variable_name,
+            '_referenced_treatment': treatment,
+            '_validators': list(),
+            '_scored_as_golf': False,
+            '_scored_as_combo': False,
+            '_has_history': True,
+            '_exclude_treatments': []
+        })
+    Model.add_variable_to_current_context(newvar)
+    return newvar
+
+
 
 #
 # foreach: for iterating across a dict within a variable
