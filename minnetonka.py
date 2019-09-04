@@ -169,9 +169,10 @@ class Model:
         >>> m3['Year']['']
         2039
         """
-        if self._end_time is None or self.TIME < self._end_time:
-            if to_end:
-                n = int((self._end_time - self.TIME) / self._timestep)
+        if to_end:
+            for i in range(int((self._end_time - self.TIME) / self._timestep)):
+                self._step_one()
+        elif self._end_time is None or self.TIME < self._end_time:
             for i in range(n):
                 self._step_one()
         else:

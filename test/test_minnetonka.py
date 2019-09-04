@@ -689,6 +689,29 @@ class StartAndEndTest(unittest.TestCase):
         self.assertEqual(Step[''], 5)
         self.assertEqual(Foo[''], 5)
 
+    def test_step_to_end_twice(self):
+        """Test step to end redundantly."""
+        with model(end_time=5) as m:
+            Time = variable('Time', lambda md: md.TIME, '__model__')
+            Step = variable('Step', lambda md: md.STEP, '__model__')
+            Foo = stock('Foo', 1, 0)
+
+        m.step(to_end=True)
+        m.step(to_end=True)
+        self.assertEqual(Time[''], 5)
+        self.assertEqual(Step[''], 5)
+        self.assertEqual(Foo[''], 5)
+        m.reset()
+        m.step()
+        self.assertEqual(Time[''], 1)
+        self.assertEqual(Step[''], 1)
+        self.assertEqual(Foo[''], 1)
+        m.step(to_end=True)
+        m.step(to_end=True)
+        self.assertEqual(Time[''], 5)
+        self.assertEqual(Step[''], 5)
+        self.assertEqual(Foo[''], 5)
+
     def test_step_to_end_with_timestep(self):
         """Test step to end with a non-one timestep."""
         with model(end_time=5, timestep=0.25) as m:
