@@ -4441,6 +4441,269 @@ class CrossTreatmentTest(unittest.TestCase):
         self.assertEqual(Foo['As is'], 2)
         self.assertEqual(Foo['To be'], 2)
 
+class UndefinedInTest(unittest.TestCase):
+    """Test defining variable undefined in some treatments."""
+    def test_undefined_value(self):
+        """Test the value of something undefined."""
+        with model(treatments=['conjecture', 'current', 'possible', 'design']):
+            Foo = constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = variable('Bar',
+                lambda x: x + 1,
+                'Foo').undefined_in('conjecture', 'current')
+        self.assertEqual(Foo['current'], 12)
+        self.assertEqual(Foo['conjecture'], None)
+        self.assertEqual(Bar['current'], None)
+        self.assertEqual(Bar['conjecture'], None)
+        self.assertEqual(Bar['possible'], 13)
+
+    def test_undefined_stock(self):
+        """Test a stock that is undefined for some treatments.""" 
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+               ) as m:
+            variable('X', 1)
+            variable('Y', 22).undefined_in('design')
+            S = stock('S',
+                """Start at 22 and increase by 1""",
+                 lambda x: x, ('X',), lambda x: x, ('Y',)
+            ).undefined_in('design')
+            P = variable('P', lambda x: x, 'S'
+            ).undefined_in('possible', 'design')
+
+        self.assertEqual(S['current'], 22)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(S['current'], 23)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 23)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()
+        self.assertEqual(S['current'], 24)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 24)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.reset()
+        self.assertEqual(S['current'], 22)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(S['current'], 23)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 23)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+
+    def test_undefined_accum(self):
+        """Test an accum that is undefined for some treatments.""" 
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+               ) as m:
+            variable('X', 1)
+            variable('Y', 22)
+            A = stock('A',
+                """Start at 23 and increase by 1""",
+                 lambda x: x, ('X',), lambda x: x, ('Y',)
+            ).undefined_in('design')
+            P = variable('P', lambda x: x, 'A'
+            ).undefined_in('possible', 'design')
+
+        self.assertEqual(A['current'], 22)
+        self.assertEqual(A['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(A['current'], 23)
+        self.assertEqual(A['design'], None)
+        self.assertEqual(P['conjecture'], 23)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()
+        self.assertEqual(A['current'], 24)
+        self.assertEqual(A['design'], None)
+        self.assertEqual(P['conjecture'], 24)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.reset()
+        self.assertEqual(A['current'], 22)
+        self.assertEqual(A['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(A['current'], 23)
+        self.assertEqual(A['design'], None)
+        self.assertEqual(P['conjecture'], 23)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+
+    def test_partial_per_treatment(self):
+        """Test PerTreatment that is not defined for undefined treatments."""
+        with model(treatments=['conjecture', 'current', 'possible', 'design']):
+            Foo = constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = variable('Bar',
+                PerTreatment({
+                    'current': lambda x: x+1,
+                    'possible': lambda x: x+2
+                    }),
+                'Foo'
+            ).undefined_in('conjecture', 'design') 
+        self.assertEqual(Bar['current'], 13)
+        self.assertEqual(Bar['conjecture'], None)
+        self.assertEqual(Bar['possible'], 14)
+
+    def test_recalculate(self):
+        """Test recalculating with undefined."""
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+                ) as m:
+            Foo = constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = variable('Bar',
+                lambda x: x + 1,
+                'Foo').undefined_in('conjecture', 'current')
+        self.assertEqual(Foo['current'], 12)
+        self.assertEqual(Foo['conjecture'], None)
+        self.assertEqual(Bar['current'], None)
+        self.assertEqual(Bar['conjecture'], None)
+        self.assertEqual(Bar['possible'], 13)
+        m.step()
+        Foo['__all__'] = 19
+        m.recalculate()
+        self.assertEqual(Foo['current'], 19)
+        self.assertEqual(Foo['conjecture'], None)
+        self.assertEqual(Bar['current'], None)
+        self.assertEqual(Bar['conjecture'], None)
+        self.assertEqual(Bar['possible'], 20)
+
+    def test_previous(self):
+        """Test a previous that is undefined for some treatments.""" 
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+               ) as m:
+            variable('X', 1)
+            variable('Y', 22).undefined_in('design')
+            S = stock('S',
+                """Start at 22 and increase by 1""",
+                 lambda x: x, ('X',), lambda x: x, ('Y',)
+            ).undefined_in('design')
+            P = previous('P', 'S').undefined_in('possible', 'design')
+
+        self.assertEqual(S['current'], 22)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(S['current'], 23)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 22)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+        m.step()        
+        self.assertEqual(S['current'], 24)
+        self.assertEqual(S['design'], None)
+        self.assertEqual(P['conjecture'], 23)
+        self.assertEqual(P['design'], None)
+        self.assertEqual(P['possible'], None)
+
+    def test_all_amounts(self):
+        """Test all amounts with undefined."""
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+               ) as m:
+            X = variable('X', 1)
+            Y = variable('Y', 22).undefined_in('design')
+            S = stock('S',
+                """Start at 22 and increase by 1""",
+                 lambda x: x, ('X',), lambda x: x, ('Y',)
+            ).undefined_in('design', 'possible')
+
+        self.assertEqual(
+            X.all(), 
+            {'conjecture': 1, 'current': 1, 'possible': 1, 'design': 1})
+        self.assertEqual(
+            Y.all(),
+            {'conjecture': 22, 'current': 22, 'possible': 22})
+        self.assertEqual(S.all(), {'conjecture': 22, 'current': 22} )
+        m.step()
+        self.assertEqual(
+            X.all(), 
+            {'conjecture': 1, 'current': 1, 'possible': 1, 'design': 1})
+        self.assertEqual(
+            Y.all(),
+            {'conjecture': 22, 'current': 22, 'possible': 22})
+        self.assertEqual(S.all(), {'conjecture': 23, 'current': 23} )
+
+    def test_dispatch_function(self):
+        """Test dispatch function with undefined."""
+        with model(treatments=['conjecture', 'current', 'possible', 'design']
+               ) as m:
+            X = variable('X', 1).undefined_in('conjecture', 'current')
+            Y = variable('Y', 22).undefined_in('possible', 'design')
+            XorY = variable('XorY',
+                PerTreatment({
+                    'conjecture': lambda _, y: y,
+                    'current': lambda _, y: y,
+                    'possible': lambda x, _: x,
+                    'design': lambda x, _: x
+                    }),
+                'X',
+                'Y')
+        self.assertEqual(
+            XorY.all(),
+            {'conjecture': 22, 'current': 22, 'possible': 1, 'design': 1})
+
+    def test_history(self):
+        """Test history with some variables undefined."""
+
+        with model(treatments=['Bar', 'Baz']) as m:
+            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Quz = variable('Quz', lambda x: x, 'Foo').undefined_in('Baz')
+            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0) 
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {'Bar': [0], 'Baz': [0]},
+                'Quz': {'Bar': [0]},
+                'Corge': {'Bar': [0], 'Baz': [0]} 
+            })
+
+        m.step(10)
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    },
+                'Quz': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] 
+                    },
+                'Corge': {
+                    'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    }
+            })
+
+
+
+
+
+
+    # works with unitary?
+
+    # def test_per_treatment(self):
+    #     with model(treatments=['conjecture', 'current', 'possible', 'design']):
+    #         Foo = variable('Foo', 
+    #             PerTreatment({
+    #                 'possible': 12
+    #                 })
+    #         ).undefined_in('current', 'conjecture')
+
 
 
 

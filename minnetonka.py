@@ -744,7 +744,7 @@ class ModelVariables:
         self._create_all_variable_instances()
         self._wire_variable_instances(model)
         self._sort_variables()
-        self._set_initial_amounts()
+        self.set_initial_amounts()
         logging.info('exit')
         
     def _check_for_cycles(self, model):
@@ -846,7 +846,7 @@ class ModelVariables:
             _maybe_insert_variable_and_antes(variable.name(), list())
         return ordered_variables
 
-    def _set_initial_amounts(self):
+    def set_initial_amounts(self):
         """Set initial amounts for all the variables."""
         logging.info('enter')
         for var in self._variables_ordered_for_init.values():
@@ -997,10 +997,14 @@ class CommonVariable(type):
         if self.tary == 'unitary':
             v = self()
             for treatment in self._model.treatments():
-                v._initialize_treatment(treatment)
+                if self._is_undefined_for(treatment.name):
+                    self(treatment, undefined=True)
+                else:
+                    v._initialize_treatment(treatment)
         else:
             for treatment in self._model.treatments():
-                self(treatment)
+                self(treatment, undefined=self._is_undefined_for(
+                    treatment.name))
 
     def note_model(self, model):
         """Keep track of the model, for future reference."""
@@ -1017,18 +1021,22 @@ class CommonVariable(type):
     def all_instances(self):
         """Return all the instances of this variable."""
         if self.tary == 'unitary':
-            return itertools.islice(self._by_treatment.values(), 0, 1) 
+            for val in self._by_treatment.values():
+                if not val.undefined:
+                    return [val]
         else:
             return self._by_treatment.values()
 
     def set_all_initial_amounts(self):
         """Set the initial amounts of all the variable instances."""
         if self.tary == 'unitary':
-            treatment_name, var = list(self._by_treatment.items())[0]
-            var._set_initial_amount(treatment_name)
+            for treatment_name, var in self._by_treatment.items():
+                if not var.undefined:
+                    var.set_initial_amount(treatment_name)
+                    return 
         else:
             for treatment_name, var in self._by_treatment.items():
-                var._set_initial_amount(treatment_name)
+                var.set_initial_amount(treatment_name)
 
     def reset_all(self, reset_external_vars):
         """Reset this variable to its initial amount.
@@ -1091,7 +1099,8 @@ class CommonVariable(type):
         """Return the amount at a past timestep for a particular treatment. """
         if treatment_name is None and step is None:
             return {trt_name:self._history_of_treatment(trt_name)
-                    for trt_name in self._by_treatment.keys()}
+                    for trt_name in self._by_treatment.keys()
+                    if not self._is_undefined_for(trt_name)}
         elif step is None:
             return self._history_of_treatment(treatment_name)
         else: 
@@ -1128,7 +1137,7 @@ class CommonVariable(type):
     def all(self):
         """Return a dict of all current amounts, one for each treatment."""
         return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()
-                if tmt not in self._exclude_treatments}
+                if not self._is_undefined_for(tmt)}
 
     def _derived_treatment_exists(self, treatment_name):
         """Does this derived treatment exist for this variable?"""
@@ -1286,14 +1295,19 @@ class CommonVariable(type):
         self._exclude_treatments = treatment_names
         return self
 
+    def _is_undefined_for(self, treatment):
+        """Is this variable not defined for this treatment?"""
+        return treatment in self._exclude_treatments
+
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
     """
     Any of the variety of variable types.
     """
 
-    def __init__(self, treatment=None):
+    def __init__(self, treatment=None, undefined=False):
         """Initialize this variable."""
+        self.undefined = undefined 
         self._extra_model_amount = None
         self._clear_history()
         if treatment is not None:
@@ -1315,7 +1329,9 @@ class CommonVariableInstance(object, metaclass=CommonVariable):
 
     def amount(self):
         """Return the current value of amount."""
-        if self._extra_model_amount is None:
+        if self.undefined: 
+            return None 
+        elif self._extra_model_amount is None:
             return self._amount
         else:
             return self._extra_model_amount
@@ -1361,7 +1377,7 @@ class SimpleVariableInstance(CommonVariableInstance):
     def _reset(self, reset_external_vars):
         """Reset to beginning of simulation."""
         if reset_external_vars or self._extra_model_amount is None:
-            self._set_initial_amount()
+            self.set_initial_amount()
 
     def _step(self):
         """Advance this simple variable one time step."""
@@ -1372,7 +1388,7 @@ class SimpleVariableInstance(CommonVariableInstance):
         if self._extra_model_amount is None: 
             self._amount = self._calculate_amount()
 
-    def _set_initial_amount(self, treatment=None):
+    def set_initial_amount(self, treatment=None):
         """Set the step 0 amount for this simple variable."""
         logging.info('setting initial amount for simple variable {}'.format(
             self))
@@ -1598,6 +1614,9 @@ class VariableInstance(SimpleVariableInstance, metaclass=Variable):
 
     def _calculate_amount(self):
         """Calculate the current amount of this plain variable."""
+        if self.undefined:
+            return None    # perhaps there should be special undefined value
+
         try:
             calculator = self._calculator
         except AttributeError:
@@ -2371,16 +2390,17 @@ class Incrementer(Variable):
         """Recalculdate all the variable instances, without changing step."""
         not_yet_stepped = self._model.STEP == 0
         for var in self._by_treatment.values():
-            var._recalculate(not_yet_stepped)
+            if not var.undefined:
+                var._recalculate(not_yet_stepped)
 
 class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
     """A variable instance with internal state, that increments every step."""
 
     def _reset(self, external_vars):
         """Reset to beginning of simulation."""
-        self._set_initial_amount(self._treatment.name)
+        self.set_initial_amount(self._treatment.name)
 
-    def _set_initial_amount(self, treatment_name):
+    def set_initial_amount(self, treatment_name):
         """Set the initial amount of the incrementer."""
         msg = 'setting initial amount for incrementer {}, treatment {}'.format(
                 self, treatment_name)
@@ -2400,7 +2420,7 @@ class IncrementerInstance(CommonVariableInstance, metaclass=Incrementer):
     def _recalculate(self, not_yet_stepped):
         """Recalculate without advancing a step."""
         if not_yet_stepped:
-            self._set_initial_amount(self._treatment.name)
+            self.set_initial_amount(self._treatment.name)
         else:
             # For incrementer recalcs only happen on increment time
             pass
@@ -3495,6 +3515,8 @@ class PreviousInstance(SimpleVariableInstance, metaclass=Previous):
 
     def _calculate_amount(self):
         """Calculate the current amount of this previous."""
+        if self.undefined:
+            return None 
         previous_amount = self._previous_instance.previous_amount()
         if previous_amount is not None:
             return previous_amount
@@ -3679,7 +3701,10 @@ class CrossInstance(SimpleVariableInstance, metaclass=Cross):
 
     def _calculate_amount(self):
         """Calculate the current amount of this cross."""
-        return self._cross_instance.amount()
+        if self.undefined:
+            return None 
+        else:
+            return self._cross_instance.amount()
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
