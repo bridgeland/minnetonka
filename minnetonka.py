@@ -1673,7 +1673,15 @@ class Calculator:
         # under two circumstances: both if foo is called with the wrong
         # number of arguments and if foo is not a callable
         if callable(defn):
-            return defn(*depends_on_amounts)
+            try:
+                return defn(*depends_on_amounts)
+            except Exception as e:
+                raise MinnetonkaError((
+                    'Error {} raised in treatment {} evaluating {} ' +
+                    'with amounts {}').format(
+                        e, treatment_name, self._definition, 
+                        depends_on_amounts))
+
         else:
             return defn
 

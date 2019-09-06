@@ -399,7 +399,7 @@ class OneArgVariableTest(unittest.TestCase):
 
     def test_populate_no_depends(self):
         current_step = 7
-        with self.assertRaises(TypeError):
+        with self.assertRaises(MinnetonkaError):
             with model(treatments=['As is', 'To be']):
                 variable('Progress', lambda db: (current_step - db) / 4)
 
@@ -2433,14 +2433,13 @@ class ForeachDict(unittest.TestCase):
 
     def test_foreach_with_mismatch(self):
         """Does a two arg foreach with mismatched dicts error correctly?"""
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaisesRegex(MinnetonkaError, 
+                'Foreach encountered mismatched dicts'):
             with model():
                 variable('Baz', {'foo': 12, 'bar': 13})
                 variable('Corge', {'foo': 0, 'wtf': 99})
                 Quz = variable('Quz', 
                     foreach(lambda b, c: b + c), 'Baz', 'Corge')
-        self.assertEqual(
-            me.exception.message, 'Foreach encountered mismatched dicts')
 
     def test_big_dict_foreach(self):
         """Does foreach work with a 1000 element dict?"""
@@ -2452,13 +2451,11 @@ class ForeachDict(unittest.TestCase):
 
     def test_foreach_nondict_error(self):
         """Does foreach raise error when first variable is not a dict?"""
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaisesRegex(MinnetonkaError,
+                'First arg of foreach 23 must be dictionary or tuple'):
             with model():
                 variable('Baz', 23)
                 Quz = variable('Quz', foreach(lambda f: f + 1), 'Baz')
-        self.assertEqual(
-            me.exception.message, 
-            'First arg of foreach 23 must be dictionary or tuple')
 
     def test_foreach_nondict_sunny_day(self):
         """Does foreach do the right thing with a nondict as second element?"""
