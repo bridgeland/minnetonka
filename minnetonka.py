@@ -997,13 +997,13 @@ class CommonVariable(type):
         if self.tary == 'unitary':
             v = self()
             for treatment in self._model.treatments():
-                if self._is_undefined_for(treatment.name):
+                if self.is_undefined_for(treatment.name):
                     self(treatment, undefined=True)
                 else:
                     v._initialize_treatment(treatment)
         else:
             for treatment in self._model.treatments():
-                self(treatment, undefined=self._is_undefined_for(
+                self(treatment, undefined=self.is_undefined_for(
                     treatment.name))
 
     def note_model(self, model):
@@ -1100,7 +1100,7 @@ class CommonVariable(type):
         if treatment_name is None and step is None:
             return {trt_name:self._history_of_treatment(trt_name)
                     for trt_name in self._by_treatment.keys()
-                    if not self._is_undefined_for(trt_name)}
+                    if not self.is_undefined_for(trt_name)}
         elif step is None:
             return self._history_of_treatment(treatment_name)
         else: 
@@ -1137,7 +1137,7 @@ class CommonVariable(type):
     def all(self):
         """Return a dict of all current amounts, one for each treatment."""
         return {tmt: inst.amount() for tmt, inst in self._by_treatment.items()
-                if not self._is_undefined_for(tmt)}
+                if not self.is_undefined_for(tmt)}
 
     def _derived_treatment_exists(self, treatment_name):
         """Does this derived treatment exist for this variable?"""
@@ -1295,7 +1295,7 @@ class CommonVariable(type):
         self._exclude_treatments = treatment_names
         return self
 
-    def _is_undefined_for(self, treatment):
+    def is_undefined_for(self, treatment):
         """Is this variable not defined for this treatment?"""
         return treatment in self._exclude_treatments
 
@@ -4094,18 +4094,23 @@ class _Constraint:
     def fails(self, model):
         """Validate constraint against all treatments. Return error or None."""
         for treatment in model.treatments():
-            amounts = [model[v][treatment.name] for v in self._var_names]
-            if not self._test(*amounts):
-                err_message = self._error_message_gen(
-                    self._var_names, amounts, treatment.name)
-                return {
-                    'error_code': self._error_code,
-                    'inconsistent_variables': self._var_names,
-                    'error_message': err_message,
-                    'treatment': treatment.name
-                }
+            if self._is_defined_for_all(model, treatment):
+                amounts = [model[v][treatment.name] for v in self._var_names]
+                if not self._test(*amounts):
+                    err_message = self._error_message_gen(
+                        self._var_names, amounts, treatment.name)
+                    return {
+                        'error_code': self._error_code,
+                        'inconsistent_variables': self._var_names,
+                        'error_message': err_message,
+                        'treatment': treatment.name
+                    }
         return None
 
+    def _is_defined_for_all(self, model, treatment):
+        """Are all variables defined for the treatment?"""
+        return all(not model[v].is_undefined_for(treatment.name)
+                   for v in self._var_names)
 
 #
 # Constructing results to send across network

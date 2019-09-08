@@ -4686,9 +4686,26 @@ class UndefinedInTest(unittest.TestCase):
                     }
             })
 
+    def test_validate_all(self):
+        """Test validate_all(), with a variable in one treatment."""
+        with model(treatments=['all good', 'one bad']) as m:
+            constant('Small', 0.4)
+            constant('Medium', 0.5).undefined_in('one bad')
+            Large = constant('Large', 0.05)
+
+            constraint(
+                ['Small', 'Medium', 'Large'],
+                lambda *sizes: sum(sizes) == 1.0,
+                'InvalidDistribution',
+                lambda names, amounts, treatment: 
+                    'Distribution of {} sums to {}, not 1.0, in {}'.format(
+                        ", ".join(names), round(sum(amounts), 3), treatment))
 
 
-
+        vresult = m.validate_all()
+        self.assertEqual(vresult['success'], False)
+        Large['__all__'] = 0.1
+        self.assertEqual(m.validate_all(), {'success': True})
 
 
     # works with unitary?
