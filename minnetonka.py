@@ -169,12 +169,16 @@ class Model:
         >>> m3['Year']['']
         2039
         """
-        if to_end:
+        if to_end and self._end_time:
             for i in range(int((self._end_time - self.TIME) / self._timestep)):
                 self._step_one()
+            self._user_actions.append_step(n, to_end)
+
         elif self._end_time is None or self.TIME < self._end_time:
             for i in range(n):
                 self._step_one()
+            self._user_actions.append_step(n, to_end)
+
         else:
             raise MinnetonkaError(
                 'Attempted to simulation beyond end_time: {}'.format(
@@ -244,6 +248,7 @@ class Model:
         """
         self._initialize_time()
         self._variables.reset(reset_external_vars)
+        self._user_actions.append_reset(reset_external_vars)
 
     def initialize(self):
         """Initialize simulation."""
@@ -430,6 +435,7 @@ class Model:
             self._variables.recalculate(at_start=True)
         else:
             self._variables.recalculate(at_start=False)
+        self._user_actions.append_recalculate()
 
     def variable_instance(self, variable_name, treatment_name):
         """Find or create right instance for this variable and treatment."""
@@ -455,7 +461,7 @@ class Model:
         if self._is_valid_treatment(treatment_name):
             res = var.validate_and_set(treatment_name, new_amount, res, excerpt)
             if res['success'] and record:
-                self._user_actions.add(
+                self._user_actions.append_set_variable(
                     variable_name, treatment_name, new_amount, excerpt)
             return res
         else:
@@ -623,41 +629,60 @@ class UserActions:
     def __init__(self):
         self._actions = [] 
 
-    def add(self, varname, treatment_name, new_amount, excerpt):
+    def append_set_variable(self, varname, treatment_name, new_amount, excerpt):
         """Add a single user action (e.g. set variable) to record.""" 
-        new_action = Action(varname, treatment_name, excerpt, new_amount)
-        if (new_action.matches(action) for action in self._actions):
+        self._append_action(ValidateAndSetAction(
+            varname, treatment_name, excerpt, new_amount))
+
+    def _append_action(self, new_action):
+        """Add the new action to the lsit of actions."""
+        if any(new_action.supercedes(action) for action in self._actions):
             self._actions = [action for action in self._actions 
-                             if not new_action.matches(action)]
+                             if not new_action.supercedes(action)]
         self._actions.append(new_action)
+
+    def append_step(self, n, to_end):
+        """Add a single user step action to record."""
+        self._append_action(StepAction(n, to_end))
+
+    def append_recalculate(self):
+        """Append a single recalculate action to records."""
+        self._append_action(RecalculateAction())
+
+    def append_reset(self, reset_external_vars):
+        """Append a single reset to records."""
+        self._append_action(ResetAction(reset_external_vars))
  
     def recording(self):
         """Record a string of all user actions, for persistance.""" 
         return json.dumps([action.freeze() for action in self._actions]) 
 
+    def thaw_recording(self, recording):
+        return json.loads(recording)
+
     def replay(self, recording, mod, rewind_first=True):
         """Replay a previous recording."""
         if rewind_first:
             self.rewind()
-        for frozen_action in json.loads(recording):
-            variable = frozen_action['variable']
-            treatment = frozen_action['treatment']
-            amount = frozen_action['amount']
-            excerpt = frozen_action['excerpt']
-            res = mod.validate_and_set(variable, treatment, amount, excerpt)
-            if not res['success']:
-                raise MinnetonkaError(
-                    'Failed to replay action {}["{}"]{} = {},'.format(
-                        variable, treatment, excerpt, amount) +
-                    'Result: {}'.format(res))
+        for frozen_action in self.thaw_recording(recording):
+            action_type = frozen_action['type']
+            del frozen_action['type']
+            action = {
+                'validate_and_set': ValidateAndSetAction,
+                'step': StepAction,
+                'recalculate': RecalculateAction,
+                'reset': ResetAction
+            }[action_type](**frozen_action)
+
+            action.thaw(mod) 
 
     def rewind(self):
         """Set the action list back to no actions."""
         self._actions = []
 
 
-class Action:
-    """A single user action"""
+class ValidateAndSetAction:
+    """A single user action for setting a variable"""
     def __init__(self, variable_name, treatment_name, excerpt, amount):
         self.variable = variable_name
         self.treatment = treatment_name
@@ -669,24 +694,98 @@ class Action:
             raise MinnetonkaError(
                 f'Cannot save amount for later playback: {amount}')
 
-
-    def matches(self, other_action):
-        """Does this action match the other? Note that amounts do not matter."""
-        return (
-            self.variable == other_action.variable and
-            self.treatment == other_action.treatment and
-            self.excerpt == other_action.excerpt)
+    def supercedes(self, other_action):
+        """Does this action supercede the other? Note: amounts do not matter."""
+        if isinstance(other_action, ValidateAndSetAction):
+            return (
+                self.variable == other_action.variable and
+                self.treatment == other_action.treatment and
+                self.excerpt == other_action.excerpt)
+        else: 
+            return False 
 
     def freeze(self):
         """Freeze this to simple json."""
         return {
-            'variable': self.variable, 
-            'treatment': self.treatment, 
+            'type': 'validate_and_set',
+            'variable_name': self.variable, 
+            'treatment_name': self.treatment, 
             'excerpt': self.excerpt,
             'amount': self.amount
           }
 
+    def thaw(self, mod):
+        """Apply once-frozen action to model."""
+        res = mod.validate_and_set(
+            self.variable, self.treatment, self.amount, self.excerpt)
+        if not res['success']:
+            raise MinnetonkaError(
+                'Failed to replay action {}["{}"]{} = {},'.format(
+                    variable, treatment, excerpt, amount) +
+                'Result: {}'.format(res))
 
+class StepAction:
+    """A single user action for stepping the model."""
+    def __init__(self, n, to_end):
+        self.n = n
+        self.to_end = to_end 
+
+    def freeze(self):
+        """Freeze this to simple json."""
+        return {'type': 'step', 'n': self.n, 'to_end': self.to_end }
+
+    def thaw(self, mod):
+        """Apply once-frozen action to model."""
+        mod.step(n=self.n, to_end=self.to_end)
+
+    def supercedes(self, other_action):
+        """Does this action supercede the prior action? No it does not"""
+        return False 
+
+
+class RecalculateAction:
+    """A single user action to recalculate the model."""
+    def __init__(self):
+        pass 
+
+    def freeze(self):
+        """Freeze this to simple json."""
+        return {'type': 'recalculate'}
+
+    def thaw(self, mod):
+        """Apply once-frozen action to model."""
+        mod.recalculate()
+
+    def supercedes(self, other_action):
+        """Does this action supercede the prior action? No it does not"""
+        return False 
+
+
+class ResetAction:
+    """A single user action to reset the simulation."""
+    def __init__(self, reset_external_vars):
+        self.reset_external_vars = reset_external_vars
+
+    def freeze(self):
+        """Freeze this to simple json."""
+        return {
+            'type': 'reset', 
+            'reset_external_vars': self.reset_external_vars
+        }
+
+    def thaw(self, mod):
+        """Apply once-frozen action to model."""
+        mod.reset(reset_external_vars=self.reset_external_vars)
+
+    def supercedes(self, other_action):
+        """Does the action supercede the prior action?"""
+        if self.reset_external_vars:
+            # Remove everything already done
+            return True 
+        elif isinstance(other_action, ValidateAndSetAction):
+            return False
+        else:
+            return True 
 
 
 class ModelVariables:

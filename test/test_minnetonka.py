@@ -4318,8 +4318,7 @@ class ReplayTest(unittest.TestCase):
 
         recording = m.recording()
         m2 = create_model()
-        m2.replay(recording)
-        m2.recalculate()
+        m2.replay(recording) 
         self.assertEqual(m2['Foo']['then'], 11)
         self.assertEqual(m2['Foo']['now'], 10)
         self.assertEqual(m2['Bar']['then'], 3)
@@ -4360,8 +4359,9 @@ class ReplayTest(unittest.TestCase):
         self.assertEqual(m['Size'][''].length.metric, 17)
         self.assertEqual(m['Size'][''].length.customary.begin, 15)
         self.assertEqual(m['Size'][''].height, 14)
-
-
+        
+        m2 = create_model()
+        m2.replay(m.recording())
         self.assertEqual(m['Size'][''].width, 99)
         self.assertEqual(m['Size'][''].length.metric, 17)
         self.assertEqual(m['Size'][''].length.customary.begin, 15)
@@ -4406,9 +4406,109 @@ class ReplayTest(unittest.TestCase):
         self.assertEqual(m2['Size'][''].length.metric, 19)
         self.assertEqual(m2['Size'][''].width, 16)
 
+    def test_included_step(self):
+        """Test Model.recording with a step or two involved."""
+        def create_model():
+            with model(end_time=10) as m:
+                variable('X', 1)
+                variable('Y', 22)
+                S = stock('S',
+                    """Start at 22 and increase by 1""",
+                     lambda x: x, ('X',), lambda x: x, ('Y',))
+            return m 
+
+        m = create_model()
+        self.assertEqual(m['S'][''], 22)
+        m.step()
+        self.assertEqual(m['S'][''], 23) 
+        recording2 = m.recording()
+
+        m.validate_and_set('X', '', 2)
+        m.recalculate()
+        m.step(2)
+        recording3 = m.recording()
+
+        m.step(to_end=True)
+        recording4 = m.recording()
+
+        m2 = create_model()
+        m2.replay(recording2)
+        self.assertEqual(m2['S'][''], 23)
+
+        m3 = create_model()
+        m3.replay(recording3)
+        self.assertEqual(m3['S'][''], 27)
+
+        m4 = create_model()
+        m4.replay(recording4)
+        self.assertEqual(m4['S'][''], 41)
+
+    def test_reset(self):
+        """Test model recording with a reset or two."""
+        def create_model():
+            with model() as m:
+                variable('X', 1) 
+            return m 
+
+        m = create_model() 
+        m.validate_and_set('X', '', 2)
+        m.reset()
+        recording2 = m.recording()
+
+        m.validate_and_set('X', '', 2)
+        m.reset(reset_external_vars=False)
+        recording3 = m.recording()
+
+        m2 = create_model()
+        m2.replay(recording2)
+        self.assertEqual(m2['X'][''], 1)
+
+        m3 = create_model()
+        m3.replay(recording3)
+        self.assertEqual(m3['X'][''], 2)
+
+    def test_multiple_resets(self):
+        """Test that multiple resets and multiple steps are only done once."""
+        def create_model():
+            with model(end_time=10) as m:
+                variable('X', 1)
+                variable('Y', 22)
+                S = stock('S',
+                    """Start at 22 and increase by 1""",
+                     lambda x: x, ('X',), lambda x: x, ('Y',))
+            return m 
+
+
+        m = create_model() 
+        m.validate_and_set('X', '', 2)
+        m.reset(reset_external_vars=False)
+        m.recalculate()
+        m.reset(reset_external_vars=False)
+        m.step(3)
+        m.reset(reset_external_vars=False)
+        m.reset(reset_external_vars=False)
+        recording = m.recording()
+
+        m2 = create_model()
+        m2.replay(recording)
+        self.assertEqual(m2['X'][''], 2)
+        self.assertEqual(
+            m2._user_actions.thaw_recording(recording),
+            # just two actions
+            [
+                {
+                    'type': 'validate_and_set',
+                    'treatment_name': '',
+                    'excerpt': '',
+                    'amount': 2,
+                    'variable_name': 'X'
+                },
+                {'type': 'reset', 'reset_external_vars': False}
+            ])
+
 
 class CrossTreatmentTest(unittest.TestCase):
-    """Test replaying a model."""
+    """Test a cross."""
     def test_cross_constant(self):
         with model(treatments=['As is', 'To be']) as m: 
             Bar = constant('Bar', PerTreatment({'As is': 1, 'To be': 2}))
