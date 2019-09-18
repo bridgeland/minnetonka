@@ -1122,9 +1122,13 @@ class CommonVariable(type):
         if self.tary == 'unitary':
             for val in self._by_treatment.values():
                 if not val.undefined:
-                    return [val]
+                    yield val
+                    break
         else:
-            return self._by_treatment.values()
+            for val in self._by_treatment.values():
+                if not val.undefined:
+                    yield val
+
 
     def set_all_initial_amounts(self):
         """Set the initial amounts of all the variable instances."""

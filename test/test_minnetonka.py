@@ -4558,7 +4558,9 @@ class UndefinedInTest(unittest.TestCase):
         with model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
             variable('X', 1)
-            variable('Y', 22).undefined_in('design')
+            variable('Y', 
+                PerTreatment({'conjecture': 22, 'current': 22, 'possible': 22})
+            ).undefined_in('design')
             S = stock('S',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',)
