@@ -3275,6 +3275,19 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Quz.history('Baz', 0), 10) 
         self.assertEqual(Quz.history('Bar', 99), 9)
         self.assertEqual(Quz.history('Baz', 99), 10)
+
+    def test_old_derived_values(self):
+        """Does history do the right thing if the treatment is derived?"""
+        with model(treatments=['Bar', 'Baz'],
+                   derived_treatments={'Quz': AmountBetter('Baz', 'Bar')}
+        ) as m:
+            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            ).derived()
+
+        m.step(6)
+        self.assertEqual(Foo.history('Quz', 0), 0) 
+        self.assertEqual(Foo.history('Quz', 1), 1) 
+        self.assertEqual(Foo.history('Quz', 2), 2) 
         
 
 class ModelHistory(unittest.TestCase):
@@ -3313,6 +3326,54 @@ class ModelHistory(unittest.TestCase):
                     'Bar': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     'Baz': [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
                     }
+            })
+
+
+    def test_derived_history(self):
+        """Test history of several variables and two treatments."""
+        with model(treatments=['Bar', 'Baz'], 
+                   derived_treatments={
+                        'Plugh': AmountBetter('Baz', 'Bar')}
+            ) as m:
+            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            ).derived()
+            Quz = variable('Quz', lambda x: x, 'Foo'
+            ).derived(scored_as='golf')
+            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            ).derived()
+            Grault = constant('Grault', PerTreatment({'Bar': 9, 'Baz':10})
+            ).derived()
+            Thud = variable('Thud', lambda x: x, 'Foo').no_history(
+            ).derived()
+            Fred = variable('Fred', 
+                lambda foo, quz: {'foo': foo, 'quz': quz},
+                'Foo', 'Quz'
+            ).derived(scored_as='combo')
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {'Plugh': [0]},
+                'Quz': {'Plugh': [0]},
+                'Corge': {'Plugh': [0]},
+                'Fred': {'Plugh': [{'foo': 0, 'quz': 0}]}
+            })
+
+        m.step(10)
+
+        self.assertEqual(
+            m.history(),
+            {
+                'Foo': {'Plugh': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+                'Quz': {'Plugh': [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10]},
+                'Corge': {'Plugh': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+                'Fred': {'Plugh': [
+                    {'foo': 0, 'quz': 0}, {'foo': 1, 'quz': -1}, 
+                    {'foo': 2, 'quz': -2}, {'foo': 3, 'quz': -3}, 
+                    {'foo': 4, 'quz': -4}, {'foo': 5, 'quz': -5}, 
+                    {'foo': 6, 'quz': -6}, {'foo': 7, 'quz': -7}, 
+                    {'foo': 8, 'quz': -8}, {'foo': 9, 'quz': -9}, 
+                    {'foo': 10, 'quz': -10}]}
             })
 
 
@@ -4241,16 +4302,20 @@ class DerivedTreatmentTest(unittest.TestCase):
                         'at-risk': AmountBetter('possible', 'current')}
         ) as m:
             Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25}))
+                PerTreatment({'current': 20, 'possible': 25})
+            ).derived()
             Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})).scored_as_golf()
+                PerTreatment({'current': 19, 'possible': 18})
+            ).derived(scored_as='golf')
             Earnings = variable('Earnings',
                 lambda r, c: r-c,
-                'Revenue', 'Cost')
+                'Revenue', 'Cost'
+            ).derived()
 
         self.assertEqual(Revenue['at-risk'], 5)
         self.assertEqual(Cost['at-risk'], 1)
         self.assertEqual(Earnings['at-risk'], 6)
+        self.assertEqual(Earnings['current'], 1)
 
     def test_derived_treatment_name_dupes_treatment(self):
         """Test derived treatment with name that is already treatemnt."""
@@ -4279,16 +4344,60 @@ class DerivedTreatmentTest(unittest.TestCase):
                         'at-risk': AmountBetter('possible', 'current')}
         ) as m:
             Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25}))
+                PerTreatment({'current': 20, 'possible': 25})
+            ).derived()
             Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})).scored_as_golf()
+                PerTreatment({'current': 19, 'possible': 18})
+            ).derived(scored_as='golf')
             Summary = variable('Summary',
                 lambda r, c: {'revenue':r, 'cost':c},
-                'Revenue', 'Cost').scored_as_combo()
+                'Revenue', 'Cost'
+            ).derived(scored_as='combo')
 
         self.assertEqual(Revenue['at-risk'], 5)
         self.assertEqual(Cost['at-risk'], 1)
         self.assertEqual(Summary['at-risk'], {'revenue': 5, 'cost': 1})
+
+    def test_attempt_to_access_derived_of_nonderived(self):
+        """Attempt to access derived treatment of non-derived variable."""
+        with model(treatments=['current', 'possible'], 
+                   derived_treatments={
+                        'at-risk': AmountBetter('possible', 'current')}
+        ) as m:
+            Revenue = constant('Revenue', 
+                PerTreatment({'current': 20, 'possible': 25})
+            ) 
+            Cost = constant('Cost',
+                PerTreatment({'current': 19, 'possible': 18})
+            ).derived(scored_as='golf')
+            Earnings = variable('Earnings',
+                lambda r, c: r-c,
+                'Revenue', 'Cost'
+            ).derived()
+
+        with self.assertRaisesRegex(MinnetonkaError, 
+                'Unknown treatment at-risk for variable Revenue'):
+            Revenue['at-risk']
+
+    def test_is_derived(self):
+        """Test the function is_derived.""" 
+        with model(treatments=['current', 'possible'], 
+                   derived_treatments={
+                        'at-risk': AmountBetter('possible', 'current')}
+        ) as m:
+            Revenue = constant('Revenue', 
+                PerTreatment({'current': 20, 'possible': 25})
+            ) 
+            Cost = constant('Cost',
+                PerTreatment({'current': 19, 'possible': 18})
+            ).derived(scored_as='golf')
+            Earnings = variable('Earnings',
+                lambda r, c: r-c,
+                'Revenue', 'Cost'
+            ).derived()
+
+        self.assertTrue(Cost.is_derived())
+        self.assertFalse(Revenue.is_derived())
 
 
 class ReplayTest(unittest.TestCase):

@@ -294,6 +294,10 @@ class Model:
             raise MinnetonkaError('Model has no derived treatment {}'.format(
                 treatment_name))
 
+    def derived_treatments(self):
+        """Iterator over names of all derived treatments."""
+        return self._derived_treatments.keys()
+
 
     def variable(self, variable_name):
         """
@@ -1067,9 +1071,14 @@ class CommonVariable(type):
         the name **treatment_name**.
         """
         if self._treatment_exists(treatment_name):
-            return self.by_treatment(treatment_name).amount()
-        elif self._derived_treatment_exists(treatment_name):
-            return self._derived_amount(treatment_name)
+            return self.by_treatment(treatment_name).amount() 
+        elif self.is_derived():
+            if self._derived_treatment_exists(treatment_name):
+                return self._derived_amount(treatment_name)
+            else:   
+                raise MinnetonkaError(
+                    'Unknown derived treatment {} for variable {}'.
+                    format(treatment_name, self.name())) 
         else:
             raise MinnetonkaError('Unknown treatment {} for variable {}'.
                 format(treatment_name, self.name()))
@@ -1199,7 +1208,103 @@ class CommonVariable(type):
         self._by_treatment = {}
 
     def history(self, treatment_name=None, step=None):
-        """Return the amount at a past timestep for a particular treatment. """
+        """Return the amount at a past timestep for a particular treatment."""
+        if not self.is_derived():
+            return self._base_history(treatment_name=treatment_name, step=step)
+        elif treatment_name is None:
+            return self._derived_history(treatment_name=None, step=step)
+        elif self._derived_treatment_exists(treatment_name):
+            return self._derived_history(
+                treatment_name=treatment_name, step=step)
+        else:
+            return self._base_history(treatment_name=treatment_name, step=step)
+
+    def _derived_history(self, treatment_name=None, step=None):
+        """Return the amount at a past timestep for a derived treatment."""
+        # Or for all past timesteps
+        if treatment_name is None and step is None:
+            return self._full_derived_history()
+        elif step is None:
+            return self._history_of_derived_treatment(treatment_name)
+        else:
+            return self._history_of_derived_treatment_at_step(
+                treatment_name, step)
+
+    def _full_derived_history(self):
+        """Return the full history of all derived treatments."""
+        return {
+            trt_name: self._history_of_derived_treatment(trt_name)
+            for trt_name in self._model.derived_treatments()
+            if self.derived_treatment_defined(trt_name)
+        }
+
+    def _history_of_derived_treatment(self, treatment_name):
+        """Return the history of this derived treatment."""
+        if self._derived_treatment_exists(treatment_name):
+            if self._is_scored_as_combo():
+                return self._history_of_derived_treatment_combo(treatment_name)
+            else:
+                return self._history_of_derived_treatment_simple(treatment_name)
+        else:
+            raise MinnetonkaError(
+                'Unknown derived treatment {} for variable {}'.
+                format(treatment_name, self.name())) 
+
+    def _history_of_derived_treatment_combo(self, treatment_name):
+        """Return the history of htis derived tremament, a combo."""
+        dependency_histories = [
+            self._model[dep]._history_of_derived_treatment(treatment_name) 
+            for dep in self.depends_on()]
+        return [amt for amt in map(
+            lambda *amounts: 
+                self._calculator.calculate(treatment_name, amounts),
+            *dependency_histories)]
+
+    def _history_of_derived_treatment_simple(self, treatment_name):
+        """REturn the history of this derived treatment, not a combo."""
+        treatment = self._model.derived_treatment(treatment_name)
+        better_treatment, worse_treatment = treatment.depends_on()
+        is_golf = self._is_scored_as_golf()
+        return [
+            treatment.deriver(is_golf, better, worse)
+            for better, worse in zip(
+                self.by_treatment(better_treatment)._history(),
+                self.by_treatment(worse_treatment)._history())]
+
+    def _history_of_derived_treatment_at_step(self, treatment_name, step):
+        """Return the amount of hte derived treatment at a step in time."""
+        if self._derived_treatment_exists(treatment_name):
+            if self._is_scored_as_combo():
+                return self._history_of_derived_treatment_at_step_combo(
+                    treatment_name, step)
+            else:
+                return self._history_of_derived_treatment_at_step_simple(
+                    treatment_name, step)
+        else:
+            raise MinnetonkaError(
+                'Unknown derived treatment {} for variable {}'.
+                format(treatment_name, self.name())) 
+
+    def _history_of_derived_treatment_at_step_combo(self, treatment_name, step):
+        """For the combo variable, return the amount of derived trt at step."""
+        return self._calculator.calculate(
+            treatment_name, 
+            [self._model[dep]._history_of_derived_treatment_at_step(
+                treatment_name, step)
+             for dep in self.depends_on()])
+
+    def _history_of_derived_treatment_at_step_simple(self, treatment_name,step):
+        """For the non-combo, return the amount of derived trt at step."""
+        treatment = self._model.derived_treatment(treatment_name)
+        better_treatment, worse_treatment = treatment.depends_on()
+        return treatment.deriver(
+            self._is_scored_as_golf(),
+            self._history_at_treatment_step(better_treatment, step),
+            self._history_at_treatment_step(worse_treatment, step))
+
+    def _base_history(self, treatment_name=None, step=None):
+        """Return the amount at a past timestep for a base treatment. """
+        # Or for all past timesteps
         if treatment_name is None and step is None:
             return {trt_name:self._history_of_treatment(trt_name)
                     for trt_name in self._by_treatment.keys()
@@ -1246,6 +1351,17 @@ class CommonVariable(type):
         """Does this derived treatment exist for this variable?"""
         return self._model.derived_treatment_exists(treatment_name)
 
+    def derived_treatment_defined(self, treatment_name):
+        """Does the treatment exist and are both the base treatments defined?"""
+        if self._model.derived_treatment_exists(treatment_name): 
+            treatment = self._model.derived_treatment(treatment_name)
+            better_treatment_name, worse_treatment_name = treatment.depends_on()
+            return not (
+                self.is_undefined_for(better_treatment_name) or 
+                self.is_undefined_for(worse_treatment_name))
+        else:
+            return False 
+
     def _derived_amount(self, treatment_name):
         """Treatment is known to be a derived treatment. Use it to calc amt."""
         treatment = self._model.derived_treatment(treatment_name)
@@ -1259,14 +1375,25 @@ class CommonVariable(type):
                 self._is_scored_as_golf(), 
                 *[self[d] for d in treatment.depends_on()])
 
+    def derived(self, scored_as='basketball'):
+        """Mark this variable as derived, and how it is scored."""
+        self._derived['derived'] = True 
+        self._derived['scored_as'] = scored_as 
+        return self
+
+    def is_derived(self):
+        """Does this variable support derived treatments?"""
+        return self._derived['derived']
+
     def _is_scored_as_golf(self):
         """Is this variable scored as golf, with lower scores better?"""
-        return self._scored_as_golf
+        return self.is_derived() and self._derived['scored_as'] == 'golf'
 
-    def scored_as_golf(self):
-        """This variable is to be scored like golf."""
-        self._scored_as_golf = True 
-        return self
+    def _is_scored_as_combo(self):
+        """Is this variable scored as a combo of golf and basketball?"""
+        # some dependencies are scored as golf, some dependencies scored
+        # as basketball
+        return self.is_derived() and self._derived['scored_as'] == 'combo'
 
     def show(self):
         """Show everything important about the variable."""
@@ -1697,17 +1824,6 @@ class Variable(CommonVariable):
         """
         super().__setitem__(treatment_name, amount)
 
-    def _is_scored_as_combo(self):
-        """Is this variable scored as a combo of golf and basketball?"""
-        # some dependencies are scored as golf, some dependencies scored
-        # as basketball
-        return self._scored_as_combo
-
-    def scored_as_combo(self):
-        """This variable is to be scored as a combo of golf and basketball."""
-        self._scored_as_combo = True 
-        return self
-
 
 class VariableInstance(SimpleVariableInstance, metaclass=Variable):
     """
@@ -1993,8 +2109,7 @@ def _create_variable(
                     '__doc__': docstring, 
                     '_calculator': calc, 
                     '_validators': list(),
-                    '_scored_as_golf': False,
-                    '_scored_as_combo': False,
+                    '_derived': {'derived': False, 'scored_as': 'basketball'},
                     '_has_history': True,
                     '_exclude_treatments': []
                   }
@@ -3006,8 +3121,7 @@ def _create_stock(stock_name, docstring,
                         '_initial': initial,
                         '_incremental': incr,
                         '_validators': list(),
-                        '_scored_as_golf': False,
-                        '_scored_as_combo': False,
+                        '_derived': {'derived': False},
                         '_has_history': True,
                         '_exclude_treatments': []
                     }
@@ -3466,8 +3580,7 @@ def _create_accum(accum_name, docstring,
                         '_initial': initial,
                         '_incremental': increment,
                         '_validators': list(),
-                        '_scored_as_golf': False,
-                        '_scored_as_combo': False,
+                        '_derived': {'derived': False},
                         '_has_history': True,
                         '_exclude_treatments': []
                     }
@@ -3762,8 +3875,7 @@ def _create_previous(
                     '_earlier': earlier_var_name,
                     '_init_amount': init_amount,
                     '_validators': list(),
-                    '_scored_as_golf': False,
-                    '_scored_as_combo': False,
+                    '_derived': {'derived': False},
                     '_has_history': True,
                     '_exclude_treatments': []
                     }
@@ -3835,8 +3947,7 @@ def _create_cross(
             '_referenced_variable': referenced_variable_name,
             '_referenced_treatment': treatment,
             '_validators': list(),
-            '_scored_as_golf': False,
-            '_scored_as_combo': False,
+            '_derived': {'derived': False},
             '_has_history': True,
             '_exclude_treatments': []
         })
