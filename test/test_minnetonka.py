@@ -4918,16 +4918,18 @@ class UndefinedInTest(unittest.TestCase):
         Large['__all__'] = 0.1
         self.assertEqual(m.validate_all(), {'success': True})
 
+    # The existing error handling is OK, better than trying to catch this
+    # explicitly and not allowing dispatch functions.
+    
+    # def test_undefined_rainy_day(self):
+    #     """Test error handling when a variable uses an undefined variable."""
+    #     with self.assertRaisesRegex(MinnetonkaError,
+    #             "Bar uses undefined conjecture amount of Foo"):
+    #         with model(treatments=['conjecture', 'current']):
+    #             Foo = constant('Foo', 12 ).undefined_in('conjecture')
+    #             Bar = variable('Bar', lambda x: x + 1, 'Foo')
 
-    # works with unitary?
 
-    # def test_per_treatment(self):
-    #     with model(treatments=['conjecture', 'current', 'possible', 'design']):
-    #         Foo = variable('Foo', 
-    #             PerTreatment({
-    #                 'possible': 12
-    #                 })
-    #         ).undefined_in('current', 'conjecture')
 
 
 
