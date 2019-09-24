@@ -3288,6 +3288,7 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Foo.history('Quz', 0), 0) 
         self.assertEqual(Foo.history('Quz', 1), 1) 
         self.assertEqual(Foo.history('Quz', 2), 2) 
+        self.assertEqual(Foo.history('Baz', 1), 2)
         
 
 class ModelHistory(unittest.TestCase):
@@ -3375,6 +3376,16 @@ class ModelHistory(unittest.TestCase):
                     {'foo': 8, 'quz': -8}, {'foo': 9, 'quz': -9}, 
                     {'foo': 10, 'quz': -10}]}
             })
+
+        self.assertEqual(
+            m.history(base=True)['Foo']['Bar'],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] )
+        self.assertEqual(
+            m.history(base=True)['Quz']['Baz'],
+            [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20] )
+        self.assertEqual(
+            m.history(base=True)['Corge']['Bar'],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] )
 
 
 class Unitary(unittest.TestCase):
