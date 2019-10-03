@@ -489,9 +489,11 @@ class Model:
         """Return a string of all the user actions, for persistance."""
         return self._user_actions.recording()
 
-    def replay(self, recording, rewind_actions_first=True):
+    def replay(self, recording, rewind_actions_first=True, ignore_step=False):
         """Replay a bunch of previous actions."""
-        self._user_actions.replay(recording, self, rewind_actions_first)
+        self._user_actions.replay(
+            recording, self, rewind_first=rewind_actions_first, 
+            ignore_step=ignore_step)
 
     def history(self, base=False):
         """Return history of all amounts of all variables in all treatments."""
@@ -664,21 +666,24 @@ class UserActions:
     def thaw_recording(self, recording):
         return json.loads(recording)
 
-    def replay(self, recording, mod, rewind_first=True):
+    def replay(self, recording, mod, rewind_first=True, ignore_step=False):
         """Replay a previous recording."""
         if rewind_first:
             self.rewind()
         for frozen_action in self.thaw_recording(recording):
             action_type = frozen_action['type']
-            del frozen_action['type']
-            action = {
-                'validate_and_set': ValidateAndSetAction,
-                'step': StepAction,
-                'recalculate': RecalculateAction,
-                'reset': ResetAction
-            }[action_type](**frozen_action)
+            if ignore_step and action_type =='step':
+                pass
+            else:
+                del frozen_action['type']
+                action = {
+                    'validate_and_set': ValidateAndSetAction,
+                    'step': StepAction,
+                    'recalculate': RecalculateAction,
+                    'reset': ResetAction
+                }[action_type](**frozen_action)
 
-            action.thaw(mod) 
+                action.thaw(mod) 
 
     def rewind(self):
         """Set the action list back to no actions."""

@@ -4626,6 +4626,43 @@ class ReplayTest(unittest.TestCase):
                 {'type': 'reset', 'reset_external_vars': False}
             ])
 
+    def test_ignore_step(self):
+        """Test replay while ignoring steps."""
+        def create_model():
+            with model(end_time=10) as m:
+                variable('X', 1)
+                variable('Y', 22)
+                S = stock('S',
+                    """Start at 22 and increase by 1""",
+                     lambda x: x, ('X',), lambda x: x, ('Y',))
+            return m 
+
+        m = create_model()
+        self.assertEqual(m['S'][''], 22)
+        m.step()
+        self.assertEqual(m['S'][''], 23) 
+        recording2 = m.recording()
+
+        m.validate_and_set('X', '', 2)
+        m.recalculate()
+        m.step(2)
+        recording3 = m.recording()
+
+        m.step(to_end=True)
+        recording4 = m.recording()
+
+        m2 = create_model()
+        m2.replay(recording2, ignore_step=True)
+        self.assertEqual(m2['S'][''], 22)
+
+        m3 = create_model()
+        m3.replay(recording3, ignore_step=True)
+        self.assertEqual(m3['S'][''], 22)
+
+        m4 = create_model()
+        m4.replay(recording4, ignore_step=True)
+        self.assertEqual(m4['S'][''], 22)
+
 
 class CrossTreatmentTest(unittest.TestCase):
     """Test a cross."""
