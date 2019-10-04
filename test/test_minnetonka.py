@@ -4977,6 +4977,26 @@ class UndefinedInTest(unittest.TestCase):
     #             Foo = constant('Foo', 12 ).undefined_in('conjecture')
     #             Bar = variable('Bar', lambda x: x + 1, 'Foo')
 
+class OnInitTest(unittest.TestCase):
+    """Test on_init and on_reset."""
+    def test_simple(self):
+        """Test on_init and on_reset."""
+        def set_seed(md):
+            random.seed(99)
+
+        with model(on_init=set_seed, on_reset=set_seed) as m:
+            foo = variable('Foo', lambda: random.randint(0, 999))
+
+        foo1a = foo['']
+        m.step()
+        foo2a = foo['']
+        m.reset()
+        foo1b = foo['']
+        m.step()
+        foo2b = foo['']
+
+        self.assertEqual(foo1a, foo1b)
+        self.assertEqual(foo2a, foo2b)
 
 
 

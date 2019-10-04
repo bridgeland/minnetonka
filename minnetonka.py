@@ -74,7 +74,7 @@ class Model:
     _model_context = None
 
     def __init__(self, treatments, derived_treatments, timestep=1, 
-                 start_time=0, end_time=None):
+                 start_time=0, end_time=None, on_init=None, on_reset=None):
         """Initialize the model, with treatments and optional timestep."""
         self._treatments = treatments 
         self._derived_treatments = derived_treatments
@@ -88,6 +88,8 @@ class Model:
         self._start_time = start_time 
         self._end_time = end_time
         self._constraints = []
+        self._on_init = on_init 
+        self._on_reset = on_reset
 
         #: Current time in the model, accessible in a specifier. See
         #: example detailed in :func:`variable`
@@ -246,6 +248,8 @@ class Model:
         >>> m['Year']['']
         2019
         """
+        if self._on_reset:
+            self._on_reset(self)
         self._initialize_time()
         self._variables.reset(reset_external_vars)
         self._user_actions.append_reset(reset_external_vars)
@@ -253,6 +257,8 @@ class Model:
     def initialize(self):
         """Initialize simulation."""
         logging.info('enter')
+        if self._on_init:
+            self._on_init(self)
         self._initialize_time()
         self._variables.initialize(self)
 
@@ -501,7 +507,8 @@ class Model:
 
 
 def model(variables=[], treatments=[''], derived_treatments=None,
-          initialize=True, timestep=1, start_time=0, end_time=None):
+          initialize=True, timestep=1, start_time=0, end_time=None,
+          on_init=None, on_reset=None):
     """
     Create and initialize a model, an instance of :class:`Model`
 
@@ -623,7 +630,9 @@ def model(variables=[], treatments=[''], derived_treatments=None,
         derived_treatments=derived_treatments,
         timestep=timestep,
         start_time=start_time, 
-        end_time=end_time)
+        end_time=end_time,
+        on_init=on_init,
+        on_reset=on_reset)
     m.add_variables(*variables)
     if initialize and variables:
         m.initialize()
