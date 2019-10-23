@@ -4999,6 +4999,64 @@ class OnInitTest(unittest.TestCase):
         self.assertEqual(foo2a, foo2b)
 
 
+class DetailsTest(unittest.TestCase):
+    """Test the details function."""
+    def test_constant(self):
+        """Test details for a constant."""
+
+        with model() as m:
+            foo = constant('Foo', 12)
+            bar = constant('Bar', 99
+            ).description("Bar is a pathetic constant"
+            ).suppress_amount()
+
+        self.assertEqual(
+            foo.details(),
+            {
+                'name': 'Foo',
+                'varies over time': False,
+                'amount': {"": 12}
+            })
+
+        self.assertEqual(
+            bar.details(),
+            {
+                'name': 'Bar',
+                'varies over time': False,
+                'description': 'Bar is a pathetic constant'
+            })
+
+        with model(treatments=['As is', 'To be'], 
+                   derived_treatments={
+                    'Improvement': AmountBetter('To be', 'As is')}) as m:
+            foo = constant('Foo', PerTreatment({'As is': 2, 'To be': 2.6})
+            ).derived()
+            bar = constant('Bar', PerTreatment({'As is': 20})
+            ).undefined_in('To be'
+            ).summarizer(lambda x: "Twenty" if x == 20 else "Not Twenty")
+
+        foo_deets = foo.details()
+        self.assertAlmostEqual(foo_deets['amount']['Improvement'], 0.6)
+        del foo_deets['amount']['Improvement']
+        self.assertEqual(
+            foo_deets,
+            {
+                'name': 'Foo',
+                'varies over time': False,
+                'amount':{'To be': 2.6, 'As is': 2}
+            })
+
+        self.assertEqual(
+            bar.details(),
+            {
+                'name': 'Bar',
+                'varies over time': False,
+                'amount':{'As is': "Twenty"}
+            })
+
+
+
+
 
 
 

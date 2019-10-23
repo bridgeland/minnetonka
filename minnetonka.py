@@ -2568,6 +2568,50 @@ class Constant(Variable):
         """A constant has no history."""
         return False
 
+    def description(self, description):
+        """Add a description to the constant."""
+        self._description = description 
+        return self 
+
+    def suppress_amount(self):
+        """Mark that this constant does not support amounts in details."""
+        self._suppress_amount = True 
+        return self
+
+    def summarizer(self, callable):
+        """Instead of providing the amount, run this callable to summarize."""
+        self._summarizer = callable 
+        return self 
+
+    def details(self):
+        """Return a json-safe structure for the details of the constant."""
+        deets = {"name": self.name(), "varies over time": False}
+        try:
+            self._suppress_amount
+        except AttributeError:
+            amounts = {**self.all(), **self.all_derived()}
+            try:
+                deets['amount'] = {trt: self._summarizer(amt) 
+                                   for trt, amt in amounts.items()}
+            except AttributeError:
+                deets['amount'] = amounts
+
+        try:
+            deets['description'] = self._description
+        except AttributeError:
+            pass
+
+        return deets
+
+    def all_derived(self):
+        """Return a dict of all derived treatments."""
+        if self.is_derived():
+            return {trt_name: self[trt_name]
+                    for trt_name in self._model.derived_treatments()
+                    if self.derived_treatment_defined(trt_name)}
+        else:
+            return {}
+
 
 class ConstantInstance(VariableInstance, metaclass=Constant):
     """A variable that does not vary."""
