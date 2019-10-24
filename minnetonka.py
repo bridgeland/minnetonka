@@ -1543,6 +1543,35 @@ class CommonVariable(type):
         """Is this variable not defined for this treatment?"""
         return treatment in self._exclude_treatments
 
+    def substitute_description_for_amount(self, description):
+        """Mark that this constant does not support amounts in details."""
+        self._summary_description = description
+        self._suppress_amount = True
+        return self
+
+    def summarizer(self, summary_description, callable):
+        """Instead of providing the amount, run this callable to summarize."""
+        self._summary_description = summary_description
+        self._summarizer = callable 
+        return self 
+
+    def details(self):
+        """Return a json-safe structure for the details of the variable."""
+        deets = {"name": self.name(), "varies over time": True}
+        history = self.history(base=True)
+        try:
+            deets['summary'] = {
+                trt: [self._summarizer(amt) for amt in amts]
+                for trt, amts in history.items()}
+            deets['summary description'] = self._summary_description
+        except AttributeError:
+            if hasattr(self, "_suppress_amount") and self._suppress_amount:     
+                deets['summary description'] = self._summary_description
+            else:
+                deets['amounts'] = history
+        return deets
+
+
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
     """
@@ -2568,39 +2597,18 @@ class Constant(Variable):
         """A constant has no history."""
         return False
 
-    def description(self, description):
-        """Add a description to the constant."""
-        self._description = description 
-        return self 
-
-    def suppress_amount(self):
-        """Mark that this constant does not support amounts in details."""
-        self._suppress_amount = True 
-        return self
-
-    def summarizer(self, callable):
-        """Instead of providing the amount, run this callable to summarize."""
-        self._summarizer = callable 
-        return self 
-
     def details(self):
         """Return a json-safe structure for the details of the constant."""
         deets = {"name": self.name(), "varies over time": False}
         try:
-            self._suppress_amount
+            deets['summary'] = {trt: self._summarizer(amt) 
+                                for trt, amt in self.all().items()}
+            deets['summary description'] = self._summary_description
         except AttributeError:
-            amounts = {**self.all(), **self.all_derived()}
-            try:
-                deets['amount'] = {trt: self._summarizer(amt) 
-                                   for trt, amt in amounts.items()}
-            except AttributeError:
-                deets['amount'] = amounts
-
-        try:
-            deets['description'] = self._description
-        except AttributeError:
-            pass
-
+            if hasattr(self, "_suppress_amount") and self._suppress_amount:     
+                deets['summary description'] = self._summary_description
+            else:
+                deets['amount'] = self.all()
         return deets
 
     def all_derived(self):

@@ -5007,8 +5007,7 @@ class DetailsTest(unittest.TestCase):
         with model() as m:
             foo = constant('Foo', 12)
             bar = constant('Bar', 99
-            ).description("Bar is a pathetic constant"
-            ).suppress_amount()
+            ).substitute_description_for_amount("Bar is a pathetic constant")
 
         self.assertEqual(
             foo.details(),
@@ -5023,21 +5022,19 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Bar',
                 'varies over time': False,
-                'description': 'Bar is a pathetic constant'
+                'summary description': 'Bar is a pathetic constant'
             })
 
-        with model(treatments=['As is', 'To be'], 
-                   derived_treatments={
-                    'Improvement': AmountBetter('To be', 'As is')}) as m:
+        with model(treatments=['As is', 'To be']) as m:
             foo = constant('Foo', PerTreatment({'As is': 2, 'To be': 2.6})
             ).derived()
             bar = constant('Bar', PerTreatment({'As is': 20})
             ).undefined_in('To be'
-            ).summarizer(lambda x: "Twenty" if x == 20 else "Not Twenty")
+            ).summarizer(
+                "Number as English",
+                lambda x: "Twenty" if x == 20 else "Not Twenty")
 
-        foo_deets = foo.details()
-        self.assertAlmostEqual(foo_deets['amount']['Improvement'], 0.6)
-        del foo_deets['amount']['Improvement']
+        foo_deets = foo.details() 
         self.assertEqual(
             foo_deets,
             {
@@ -5051,11 +5048,236 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Bar',
                 'varies over time': False,
-                'amount':{'As is': "Twenty"}
+                'summary description': "Number as English",
+                'summary':{'As is': "Twenty"}
             })
 
+    def test_normal_variable(self):
+        """Test details for a normal variable."""
+        def _convert_to_english(num):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num]
+            except KeyError:
+                return "Many"
 
+        with model(treatments=['As is', 'To be']) as m:
+            week = variable('Week', lambda md: md.TIME, '__model__'
+            ).summarizer("As English", _convert_to_english)
+            next_week = variable('NextWeek', lambda x: x+1, 'Week')
+            week_after = variable('WeekAfter', lambda x: x+2, 'Week'
+            ).substitute_description_for_amount(
+                "Sometime in the distant future")
 
+        m.step(4)
+        self.assertEqual(
+            week.details(),
+            {
+                'name': 'Week',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
+                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']}
+            })
+
+        self.assertEqual(
+            next_week.details(),
+            {
+                'name': 'NextWeek',
+                'varies over time': True,
+                'amounts': {'As is': [1, 2, 3, 4, 5],
+                            'To be': [1, 2, 3, 4, 5]}
+            })
+
+        self.assertEqual(
+            week_after.details(),
+            {
+                'name': 'WeekAfter',
+                'varies over time': True,
+                'summary description': 'Sometime in the distant future'
+            })
+
+    def test_stocks(self):
+        """Test details for a stock."""
+        def _convert_to_english(num):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num]
+            except KeyError:
+                return "Many"
+
+        with model(treatments=['As is', 'To be']) as m:
+            first = stock('First', PerTreatment({'As is': 1, 'To be': 2})
+            ).summarizer('As English', _convert_to_english)
+            second = stock('Second', lambda f: f, ('First',), 0)
+            third = stock('Third', lambda f, s: f + s, ('First', 'Second'), 0
+            ).substitute_description_for_amount('A lot')
+
+        m.step(4)
+        self.assertEqual(
+            first.details(),
+            {
+                'name': 'First',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
+                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']}
+            })
+
+        self.assertEqual(
+            second.details(),
+            {
+                'name': 'Second',
+                'varies over time': True,
+                'amounts': {'As is': [0, 0, 1, 3, 6],
+                            'To be': [0, 0, 2, 6, 12]}
+            })
+
+        self.assertEqual(
+            third.details(),
+            {
+                'name': 'Third',
+                'varies over time': True,
+                'summary description': 'A lot'
+            })
+
+    def test_accums(self):
+        """Test details for an accum."""
+        def _convert_to_english(num):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num]
+            except KeyError:
+                return "Many"
+
+        with model(treatments=['As is', 'To be']) as m:
+            first = accum('First', PerTreatment({'As is': 1, 'To be': 2})
+            ).summarizer('As English', _convert_to_english)
+            second = accum('Second', lambda f: f, ('First',), 0)
+            third = accum('Third', lambda f, s: f + s, ('First', 'Second'), 0
+            ).substitute_description_for_amount('A lot')
+
+        m.step(4)
+        self.assertEqual(
+            first.details(),
+            {
+                'name': 'First',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
+                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']}
+            })
+
+        self.assertEqual(
+            second.details(),
+            {
+                'name': 'Second',
+                'varies over time': True,
+                'amounts': {'As is': [0, 1, 3, 6, 10],
+                            'To be': [0, 2, 6, 12, 20]}
+            })
+
+        self.assertEqual(
+            third.details(),
+            {
+                'name': 'Third',
+                'varies over time': True,
+                'summary description': 'A lot'
+            })
+
+    def test_previous(self):
+        """Test details for a normal variable."""
+        def _convert_to_english(num):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num]
+            except KeyError:
+                return "Many"
+
+        with model() as m:
+            stock('Foo', 1, 0)
+            lf = previous('LastFoo', 'Foo'
+            ).summarizer('As English', _convert_to_english)
+            lf2 = previous('LastFoo2', 'Foo')
+            lf3 = previous('LastFoo3', 'Foo'
+            ).substitute_description_for_amount('A lot')
+
+        m.step(4)
+        self.assertEqual(
+            lf.details(),
+            {
+                'name': 'LastFoo',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'': ['Zero', 'Zero', 'One', 'Two', 'Three']}
+            })
+
+        self.assertEqual(
+            lf2.details(),
+            {
+                'name': 'LastFoo2',
+                'varies over time': True,
+                'amounts': {'': [0, 0, 1, 2, 3]}
+            })
+
+        self.assertEqual(
+            lf3.details(),
+            {
+                'name': 'LastFoo3',
+                'varies over time': True,
+                'summary description': 'A lot'
+            })
+
+    def test_cross(self):
+        """Test details for a cross variable."""
+        def _convert_to_english(num):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num]
+            except KeyError:
+                return "Many"
+
+        with model(treatments=['As is', 'To be']) as m:
+            s = stock('S', PerTreatment({'As is': 1, 'To be': 2}))
+            foo = cross('Foo', 'S', 'As is'
+            ).summarizer('As English', _convert_to_english) 
+
+        m.step(4)
+        self.assertEqual(
+            foo.details(),
+            {
+                'name': 'Foo',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
+                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']}
+            })
+ 
 
 
 
