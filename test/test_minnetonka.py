@@ -3963,6 +3963,7 @@ class ValidateAndSetTest(unittest.TestCase):
         self.assertEqual(InterestRate[''], 0.05)  
         m.reset()
         self.assertEqual(InterestRate[''], 0.04)
+
            
 
 class ValidateAndSetAttributeTest(unittest.TestCase):
@@ -4167,11 +4168,12 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
         self.assertEqual(Size[''].length, 18)
         m.validate_and_set('Size', '', 19, excerpt='.length')
         self.assertEqual(Size[''].length, 19)
+        m.recalculate()
+        self.assertEqual(Size[''].length, 19)
         m.reset(reset_external_vars=False)
         self.assertEqual(Size[''].length, 19)
         m.reset()
         self.assertEqual(Size[''].length, 18)
-
 
 class ValidateAllTest(unittest.TestCase):
     """Test validate_all()."""
