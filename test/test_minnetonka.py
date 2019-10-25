@@ -5032,7 +5032,7 @@ class DetailsTest(unittest.TestCase):
             ).undefined_in('To be'
             ).summarizer(
                 "Number as English",
-                lambda x: "Twenty" if x == 20 else "Not Twenty")
+                lambda x, _: "Twenty" if x == 20 else "Not Twenty")
 
         foo_deets = foo.details() 
         self.assertEqual(
@@ -5054,7 +5054,7 @@ class DetailsTest(unittest.TestCase):
 
     def test_normal_variable(self):
         """Test details for a normal variable."""
-        def _convert_to_english(num):
+        def _convert_to_english(num, _):
             num2words = {
                 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
                 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
@@ -5102,9 +5102,47 @@ class DetailsTest(unittest.TestCase):
                 'summary description': 'Sometime in the distant future'
             })
 
+    def test_use_treatment(self):
+        """Test details with a summarizer that uses the treatment."""
+        def _convert_to_english(num, trt):
+            num2words = {
+                1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
+                6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
+                11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 
+                15: 'Fifteen', 16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 
+                19: 'Nineteen', 20: 'Twenty', 0: 'Zero'}
+            try:
+                return num2words[num] + ' ' + trt 
+            except KeyError:
+                return "Many"
+
+        with model(treatments=['As is', 'To be']) as m:
+            week = variable('Week', lambda md: md.TIME, '__model__'
+            ).summarizer("As English", _convert_to_english)
+            next_week = variable('NextWeek', lambda x: x+1, 'Week')
+            week_after = variable('WeekAfter', lambda x: x+2, 'Week'
+            ).substitute_description_for_amount(
+                "Sometime in the distant future")
+
+        m.step(4)
+        self.assertEqual(
+            week.details(),
+            {
+                'name': 'Week',
+                'varies over time': True,
+                'summary description': 'As English',
+                'summary': {'As is': ['Zero As is', 'One As is', 'Two As is', 
+                                      'Three As is', 'Four As is'],
+                            'To be': ['Zero To be', 'One To be', 'Two To be', 
+                                      'Three To be', 'Four To be']}
+            })
+
+
+
+
     def test_stocks(self):
         """Test details for a stock."""
-        def _convert_to_english(num):
+        def _convert_to_english(num, _):
             num2words = {
                 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
                 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
@@ -5153,7 +5191,7 @@ class DetailsTest(unittest.TestCase):
 
     def test_accums(self):
         """Test details for an accum."""
-        def _convert_to_english(num):
+        def _convert_to_english(num, _):
             num2words = {
                 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
                 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
@@ -5202,7 +5240,7 @@ class DetailsTest(unittest.TestCase):
 
     def test_previous(self):
         """Test details for a normal variable."""
-        def _convert_to_english(num):
+        def _convert_to_english(num, _):
             num2words = {
                 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
                 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 
@@ -5250,7 +5288,7 @@ class DetailsTest(unittest.TestCase):
 
     def test_cross(self):
         """Test details for a cross variable."""
-        def _convert_to_english(num):
+        def _convert_to_english(num, _):
             num2words = {
                 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 
                 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 

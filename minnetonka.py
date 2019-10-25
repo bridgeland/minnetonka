@@ -1561,7 +1561,7 @@ class CommonVariable(type):
         history = self.history(base=True)
         try:
             deets['summary'] = {
-                trt: [self._summarizer(amt) for amt in amts]
+                trt: [self._summarizer(amt, trt) for amt in amts]
                 for trt, amts in history.items()}
             deets['summary description'] = self._summary_description
         except AttributeError:
@@ -2601,7 +2601,7 @@ class Constant(Variable):
         """Return a json-safe structure for the details of the constant."""
         deets = {"name": self.name(), "varies over time": False}
         try:
-            deets['summary'] = {trt: self._summarizer(amt) 
+            deets['summary'] = {trt: self._summarizer(amt, trt) 
                                 for trt, amt in self.all().items()}
             deets['summary description'] = self._summary_description
         except AttributeError:
