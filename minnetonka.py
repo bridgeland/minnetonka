@@ -4378,18 +4378,31 @@ class _Constraint:
 
     def fails(self, model):
         """Validate constraint against all treatments. Return error or None."""
+        def _fail_dict(msg, treatment):
+            return {
+                        'error_code': self._error_code,
+                        'inconsistent_variables': self._var_names,
+                        'error_message': msg,
+                        'treatment': treatment.name
+                    }
+
         for treatment in model.treatments():
             if self._is_defined_for_all(model, treatment):
                 amounts = [model[v][treatment.name] for v in self._var_names]
-                if not self._test(*amounts):
-                    err_message = self._error_message_gen(
-                        self._var_names, amounts, treatment.name)
-                    return {
-                        'error_code': self._error_code,
-                        'inconsistent_variables': self._var_names,
-                        'error_message': err_message,
-                        'treatment': treatment.name
-                    }
+                try:
+                    test_result = self._test(*amounts)
+                except Exception as err:
+                    return _fail_dict(
+                        f'Constraint raised exception {str(err)}', treatment)
+                if not test_result:
+                    try:
+                        err_message = self._error_message_gen(
+                            self._var_names, amounts, treatment.name)
+                    except Exception as err:
+                        return _fail_dict(
+                            f'Constraint raised exception {str(err)}', 
+                            treatment)
+                    return _fail_dict(err_message, treatment)
         return None
 
     def _is_defined_for_all(self, model, treatment):

@@ -4304,6 +4304,59 @@ class ValidateAllTest(unittest.TestCase):
         X5[''] = True
         Large[''] = 0.1
         self.assertEqual(m.validate_all(), {'success': True})
+
+    def test_constraint_raising_error(self):
+        """Test validate_all() with a broken constraint that raises error."""
+        with model() as m:
+            constant('X7Allowed', False)
+            constraint(
+                ['X7Allowed'],
+                lambda machine: 1 / 0,
+                "Whatever",
+                lambda names, amounts, trt: 'whatever')
+
+        vresult = m.validate_all()
+        self.assertEqual(
+            m.validate_all(),
+            {
+                'success': False,
+                'errors': [
+                    {
+                        'error_code': 'Whatever',
+                        'inconsistent_variables': ['X7Allowed'],
+                        'error_message': 
+                            'Constraint raised exception division by zero',
+                        'treatment': ''
+                    }
+
+                ]
+            })
+
+        with model() as m:
+            constant('X7Allowed', False)
+            constraint(
+                ['X7Allowed'],
+                lambda x: False,
+                "Whatever",
+                lambda names, amounts, trt: 1 / 0)
+
+        self.assertEqual(
+            m.validate_all(),
+            {
+                'success': False,
+                'errors': [
+                    {
+                        'error_code': 'Whatever',
+                        'inconsistent_variables': ['X7Allowed'],
+                        'error_message': 
+                            'Constraint raised exception division by zero',
+                        'treatment': ''
+                    }
+
+                ]
+            })
+
+
  
 
 class DerivedTreatmentTest(unittest.TestCase):
