@@ -1006,6 +1006,17 @@ class BasicStockTest(unittest.TestCase):
         m.step(3)
         self.assertEqual(S[''], 25)
 
+    def test_stock_with_nontuple_dependency(self):
+        """Test stock with a nontuple dependency, translated to tuple.""" 
+        with model() as m:
+            variable('XY', 1)
+            S = stock('S', lambda x: x, 'XY', 22)
+
+        with model() as m:
+            variable('XY', 1)
+            S = stock('S', lambda: 1, (), lambda x: x, 'XY')
+
+
     def test_stock_with_two_callables_with_depends(self):
         """Stock with depends vars for both flow and initial"""
         with model() as m:
@@ -1472,6 +1483,15 @@ class BasicAccumTest(unittest.TestCase):
         m.step(3)
         self.assertEqual(A[''], 25)
         self.assertEqual(A.__doc__, 'Start at 22 and increase by 1')
+
+    def test_accum_with_nontuple_dependency(self):
+        """Test accum with a nontuple dependency, translated to tuple.""" 
+        with model() as m:
+            variable('X1', 1)
+            variable('Y2', 22)
+            A = accum('A',
+                """Start at 22 and increase by 1""",
+                 lambda x: x, 'X1', lambda x: x, 'Y2') 
 
     def test_accum_with_variable_increase(self):
         with model() as m:
@@ -4355,8 +4375,6 @@ class ValidateAllTest(unittest.TestCase):
 
                 ]
             })
-
-
  
 
 class DerivedTreatmentTest(unittest.TestCase):
@@ -5371,11 +5389,4 @@ class DetailsTest(unittest.TestCase):
                             'To be': ['Zero', 'One', 'Two', 'Three', 'Four']}
             })
  
-
-
-
-
-
-
-
 

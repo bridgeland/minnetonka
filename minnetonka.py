@@ -3,7 +3,7 @@
 __author__ = "Dave Bridgeland"
 __copyright__ = "Copyright 2017-2019, Hanging Steel Productions LLC"
 __credits__ = ["Dave Bridgeland"]
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Dave Bridgeland"
 __email__ = "dave@hangingsteel.com"
 __status__ = "Prototype"
@@ -3155,9 +3155,17 @@ def stock(stock_name, *args):
     logging.info('Creating stock %s', stock_name)
     incr_def, incr_vars, init_def, init_vars, docstring = _parse_stock(
         stock_name, args)
+    incr_vars = _maybe_correct_vars(incr_vars)
+    init_vars = _maybe_correct_vars(init_vars)
     return _create_stock(
         stock_name, docstring, incr_def, incr_vars, init_def, init_vars)
 
+def _maybe_correct_vars(vars):
+    """Change vars from string to singleton tuple of string, if necessary."""
+    if isinstance(vars, str):
+        return (vars,)
+    else:
+        return vars 
 
 def _parse_stock(name, args):
     """Parse the arguments in stock_args, and return them properly sorted."""
@@ -3634,6 +3642,8 @@ def accum(accum_name, *args):
     logging.info('Creating accume %s', accum_name)
     incr_def, incr_vars, init_def, init_vars, docstring = _parse_stock(
         accum_name, args)
+    incr_vars = _maybe_correct_vars(incr_vars)
+    init_vars = _maybe_correct_vars(init_vars)
     return _create_accum(
         accum_name, docstring, incr_def, incr_vars, init_def, init_vars)
 
