@@ -1559,6 +1559,9 @@ class CommonVariable(type):
         """Return a json-safe structure for the details of the variable."""
         deets = {"name": self.name(), "varies over time": True}
         history = self.history(base=True)
+        if self.is_derived():
+            derived_history = self.history(base=False)
+            history = {**history, **derived_history}
         try:
             deets['summary'] = {
                 trt: [self._summarizer(amt, trt) for amt in amts]
@@ -1570,7 +1573,6 @@ class CommonVariable(type):
             else:
                 deets['amounts'] = history
         return deets
-
 
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -2600,15 +2602,19 @@ class Constant(Variable):
     def details(self):
         """Return a json-safe structure for the details of the constant."""
         deets = {"name": self.name(), "varies over time": False}
+        amounts = self.all()
+        if self.is_derived():
+            derived_amounts = self.all_derived()
+            amounts = {**amounts, **derived_amounts}
         try:
             deets['summary'] = {trt: self._summarizer(amt, trt) 
-                                for trt, amt in self.all().items()}
+                                for trt, amt in amounts.items()}
             deets['summary description'] = self._summary_description
         except AttributeError:
             if hasattr(self, "_suppress_amount") and self._suppress_amount:     
                 deets['summary description'] = self._summary_description
             else:
-                deets['amount'] = self.all()
+                deets['amount'] = amounts
         return deets
 
     def all_derived(self):

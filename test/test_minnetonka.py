@@ -5074,6 +5074,18 @@ class OnInitTest(unittest.TestCase):
 
 class DetailsTest(unittest.TestCase):
     """Test the details function."""
+    def assertDictAlmostEqual(self, x, y):
+        if isinstance(x, (int, float, complex)):
+            self.assertAlmostEqual(x, y)
+        elif isinstance(x, dict):
+            for k in x.keys():
+                self.assertDictAlmostEqual(x[k], y[k])
+            # in case some keys in y are not in x
+            for k in y.keys():
+                self.assertDictAlmostEqual(x[k], y[k])
+        else:
+            self.assertEqual(x, y)
+
     def test_constant(self):
         """Test details for a constant."""
 
@@ -5098,8 +5110,13 @@ class DetailsTest(unittest.TestCase):
                 'summary description': 'Bar is a pathetic constant'
             })
 
-        with model(treatments=['As is', 'To be']) as m:
-            foo = constant('Foo', PerTreatment({'As is': 2, 'To be': 2.6})
+        with model(
+            treatments=['As is', 'To be'], 
+            derived_treatments={'Improvement': AmountBetter('To be', 'As is')}
+        ) as m:
+
+            foo = constant('Foo', PerTreatment({'As is': 2, 'To be': 2.6}))
+            baz = constant('Baz', lambda x: x+x, 'Foo', 
             ).derived()
             bar = constant('Bar', PerTreatment({'As is': 20})
             ).undefined_in('To be'
@@ -5123,6 +5140,14 @@ class DetailsTest(unittest.TestCase):
                 'varies over time': False,
                 'summary description': "Number as English",
                 'summary':{'As is': "Twenty"}
+            })
+
+        self.assertDictAlmostEqual(
+            baz.details(),
+            {
+                'name': 'Baz',
+                'varies over time': False, 
+                'amount':{'To be': 5.2, 'As is': 4, 'Improvement': 1.2}
             })
 
     def test_normal_variable(self):
@@ -5210,7 +5235,42 @@ class DetailsTest(unittest.TestCase):
                                       'Three To be', 'Four To be']}
             })
 
+    def test_normal_derived(self):
+        """Test details with a variable that has a derived treatment."""
 
+        with model(
+            treatments=['As is', 'To be'], 
+            derived_treatments={'Improvement': AmountBetter('To be', 'As is')}
+        ) as m:
+            foo = stock('Foo', PerTreatment({'As is': 1, 'To be': 2})
+            ).derived()
+            bar = variable('Bar', lambda x: x, 'Foo'
+            ).derived(scored_as='golf')
+
+        m.step(3)
+        self.assertAlmostEqual(
+            foo.details(),
+            {
+                'name': 'Foo',
+                'varies over time': True,
+                'amounts': {
+                    'As is': [0, 1, 2, 3],
+                    'To be': [0, 2, 4, 6],
+                    'Improvement': [0, 1, 2, 3]
+                }
+            })
+
+        self.assertAlmostEqual(
+            bar.details(),
+            {
+                'name': 'Bar',
+                'varies over time': True,
+                'amounts': {
+                    'As is': [0, 1, 2, 3],
+                    'To be': [0, 2, 4, 6],
+                    'Improvement': [0, -1, -2, -3]
+                }
+            })
 
 
     def test_stocks(self):
