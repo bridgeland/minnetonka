@@ -1473,8 +1473,8 @@ class CommonVariable(type):
         except Exception as e:
             return res.fail(
                 'Unsettable', 
-                'Error {} raised when setting amount of {} to {}'.format(
-                    str(e), val.__class__.__name__, amount))
+                'Error {} raised for {} when setting amount of {} to {}'.format(
+                    str(e), self, val.__class__.__name__, amount))
 
     def _isolate_excerpt(self, treatment_name, excerpt):
         """Find the object and attribute to be validated and set."""
