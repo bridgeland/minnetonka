@@ -2619,16 +2619,31 @@ class Constant(Variable):
         if self.is_derived():
             derived_amounts = self.all_derived()
             amounts = {**amounts, **derived_amounts}
-        try:
-            deets['summary'] = {trt: self._summarizer(amt, trt) 
-                                for trt, amt in amounts.items()}
-            deets['summary description'] = self._summary_description
-        except AttributeError:
-            if hasattr(self, "_suppress_amount") and self._suppress_amount:     
-                deets['summary description'] = self._summary_description
-            else:
-                deets['amount'] = amounts
+        if hasattr(self, '_summarizer'):
+            self._add_summary(deets, amounts)
+        elif hasattr(self, "_suppress_amount") and self._suppress_amount: 
+            self._add_summary_description_only(deets)
+        else:
+            self._add_amount(deets, amounts)
         return deets
+
+    def _add_summary(self, deets, amounts):
+        """Add a summary to the deets."""
+        summary = {
+            trt: self._summarizer(amt, trt) for trt, amt in amounts.items()}
+        deets['summary'] = summary
+        deets['summary description'] = self._summary_description
+        deets['caucus'] = summary
+
+    def _add_summary_description_only(self, deets):
+        """Add only a summary description to the deets."""
+        deets['summary description'] = self._summary_description
+        deets['caucus'] = self._summary_description
+
+    def _add_amount(self, deets, amounts):
+        """Add amounts to deets"""
+        deets['amount'] = amounts
+        deets['caucus'] = amounts 
 
     def all_derived(self):
         """Return a dict of all derived treatments."""

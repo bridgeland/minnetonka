@@ -5099,7 +5099,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Foo',
                 'varies over time': False,
-                'amount': {"": 12}
+                'amount': {"": 12},
+                'caucus': {"": 12}
             })
 
         self.assertEqual(
@@ -5107,7 +5108,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Bar',
                 'varies over time': False,
-                'summary description': 'Bar is a pathetic constant'
+                'summary description': 'Bar is a pathetic constant',
+                'caucus': 'Bar is a pathetic constant'
             })
 
         with model(
@@ -5130,7 +5132,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Foo',
                 'varies over time': False,
-                'amount':{'To be': 2.6, 'As is': 2}
+                'amount':{'To be': 2.6, 'As is': 2},
+                'caucus': {'To be': 2.6, 'As is': 2}
             })
 
         self.assertEqual(
@@ -5139,7 +5142,8 @@ class DetailsTest(unittest.TestCase):
                 'name': 'Bar',
                 'varies over time': False,
                 'summary description': "Number as English",
-                'summary':{'As is': "Twenty"}
+                'summary':{'As is': "Twenty"},
+                'caucus': {'As is': "Twenty"}
             })
 
         self.assertDictAlmostEqual(
@@ -5147,7 +5151,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Baz',
                 'varies over time': False, 
-                'amount':{'To be': 5.2, 'As is': 4, 'Improvement': 1.2}
+                'amount':{'To be': 5.2, 'As is': 4, 'Improvement': 1.2},
+                'caucus': {'To be': 5.2, 'As is': 4, 'Improvement': 1.2}
             })
 
     def test_normal_variable(self):
