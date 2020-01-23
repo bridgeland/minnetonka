@@ -1575,17 +1575,44 @@ class CommonVariable(type):
         if self.is_derived():
             derived_history = self.history(base=False)
             history = {**history, **derived_history}
-        try:
-            deets['summary'] = {
-                trt: [self._summarizer(amt, trt) for amt in amts]
-                for trt, amts in history.items()}
-            deets['summary description'] = self._summary_description
-        except AttributeError:
-            if hasattr(self, "_suppress_amount") and self._suppress_amount:     
-                deets['summary description'] = self._summary_description
-            else:
-                deets['amounts'] = history
+        if hasattr(self, '_summarizer'):
+            self._add_summary(deets, history)
+        elif hasattr(self, "_suppress_amount") and self._suppress_amount: 
+            self._add_summary_description_only(deets)
+        else:
+            self._add_history(deets, history)
         return deets
+
+    def _add_summary(self, deets, history):
+        """Add a summary to the deets."""
+        deets['summary'] = {
+            trt: [self._summarizer(amt, trt) for amt in amts]
+            for trt, amts in history.items()}
+        deets['summary description'] = self._summary_description
+        deets['caucus'] = self._caucus_amount(history)
+
+    def _caucus_amount(self, history):
+        """Return some aggregation of the history."""        
+        try:
+            caucus_fn = self._caucuser
+        except AttributeError:
+            caucus_fn = mean  
+        return {trt: caucus_fn(amts) for trt, amts in history.items()}
+
+    def _add_summary_description_only(self, deets):
+        """Add only a summary description to the deets."""
+        deets['summary description'] = self._summary_description
+        deets['caucus'] = self._summary_description
+
+    def _add_history(self, deets, history):
+        """Add amounts to deets"""
+        deets['amounts'] = history  
+        deets['caucus'] = self._caucus_amount(history)
+
+    def caucuser(self, callable):
+        """Instead of the arithmetic mean, run this callable for a caucus."""
+        self._caucuser = callable 
+        return self
 
 
 class CommonVariableInstance(object, metaclass=CommonVariable):
@@ -2634,11 +2661,6 @@ class Constant(Variable):
         deets['summary'] = summary
         deets['summary description'] = self._summary_description
         deets['caucus'] = summary
-
-    def _add_summary_description_only(self, deets):
-        """Add only a summary description to the deets."""
-        deets['summary description'] = self._summary_description
-        deets['caucus'] = self._summary_description
 
     def _add_amount(self, deets, amounts):
         """Add amounts to deets"""
@@ -4619,6 +4641,9 @@ def array_graph_yx(y, XYs):
     """
     Xs, Ys = map(list, zip(*XYs))
     return _inner_array_graph(y, Ys, Xs)
+
+def mean(number_list):
+    return safe_div(sum(number_list), len(number_list))
 
 #
 # Errors and warnings

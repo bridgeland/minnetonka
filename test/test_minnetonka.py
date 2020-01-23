@@ -5171,8 +5171,10 @@ class DetailsTest(unittest.TestCase):
 
         with model(treatments=['As is', 'To be']) as m:
             week = variable('Week', lambda md: md.TIME, '__model__'
-            ).summarizer("As English", _convert_to_english)
-            next_week = variable('NextWeek', lambda x: x+1, 'Week')
+            ).summarizer("As English", _convert_to_english
+            ).caucuser(lambda amts: 'complex')
+            next_week = variable('NextWeek', lambda x: x+1, 'Week'
+            ).caucuser(sum)
             week_after = variable('WeekAfter', lambda x: x+2, 'Week'
             ).substitute_description_for_amount(
                 "Sometime in the distant future")
@@ -5185,7 +5187,8 @@ class DetailsTest(unittest.TestCase):
                 'varies over time': True,
                 'summary description': 'As English',
                 'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
-                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']}
+                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']},
+                'caucus': {'As is': 'complex', 'To be': 'complex'}
             })
 
         self.assertEqual(
@@ -5194,7 +5197,8 @@ class DetailsTest(unittest.TestCase):
                 'name': 'NextWeek',
                 'varies over time': True,
                 'amounts': {'As is': [1, 2, 3, 4, 5],
-                            'To be': [1, 2, 3, 4, 5]}
+                            'To be': [1, 2, 3, 4, 5]},
+                'caucus': {'As is': 15.0, 'To be': 15.0}
             })
 
         self.assertEqual(
@@ -5202,7 +5206,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'WeekAfter',
                 'varies over time': True,
-                'summary description': 'Sometime in the distant future'
+                'summary description': 'Sometime in the distant future',
+                'caucus': 'Sometime in the distant future'
             })
 
     def test_use_treatment(self):
@@ -5221,7 +5226,8 @@ class DetailsTest(unittest.TestCase):
 
         with model(treatments=['As is', 'To be']) as m:
             week = variable('Week', lambda md: md.TIME, '__model__'
-            ).summarizer("As English", _convert_to_english)
+            ).summarizer("As English", _convert_to_english
+            ).caucuser(lambda amts: 'complex')
             next_week = variable('NextWeek', lambda x: x+1, 'Week')
             week_after = variable('WeekAfter', lambda x: x+2, 'Week'
             ).substitute_description_for_amount(
@@ -5237,7 +5243,8 @@ class DetailsTest(unittest.TestCase):
                 'summary': {'As is': ['Zero As is', 'One As is', 'Two As is', 
                                       'Three As is', 'Four As is'],
                             'To be': ['Zero To be', 'One To be', 'Two To be', 
-                                      'Three To be', 'Four To be']}
+                                      'Three To be', 'Four To be']},
+                'caucus': {'As is': 'complex', 'To be': 'complex'}
             })
 
     def test_normal_derived(self):
@@ -5248,12 +5255,12 @@ class DetailsTest(unittest.TestCase):
             derived_treatments={'Improvement': AmountBetter('To be', 'As is')}
         ) as m:
             foo = stock('Foo', PerTreatment({'As is': 1, 'To be': 2})
-            ).derived()
+            ).derived().caucuser(sum)
             bar = variable('Bar', lambda x: x, 'Foo'
             ).derived(scored_as='golf')
 
         m.step(3)
-        self.assertAlmostEqual(
+        self.assertEqual(
             foo.details(),
             {
                 'name': 'Foo',
@@ -5261,11 +5268,11 @@ class DetailsTest(unittest.TestCase):
                 'amounts': {
                     'As is': [0, 1, 2, 3],
                     'To be': [0, 2, 4, 6],
-                    'Improvement': [0, 1, 2, 3]
-                }
+                    'Improvement': [0, 1, 2, 3]},
+                'caucus': {'As is': 6.0, 'To be': 12.0, 'Improvement': 6.0}
             })
 
-        self.assertAlmostEqual(
+        self.assertEqual(
             bar.details(),
             {
                 'name': 'Bar',
@@ -5274,7 +5281,8 @@ class DetailsTest(unittest.TestCase):
                     'As is': [0, 1, 2, 3],
                     'To be': [0, 2, 4, 6],
                     'Improvement': [0, -1, -2, -3]
-                }
+                },
+                'caucus': {'As is': 1.5, 'To be': 3.0, 'Improvement': -1.5}
             })
 
 
@@ -5294,8 +5302,10 @@ class DetailsTest(unittest.TestCase):
 
         with model(treatments=['As is', 'To be']) as m:
             first = stock('First', PerTreatment({'As is': 1, 'To be': 2})
-            ).summarizer('As English', _convert_to_english)
-            second = stock('Second', lambda f: f, ('First',), 0)
+            ).summarizer('As English', _convert_to_english
+            ).caucuser(lambda amts: 'complex')
+            second = stock('Second', lambda f: f, ('First',), 0
+            ).caucuser(sum)
             third = stock('Third', lambda f, s: f + s, ('First', 'Second'), 0
             ).substitute_description_for_amount('A lot')
 
@@ -5307,7 +5317,8 @@ class DetailsTest(unittest.TestCase):
                 'varies over time': True,
                 'summary description': 'As English',
                 'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
-                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']}
+                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']},
+                'caucus': {'As is': 'complex', 'To be': 'complex'}
             })
 
         self.assertEqual(
@@ -5316,7 +5327,8 @@ class DetailsTest(unittest.TestCase):
                 'name': 'Second',
                 'varies over time': True,
                 'amounts': {'As is': [0, 0, 1, 3, 6],
-                            'To be': [0, 0, 2, 6, 12]}
+                            'To be': [0, 0, 2, 6, 12]},
+                'caucus': {'As is': 10.0, 'To be': 20.0}
             })
 
         self.assertEqual(
@@ -5324,7 +5336,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Third',
                 'varies over time': True,
-                'summary description': 'A lot'
+                'summary description': 'A lot',
+                'caucus': 'A lot'
             })
 
     def test_accums(self):
@@ -5343,7 +5356,8 @@ class DetailsTest(unittest.TestCase):
 
         with model(treatments=['As is', 'To be']) as m:
             first = accum('First', PerTreatment({'As is': 1, 'To be': 2})
-            ).summarizer('As English', _convert_to_english)
+            ).summarizer('As English', _convert_to_english
+            ).caucuser(lambda amts: 'complex')
             second = accum('Second', lambda f: f, ('First',), 0)
             third = accum('Third', lambda f, s: f + s, ('First', 'Second'), 0
             ).substitute_description_for_amount('A lot')
@@ -5356,7 +5370,8 @@ class DetailsTest(unittest.TestCase):
                 'varies over time': True,
                 'summary description': 'As English',
                 'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
-                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']}
+                            'To be': ['Zero', 'Two', 'Four', 'Six', 'Eight']},
+                'caucus': {'As is': 'complex', 'To be': 'complex'}
             })
 
         self.assertEqual(
@@ -5365,7 +5380,8 @@ class DetailsTest(unittest.TestCase):
                 'name': 'Second',
                 'varies over time': True,
                 'amounts': {'As is': [0, 1, 3, 6, 10],
-                            'To be': [0, 2, 6, 12, 20]}
+                            'To be': [0, 2, 6, 12, 20]},
+                'caucus': {'As is': 4.0, 'To be': 8.0}
             })
 
         self.assertEqual(
@@ -5373,6 +5389,7 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'Third',
                 'varies over time': True,
+                'caucus': 'A lot',
                 'summary description': 'A lot'
             })
 
@@ -5393,8 +5410,9 @@ class DetailsTest(unittest.TestCase):
         with model() as m:
             stock('Foo', 1, 0)
             lf = previous('LastFoo', 'Foo'
-            ).summarizer('As English', _convert_to_english)
-            lf2 = previous('LastFoo2', 'Foo')
+            ).summarizer('As English', _convert_to_english
+            ).caucuser(lambda amts: 'complex')
+            lf2 = previous('LastFoo2', 'Foo').caucuser(sum)
             lf3 = previous('LastFoo3', 'Foo'
             ).substitute_description_for_amount('A lot')
 
@@ -5405,7 +5423,8 @@ class DetailsTest(unittest.TestCase):
                 'name': 'LastFoo',
                 'varies over time': True,
                 'summary description': 'As English',
-                'summary': {'': ['Zero', 'Zero', 'One', 'Two', 'Three']}
+                'summary': {'': ['Zero', 'Zero', 'One', 'Two', 'Three']},
+                'caucus': {'': 'complex'}
             })
 
         self.assertEqual(
@@ -5413,7 +5432,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'LastFoo2',
                 'varies over time': True,
-                'amounts': {'': [0, 0, 1, 2, 3]}
+                'amounts': {'': [0, 0, 1, 2, 3]},
+                'caucus': {'': 6.0}
             })
 
         self.assertEqual(
@@ -5421,7 +5441,8 @@ class DetailsTest(unittest.TestCase):
             {
                 'name': 'LastFoo3',
                 'varies over time': True,
-                'summary description': 'A lot'
+                'summary description': 'A lot',
+                'caucus': 'A lot'
             })
 
     def test_cross(self):
@@ -5441,7 +5462,8 @@ class DetailsTest(unittest.TestCase):
         with model(treatments=['As is', 'To be']) as m:
             s = stock('S', PerTreatment({'As is': 1, 'To be': 2}))
             foo = cross('Foo', 'S', 'As is'
-            ).summarizer('As English', _convert_to_english) 
+            ).summarizer('As English', _convert_to_english
+            ).caucuser(lambda amts: 'complex') 
 
         m.step(4)
         self.assertEqual(
@@ -5451,7 +5473,8 @@ class DetailsTest(unittest.TestCase):
                 'varies over time': True,
                 'summary description': 'As English',
                 'summary': {'As is': ['Zero', 'One', 'Two', 'Three', 'Four'],
-                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']}
+                            'To be': ['Zero', 'One', 'Two', 'Three', 'Four']},
+                'caucus': {'As is': 'complex', 'To be': 'complex'}
             })
  
 
