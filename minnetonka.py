@@ -1076,6 +1076,18 @@ class AmountBetter:
 # Variable classes
 #
 
+# Variable class hierarchy
+#
+#    CommonVariable
+#        Variable
+#            Constant
+#        Incrementer
+#            Stock
+#            Accum
+#        Previous
+#        Cross
+#    ModelPseudoVariable
+
 
 class CommonVariable(type):
     """The common superclass for all Minnetonka variables and variable-like things."""
