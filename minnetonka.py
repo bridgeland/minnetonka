@@ -1596,8 +1596,14 @@ class CommonVariable(type):
         try:
             caucus_fn = self._caucuser
         except AttributeError:
-            caucus_fn = mean  
-        return {trt: caucus_fn(amts) for trt, amts in history.items()}
+            caucus_fn = mean 
+        try: 
+            caucus_amount = {
+                trt: caucus_fn(amts) for trt, amts in history.items()}
+        except:
+            caucus_amount = {
+                trt: 'error aggregating' for trt, amounts in history.items()}
+        return caucus_amount
 
     def _add_summary_description_only(self, deets):
         """Add only a summary description to the deets."""
