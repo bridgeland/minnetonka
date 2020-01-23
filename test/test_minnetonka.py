@@ -4134,7 +4134,7 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 'excerpt': '.length',
                 'treatment': '',
                 'error_code': 'Unsettable',
-                'error_message': "Error can't set attribute raised for <Constant Size> when setting amount of _Size to 17", 
+                'error_message': "Error can't set attribute raised when setting amount of _Size to 17", 
                 'amount': 17
 
             })

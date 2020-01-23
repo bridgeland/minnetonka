@@ -1162,7 +1162,8 @@ class CommonVariable(type):
                     return 
         else:
             for treatment_name, var in self._by_treatment.items():
-                var.set_initial_amount(treatment_name)
+                if not self.is_undefined_for(treatment_name):
+                    var.set_initial_amount(treatment_name)
 
     def reset_all(self, reset_external_vars):
         """Reset this variable to its initial amount.
@@ -1473,8 +1474,8 @@ class CommonVariable(type):
         except Exception as e:
             return res.fail(
                 'Unsettable', 
-                'Error {} raised for {} when setting amount of {} to {}'.format(
-                    str(e), self, val.__class__.__name__, amount))
+                'Error {} raised when setting amount of {} to {}'.format(
+                    str(e), val.__class__.__name__, amount))
 
     def _isolate_excerpt(self, treatment_name, excerpt):
         """Find the object and attribute to be validated and set."""
