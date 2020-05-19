@@ -5478,3 +5478,54 @@ class DetailsTest(unittest.TestCase):
             })
  
 
+class ModifiedTest(unittest.TestCase):
+    """Test the is_modified() function on a variable instance."""
+    def test_constant(self):
+        """Test is_modified on a constant instance."""
+        with model() as m:
+            foo = constant('Foo', 12)
+
+        self.assertFalse(m.is_modified('Foo', ''))
+        foo[''] = 13
+        self.assertTrue(m.is_modified('Foo', ''))
+
+        with model(treatments=['As is', 'To be']) as m:
+            bar = constant('Bar', PerTreatment({'As is': 12, 'To be': 13}))
+
+        self.assertFalse(m.is_modified('Bar', 'As is'))
+        self.assertFalse(m.is_modified('Bar', 'To be'))
+        bar['To be'] = 14
+        self.assertFalse(m.is_modified('Bar', 'As is'))
+        self.assertTrue(m.is_modified('Bar', 'To be'))
+        bar['As is'] = 13
+        self.assertTrue(m.is_modified('Bar', 'As is'))
+        self.assertTrue(m.is_modified('Bar', 'To be'))
+
+    def test_constant_reset(self):
+        """Test is_modified on a constant after being reset."""
+        with model() as m:
+            foo = constant('Foo', 12) 
+
+        foo[''] = 13
+        self.assertTrue(m.is_modified('Foo', ''))
+        m.reset()
+        self.assertFalse(m.is_modified('Foo', ''))
+        foo[''] = 14
+        self.assertTrue(m.is_modified('Foo', ''))
+        m.reset(reset_external_vars=False)
+        self.assertTrue(m.is_modified('Foo', ''))
+
+    def test_variable(self):
+        """Test is_modified on a variable instance."""
+        with model() as m:
+            foo = constant('Foo', 12)
+            bar = variable('Bar', lambda x: x + 2, 'Foo')
+
+        self.assertFalse(m.is_modified('Bar', ''))
+        foo[''] = 13        
+        self.assertFalse(m.is_modified('Bar', ''))
+        bar[''] = 99       
+        self.assertTrue(m.is_modified('Bar', ''))
+
+
+

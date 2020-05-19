@@ -505,6 +505,10 @@ class Model:
         """Return history of all amounts of all variables in all treatments."""
         return self._variables.history(base=base)
 
+    def is_modified(self, varname, treatment_name):
+        """Has variable named varname been modified in treatment?"""
+        return self.variable_instance(varname, treatment_name).is_modified()
+
 
 def model(variables=[], treatments=[''], derived_treatments=None,
           initialize=True, timestep=1, start_time=0, end_time=None,
@@ -1732,6 +1736,10 @@ class SimpleVariableInstance(CommonVariableInstance):
         # ignore for_init and for_sort since behavior is the same for simple 
         #variable
         return cls._calculator.depends_on(ignore_pseudo)
+
+    def is_modified(self):
+        """Has this instance been modified?"""
+        return self._extra_model_amount is not None
 
 
 
