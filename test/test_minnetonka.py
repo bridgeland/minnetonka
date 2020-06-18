@@ -5529,3 +5529,73 @@ class ModifiedTest(unittest.TestCase):
 
 
 
+class VelocityTest(unittest.TestCase):
+    """Testing velocity()"""
+    def test_simple(self):
+        """Test a simple use of velocity work, with a stock"""
+        with model() as m:
+            stock('Foo', 1, 0)
+            FooVelocity = velocity('FooVelocity', 'Foo')
+
+        self.assertEqual(FooVelocity[''], 0)
+        m.step()
+        self.assertEqual(FooVelocity[''], 1)
+        m.step()
+        self.assertEqual(FooVelocity[''], 1)
+        m.reset()
+        self.assertEqual(FooVelocity[''], 0)
+
+    def test_timestep(self):
+        """Test a simple use of velocity work, with a timestep that is not 1"""
+        with model(timestep=0.5) as m:
+            stock('Foo', 1, 0)
+            FooVelocity = velocity('FooVelocity', 'Foo')
+
+        self.assertEqual(FooVelocity[''], 0)
+        m.step()
+        self.assertEqual(FooVelocity[''], 1)
+        m.step()
+        self.assertEqual(FooVelocity[''], 1)
+        m.reset()
+        self.assertEqual(FooVelocity[''], 0)
+
+    def test_treatments(self):
+        """Test velocity works across treatments"""
+        with model(treatments=['as is', 'to be']) as m:
+            Bar = stock('Bar', 1, 0)
+            Foo = variable('Foo', 
+                PerTreatment({
+                    'as is': lambda x: x * x,
+                    'to be': lambda x: x * x * x
+                    }),
+                'Bar')
+            FooVelocity = velocity('FooVelocity', 'Foo')
+
+        self.assertEqual(FooVelocity['as is'], 0)
+        self.assertEqual(FooVelocity['to be'], 0)
+        m.step()        
+        self.assertEqual(FooVelocity['as is'], 1)
+        self.assertEqual(FooVelocity['to be'], 1) 
+        m.step()
+        self.assertEqual(FooVelocity['as is'], 3)
+        self.assertEqual(FooVelocity['to be'], 7)  
+        m.step()
+        self.assertEqual(FooVelocity['as is'], 5)
+        self.assertEqual(FooVelocity['to be'], 19) 
+        m.reset()
+        self.assertEqual(FooVelocity['as is'], 0)
+        self.assertEqual(FooVelocity['to be'], 0)
+        m.step()        
+        self.assertEqual(FooVelocity['as is'], 1)
+        self.assertEqual(FooVelocity['to be'], 1)  
+
+    def test_cycle(self):
+        """Test that a cycle is caught."""
+        with self.assertRaises(MinnetonkaError) as me:
+            with model() as m:
+                Foo = variable('Foo', lambda x: x+1, 'FooVelocity')
+                FooVelocity = velocity('FooVelocity', 'Foo')
+        self.assertEqual(me.exception.message,
+            'Circularity among variables: Foo <- FooVelocity <- Foo')
+
+

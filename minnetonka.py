@@ -1089,6 +1089,7 @@ class AmountBetter:
 #            Stock
 #            Accum
 #        Previous
+#        Velocity
 #        Cross
 #    ModelPseudoVariable
 
@@ -1740,8 +1741,6 @@ class SimpleVariableInstance(CommonVariableInstance):
     def is_modified(self):
         """Has this instance been modified?"""
         return self._extra_model_amount is not None
-
-
 
 
 class Variable(CommonVariable):
@@ -3874,7 +3873,7 @@ class Previous(CommonVariable):
         """
         return super().__getitem__(treatment_name)
 
-    def __setitem__(self, treatment_name, amount):
+    def set(self, treatment_name, amount):
         """An error. Should not set a previous."""
         raise MinnetonkaError(
             'Amount of {} cannot be changed outside model logic'.format(self))
@@ -4059,7 +4058,7 @@ class Cross(CommonVariable):
         """Return whether the cross has a unitary definition."""
         return True
 
-    def __setitem__(self, treatment_name, amount):
+    def set(self, treatment_name, amount):
         """An error. Should not set a cross"""
         raise MinnetonkaError(
             'Amount of {} cannot be changed outside model logic'.format(
@@ -4086,7 +4085,6 @@ class CrossInstance(SimpleVariableInstance, metaclass=Cross):
         return [cls._referenced_variable]
 
 
-
 def cross(variable_name, referenced_variable_name, treatment):
     """For pulling the amount from a different treatment."""
     return _create_cross(variable_name, '', referenced_variable_name, treatment)
@@ -4105,7 +4103,122 @@ def _create_cross(
     Model.add_variable_to_current_context(newvar)
     return newvar
 
+#
+# derivn: a variable that is the (first order) derivative of another
+#
 
+class Velocity(CommonVariable):
+    """A variable that is the (first order) derivative of another."""
+
+    def _check_for_cycle_in_depends_on(self, checked_already, dependents):
+        """Check for cycles among the depends on."""
+        self._model[self._position_varname].check_for_cycle(
+            checked_already, dependents=dependents)
+
+    def _show_definition_and_dependencies(self):
+        """Print the definition and variables it depends on."""
+        print('First order derivative of: {}'.format(self._position_varname))
+
+    def antecedents(self, ignore_pseudo=False):
+        """Return all the depends_on variables."""
+        return [self._model[self._position_varname]]
+
+    def has_unitary_definition(self):
+        """Returns whether the previous has a unitary definition."""
+        return True
+
+    def calculate_all_increments(self, timestep):
+        """Capture the timestep and last value of position."""
+        # This is a bit of a hack, but when stocks are calculating increments
+        # it is a good time to capture the last position and the time step
+        for var in self.all_instances():
+            var.capture_position(timestep)
+
+    def set(self, treatment_name, amount):
+        """An error. Should not set a velocity."""
+        raise MinnetonkaError(
+            'Amount of {} cannot be changed outside model logic'.format(self))
+
+
+class VelocityInstance(SimpleVariableInstance, metaclass=Velocity):
+    """A variable that is the (first order) derivative of another variable."""
+
+    def wire_instance(self, model, treatment_name):
+        """Set the variable this instance depends on."""
+        self._position_instance = model.variable_instance(
+            self._position_varname, treatment_name)
+
+    def capture_position(self, timestep):
+        """Capture the current position (soon to be last position) + timestep"""
+        self._timestep = timestep 
+        self._last_position = self._position_instance.amount() 
+
+    def _calculate_amount(self):
+        """Calculate the current amount of this velocity."""
+        if self.undefined:
+            return None 
+        current_position = self._position_instance.amount()
+        if self._last_position is None or current_position is None:
+            return 0
+        else:
+            step_incr = self.subtract(current_position, self._last_position)
+            return self.divide(step_incr, self._timestep)
+
+    def subtract(self, minuend, subtrahend):
+        ### Stubbed in for now
+        return minuend - subtrahend 
+
+    def divide(self, dividend, divisor):
+        ### Stubbed in for now
+        return dividend / divisor
+
+    @classmethod
+    def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
+        """Return the variables this variable depends on.
+
+        :param for_init: return only the variables used in initialization
+        :param for_sort: return only the variables relevant for sorting vars
+        :param ignore_pseudo: do not return names of pseudo-variables
+        :return: list of all variable names this variable depends on
+        """
+        return [cls._position_varname]
+
+    def set_initial_amount(self, treatment=None):
+        """Set the step 0 amount for this velocity."""
+        self._last_position = None
+        self._amount = self._calculate_amount()
+
+
+def velocity(variable_name, *args):
+    """Create a new velocity."""
+    if len(args) == 1:
+        position = args[0]
+        docstring = '' 
+    elif len(args) == 2:
+        docstring, position = args 
+    elif len(args) == 0:
+        raise MinnetonkaError(
+            'Velocity {} names no position variable'.format(variable_name))
+    else:
+        raise MinnetonkaError('Too many arguments for velocity {}: {}'.format(
+            variable_name, args))
+    return _create_velocity(variable_name, docstring, position)
+
+def _create_velocity(velocity_varname, docstring, position_varname):
+    """Create a new velocity."""
+    newvar = type(velocity_varname, (VelocityInstance,),
+                {
+                    '__doc__': docstring, 
+                    '_position_varname': position_varname, 
+                    '_last_position': None, 
+                    '_validators': list(),
+                    '_derived': {'derived': False},
+                    '_has_history': True,
+                    '_exclude_treatments': []
+                    }
+                )
+    Model.add_variable_to_current_context(newvar)
+    return newvar
 
 #
 # foreach: for iterating across a dict within a variable
