@@ -5542,7 +5542,6 @@ class ModifiedTest(unittest.TestCase):
         self.assertTrue(m.is_modified('Bar', ''))
 
 
-
 class VelocityTest(unittest.TestCase):
     """Testing velocity()"""
     def test_simple(self):
@@ -5612,4 +5611,373 @@ class VelocityTest(unittest.TestCase):
         self.assertEqual(me.exception.message,
             'Circularity among variables: Foo <- FooVelocity <- Foo')
 
+    def test_array(self):
+        """Test velocity with numpy arrays."""
+        with model() as m:
+            stock('Savings', 
+                lambda x: x, 'Interest', np.array([1000, 1000, 1000]))
+            variable('Interest',
+                lambda savings, rate: savings * rate,
+                'Savings',
+                'Rate')
+            constant('Rate', np.array([0.08, 0.09, 0.1]))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
+        m.step()
+        assert_array_equal(SavingsVelocity[''], np.array([80, 90, 100]))
+        m.step()
+        assert_array_almost_equal(
+            SavingsVelocity[''], np.array([86.4, 98.1, 110]))
+        m.step()
+        assert_array_almost_equal(
+            SavingsVelocity[''], np.array([93.312, 106.929, 121]))
+        m.reset()
+        assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
+        m.step()
+        assert_array_equal(SavingsVelocity[''], np.array([80, 90, 100]))
+
+    def test_array_timestep(self):
+        """Test velocity with numpy arrays and nonzero timestep."""
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                lambda x: x, 'Interest', np.array([1000, 1000, 1000]))
+            variable('Interest',
+                lambda savings, rate: savings * rate,
+                'Savings',
+                'Rate')
+            constant('Rate', np.array([0.08, 0.09, 0.1]))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
+        m.step()
+        assert_array_equal(SavingsVelocity[''], np.array([80, 90, 100]))
+        m.step()
+        assert_array_almost_equal(
+            SavingsVelocity[''], np.array([83.2, 94.05, 105]))
+        m.step()
+        assert_array_almost_equal(
+            SavingsVelocity[''], np.array([86.528, 98.28225, 110.25]))
+        m.reset()
+        assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
+        m.step()
+        assert_array_equal(SavingsVelocity[''], np.array([80, 90, 100]))
+
+    def test_tuple(self):
+        """Test velocity with tuple values."""
+        with model() as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', (0.08, 0.09, 0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], (0, 0, 0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], (80, 90, 100))
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''][0], 86.4)
+        self.assertAlmostEqual(SavingsVelocity[''][1], 98.1)
+        self.assertAlmostEqual(SavingsVelocity[''][2], 110)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''][0], 93.312)
+        self.assertAlmostEqual(SavingsVelocity[''][1], 106.929)
+        self.assertAlmostEqual(SavingsVelocity[''][2], 121)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], (0, 0, 0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], (80, 90, 100))
+
+    def test_tuple_timestep(self):
+        """Test velocity with tuple values and nonzero timestep."""
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', (0.08, 0.09, 0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], (0, 0, 0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], (80, 90, 100))
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''][0], 83.2)
+        self.assertAlmostEqual(SavingsVelocity[''][1], 94.05)
+        self.assertAlmostEqual(SavingsVelocity[''][2], 105)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''][0], 86.528)
+        self.assertAlmostEqual(SavingsVelocity[''][1], 98.28225)
+        self.assertAlmostEqual(SavingsVelocity[''][2], 110.25)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], (0, 0, 0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], (80, 90, 100))
+
+    def test_dict(self):
+        """Test velocity with dict values."""
+        with model() as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', 
+                {'foo': 1000, 'bar': 900, 'baz': 800})
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
+        m.step()
+        self.assertEqual(SavingsVelocity[''], {'foo': 80, 'bar': 81, 'baz': 80})
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity['']['foo'], 86.4)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'], 88.29)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'], 88.0)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity['']['foo'], 93.312)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'], 96.2361)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'], 96.8)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
+        m.step()
+        self.assertEqual(SavingsVelocity[''], {'foo': 80, 'bar': 81, 'baz': 80})
+
+    def test_dict_timestep(self):
+        """Test velocity with dict values and nonzero timestep."""
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', 
+                {'foo': 1000, 'bar': 900, 'baz': 800})
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity['']['foo'], 83.2)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'], 84.645)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'], 84.0)
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity['']['foo'], 89.98912)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'], 92.4344561)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'], 92.61)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity['']['foo'], 93.5886848)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'], 96.5940067)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'], 97.2405)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
+        m.step()
+        self.assertEqual(SavingsVelocity[''], {'foo': 80, 'bar': 81, 'baz': 80})
+
+    def test_named_tuple(self):
+        """Test velocity with named tuple values."""
+        FBB = collections.namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with model() as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', 
+                FBB(foo=1000, bar=900, baz=800))
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 86.4)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 88.29)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 88.0)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 93.312)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 96.2361)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 96.8)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))
+
+    def test_named_tuple_timestep(self):
+        """Test velocity with named tuple values and nonzero timestep."""
+        FBB = collections.namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                foreach(lambda x: x), 'Interest', 
+                FBB(foo=1000, bar=900, baz=800))
+            variable('Interest',
+                foreach(lambda savings, rate: savings * rate),
+                'Savings',
+                'Rate')
+            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 83.2)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 84.645)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 84.0)
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 89.98912)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 92.4344561)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 92.61)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 93.5886848)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 96.5940067)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 97.2405)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))  
+
+    def test_mn_named_tuple(self):
+        """Test velocity with mn_namedtuple values."""
+        FBB = mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with model() as m:
+            stock('Savings', 
+                lambda x: x, 'Interest', 
+                FBB(foo=1000, bar=900, baz=800))
+            variable('Interest',
+                lambda savings, rate: savings * rate,
+                'Savings',
+                'Rate')
+            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 86.4)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 88.29)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 88.0)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 93.312)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 96.2361)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 96.8)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))
+
+    def test_mn_named_tuple_timestep(self):
+        """Test velocity with mn_namedtuple values and nonzero timestep."""
+        FBB = mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                lambda x: x, 'Interest', 
+                FBB(foo=1000, bar=900, baz=800))
+            variable('Interest',
+                lambda savings, rate: savings * rate,
+                'Savings',
+                'Rate')
+            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 83.2)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 84.645)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 84.0)
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 89.98912)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 92.4344561)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 92.61)
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity[''].foo, 93.5886848)
+        self.assertAlmostEqual(SavingsVelocity[''].bar, 96.5940067)
+        self.assertAlmostEqual(SavingsVelocity[''].baz, 97.2405)
+        m.reset()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
+        m.step()
+        self.assertEqual(SavingsVelocity[''], FBB(foo=80, bar=81, baz=80))  
+
+    def test_dict_tuple(self):
+        """Test velocity with dicts of tuples."""
+        with model() as m:
+            stock('Savings', 
+                foreach(foreach(lambda x: x)), 'Interest', 
+                {'foo': (1000, 1050), 'bar': (900, 950), 'baz': (800, 850)})
+            variable('Interest',
+                foreach(lambda savings, rate: tuple(s * rate for s in savings)),
+                'Savings',
+                'Rate')
+            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (0, 0), 'bar': (0, 0), 'baz': (0, 0)})
+        m.step()
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (80.0, 84.0), 'bar': (81.0, 85.5), 'baz': (80.0, 85.0)})
+        m.step()
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][0], 86.4)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][0], 88.29)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][0], 88.0)        
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][1], 90.72)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][1], 93.195)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][1], 93.5) 
+        m.reset()
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (0, 0), 'bar': (0, 0), 'baz': (0, 0)})
+        m.step()
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (80.0, 84.0), 'bar': (81.0, 85.5), 'baz': (80.0, 85.0)}) 
+
+    def test_dict_tuple_timestep(self):
+        """Test velocity with dict of tuples and nonzero timestep."""
+        with model(timestep=0.5) as m:
+            stock('Savings', 
+                foreach(foreach(lambda x: x)), 'Interest', 
+                {'foo': (1000, 1050), 'bar': (900, 950), 'baz': (800, 850)})
+            variable('Interest',
+                foreach(lambda savings, rate: tuple(s * rate for s in savings)),
+                'Savings',
+                'Rate')
+            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = velocity('SavingsVelocity', 'Savings') 
+
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (0, 0), 'bar': (0, 0), 'baz': (0, 0)})
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][0], 83.2)       
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][1], 87.36)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][0], 84.645)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][1], 89.3475)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][0], 84.0) 
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][1], 89.25)  
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][0], 89.98912)      
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][1], 94.488576)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][0], 92.4344561)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][1], 97.5697037)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][0], 92.61)  
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][1], 98.398125) 
+        m.reset()
+        self.assertEqual(
+            SavingsVelocity[''], 
+            {'foo': (0, 0), 'bar': (0, 0), 'baz': (0, 0)})
+        m.step(2)
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][0], 83.2)       
+        self.assertAlmostEqual(SavingsVelocity['']['foo'][1], 87.36)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][0], 84.645)
+        self.assertAlmostEqual(SavingsVelocity['']['bar'][1], 89.3475)
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][0], 84.0) 
+        self.assertAlmostEqual(SavingsVelocity['']['baz'][1], 89.25)  
 
