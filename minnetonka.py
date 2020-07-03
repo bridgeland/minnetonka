@@ -2308,6 +2308,9 @@ class PerTreatment:
         except:
             return '"{}": {}'.format(k, v)
 
+def per_treatment(**kwargs):
+    """Alternative syntax for PerTreatment."""
+    return PerTreatment(kwargs)
 
 #
 # Defining constants

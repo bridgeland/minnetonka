@@ -5981,3 +5981,21 @@ class VelocityTest(unittest.TestCase):
         self.assertAlmostEqual(SavingsVelocity['']['baz'][0], 84.0) 
         self.assertAlmostEqual(SavingsVelocity['']['baz'][1], 89.25)  
 
+class PerTreatmentAlternative(unittest.TestCase):
+    """Test alternative syntax for PerTreatment."""
+    def test_alt_syntax(self):
+        """Test per_treatment."""
+        with model(treatments=['as_is', 'to_be']) as m:
+            Foo = variable('Foo', per_treatment(as_is=12, to_be=9))
+            Bar = stock('Bar', 
+                per_treatment(as_is=lambda x: x, to_be=lambda x: -x),
+                'Foo',
+                100)
+        self.assertEqual(Foo['as_is'], 12)
+        self.assertEqual(Foo['to_be'], 9)
+        m.step()
+        self.assertEqual(Bar['as_is'], 112)
+        self.assertEqual(Bar['to_be'], 91)
+        m.step()
+        self.assertEqual(Bar['as_is'], 124)
+        self.assertEqual(Bar['to_be'], 82)
