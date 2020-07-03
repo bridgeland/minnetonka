@@ -4124,7 +4124,7 @@ class Velocity(CommonVariable):
         return [self._model[self._position_varname]]
 
     def has_unitary_definition(self):
-        """Returns whether the previous has a unitary definition."""
+        """Returns whether the velocity has a unitary definition."""
         return True
 
     def calculate_all_increments(self, timestep):
@@ -4158,19 +4158,87 @@ class VelocityInstance(SimpleVariableInstance, metaclass=Velocity):
         if self.undefined:
             return None 
         current_position = self._position_instance.amount()
-        if self._last_position is None or current_position is None:
+        if current_position is None:
             return 0
+        elif self._last_position is None:
+            return self._zero(current_position)
         else:
             step_incr = self.subtract(current_position, self._last_position)
             return self.divide(step_incr, self._timestep)
 
+    def _zero(self, obj):
+        """Return the zero with the same shape as obj."""
+        if isinstance(obj, int): 
+            return 0
+        elif isinstance(obj, float):
+            return 0.0
+        elif isinstance(obj, np.ndarray):
+            return np.zeros(obj.shape)
+        elif isinstance(obj, dict):
+            return {k: self._zero(v) for k, v in obj.items()} 
+        elif isnamedtuple(obj) or isinstance(obj, MinnetonkaNamedTuple):
+            typ = type(obj)
+            return typ(*(self._zero(o) for o in obj))
+        elif isinstance(obj, tuple):
+            return tuple(self._zero(o) for o in obj)
+        else:
+            raise MinnetonkaError(
+                'Do not know how to find initial velocity of {}'.format(obj) +
+                'as it is {}'.format(type(obj)))
+
     def subtract(self, minuend, subtrahend):
-        ### Stubbed in for now
-        return minuend - subtrahend 
+        """Subtract subtrahend from minuend."""
+        try:
+            return minuend - subtrahend
+        except TypeError:
+            fn = self._across_fn(minuend)
+            return fn(minuend, subtrahend, self.subtract)
 
     def divide(self, dividend, divisor):
-        ### Stubbed in for now
-        return dividend / divisor
+        """Subtract dividend by divisor."""
+        try:
+            return dividend / divisor
+        except TypeError:
+            fn = self._across_fn(dividend)
+            return fn(dividend, divisor, self.divide)
+
+    def _across_fn(self, obj):
+        """Return function that applies another function across collection."""
+        if isinstance(obj, dict):
+            return self._across_dicts
+        elif isnamedtuple(obj):
+            return self._across_named_tuples
+        elif isinstance(obj, tuple):
+            return self._across_tuples
+        else:
+            raise MinnetonkaError(
+                'Velocity argument {} must be numeric, dict, '.format(obj) +
+                'tuple, or numpy array, not {}'.format(type(obj)))
+
+    def _across_dicts(self, arg1, arg2, fn):
+        """arg1 is a dict. Apply fn to it and arg2."""
+        try: 
+            return {k: fn(v, arg2[k]) for k,v in arg1.items()}
+        except TypeError:
+            # arg2 might be constant rather than a dict
+            return {k: fn(v, arg2) for k,v in arg1.items()}
+
+    def _across_named_tuples(self, arg1, arg2, fn):
+        """arg1 is an ordinary named tuple. Apply fn to it and arg2."""
+        try:
+            typ = type(arg1)
+            return typ(*(fn(a1, a2) for a1, a2 in zip(arg1, arg2)))
+        except TypeError:
+            # arg2 might be constant rather than a namedtuple
+            return typ(*(fn(a1, arg2) for a1 in arg1))
+
+    def _across_tuples(self, arg1, arg2, fn):
+        """arg1 is a tuple. Apply fn to it and arg2"""
+        try: 
+            return tuple(fn(a1, a2) for a1, a2 in zip(arg1, arg2))
+        except TypeError:
+            # arg2 might be constant rather than a namedtuple
+            return tuple(fn(a1, arg2) for a1 in arg1)
 
     @classmethod
     def depends_on(cls, for_init=False, for_sort=False, ignore_pseudo=False):
@@ -4625,13 +4693,13 @@ class _Result:
     def succeed(self):
         self.add(success=True) 
         return self._result_in_progress
+
 #
 # mn_namedtuple: a variant of namedtuple in which the named tuples support
 # some basic operations
 #
 # Add new operations as needed
 #
-
 
 class MinnetonkaNamedTuple():
     """A mixin class for std namedtuple, so operators can be overridden."""
@@ -4712,6 +4780,20 @@ class MinnetonkaNamedTuple():
                 return type(self)(*(x * other for x in self))
             except:
                 return NotImplemented
+
+    def __truediv__(self, other):
+        """Divide by other."""
+        if isinstance(other, tuple):
+            try:
+                return type(self)(*(x / y for x, y in zip(self, other)))
+            except:
+                return NotImplemented
+        else:
+            try:
+                return type(self)(*(x / other for x in self))
+            except:
+                return NotImplemented
+
 
     @classmethod
     def _create(cls, val):

@@ -2124,6 +2124,20 @@ class NamedTuplesFundasTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) * self.AnotherType(5, 6)
 
+    def test_namedtuple_divide(self):
+        """Test divide of two mn named tuples together"""
+        self.assertEqual(self.OneType(4, 5, 6) / self.OneType(1, 2, 3),
+                         self.OneType(4, 2.5, 2))
+
+    def test_named_tuple_divide_scalar(self):
+        """Test divide of named tuple by scalar"""
+        self.assertEqual(self.OneType(1, 2, 3) / 2, self.OneType(0.5, 1, 1.5))
+
+    def test_named_tuple_divide_failure(self):
+        """Test divide failure for Minnetonka named tuples"""
+        with self.assertRaises(TypeError):
+            self.OneType(1, 2, 3) / self.AnotherType(5, 6)
+
     def test_named_tuple_equal(self):
         """Test whether two equivalent namedtuples are judged equal"""
         self.assertEqual(self.OneType(0, 10, -10), self.OneType(0, 10, -10))
