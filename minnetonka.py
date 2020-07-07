@@ -4801,6 +4801,23 @@ class MinnetonkaNamedTuple():
         """Round the named tuple."""
         return type(self)(*(round(x, ndigits) for x in self))
 
+    def __le__(self, other):
+        """Implement <="""
+        if type(self) == type(other):
+            return all(s <= o for s, o in zip(self, other))
+        elif isinstance(other, int) or isinstance(other, float):
+            return all(s <= other for s in self)
+        else:
+            return NotImplemented
+
+    def __ge__(self, other):
+        """Implement >="""
+        if type(self) == type(other):
+            return all(s >= o for s, o in zip(self, other))
+        elif isinstance(other, int) or isinstance(other, float):
+            return all(s >= other for s in self)
+        else:
+            return NotImplemented
 
     @classmethod
     def _create(cls, val):

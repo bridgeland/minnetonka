@@ -2080,65 +2080,65 @@ class NamedTuplesFundasTest(unittest.TestCase):
         self.OneType = mn_namedtuple('OneType', ['Foo', 'Bar', 'Baz'])
         self.AnotherType = mn_namedtuple('AnotherType', ['Foo', 'Bar'])
 
-    def test_named_tuple_add(self):
+    def test_add(self):
         """Test addition for Minnetonka named tuples"""
         self.assertEqual(self.OneType(1, 2, 3) + self.OneType(4, 5, 0), 
                          self.OneType(5, 7, 3))
 
-    def test_named_tuple_add_scalar(self):
+    def test_add_scalar(self):
         """Test addition for MN named tuple and a scalar"""
         self.assertEqual(self.OneType(1, 2, 3) + 2, self.OneType(3, 4, 5))
         self.assertEqual(2 + self.OneType(1, 2, 0), self.OneType(3, 4, 2))
 
-    def test_namedtuple_add_failure(self):
+    def test_add_failure(self):
         """Test addition failure for Minnetonka named tuples"""
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) + self.AnotherType(3, 4)
 
-    def test_namedtuple_subtract(self):
+    def test_subtract(self):
         """Test subtraction for Minnetonka named tuples"""
         self.assertEqual(self.OneType(1, 2, 3) - self.OneType(4, 5, 0), 
                          self.OneType(-3, -3, 3))
 
-    def test_named_tuple_subtract_scalar(self):
+    def test_subtract_scalar(self):
         """Test subtraction of scalar value from MN named tuple"""
         self.assertEqual(self.OneType(1, 2, 3) - 2, self.OneType(-1, 0, 1))
         self.assertEqual(5 - self.OneType(1, 2, 0), self.OneType(4, 3, 5))
 
-    def test_namedtuple_subtract_failure (self):
+    def test_subtract_failure (self):
         """Test subtraction failure for Minnetonka named tuples"""
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) - self.AnotherType(3, 4)
 
-    def test_namedtuple_multiply(self):
+    def test_multiply(self):
         """Test multiplication of two mn named tuples together"""
         self.assertEqual(self.OneType(1, 2, 3) * self.OneType(4, 5, 6),
                          self.OneType(4, 10, 18))
 
-    def test_named_tuple_multiply_scalar(self):
+    def test_multiply_scalar(self):
         """Test multiplication of named tuple by scalar"""
         self.assertEqual(self.OneType(1, 2, 3) * 2, self.OneType(2, 4, 6))
 
-    def test_named_tuple_multiply_failure(self):
+    def test_multiply_failure(self):
         """Test multiplication failure for Minnetonka named tuples"""
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) * self.AnotherType(5, 6)
 
-    def test_namedtuple_divide(self):
+    def test_divide(self):
         """Test divide of two mn named tuples together"""
         self.assertEqual(self.OneType(4, 5, 6) / self.OneType(1, 2, 3),
                          self.OneType(4, 2.5, 2))
 
-    def test_named_tuple_divide_scalar(self):
+    def test_divide_scalar(self):
         """Test divide of named tuple by scalar"""
         self.assertEqual(self.OneType(1, 2, 3) / 2, self.OneType(0.5, 1, 1.5))
 
-    def test_named_tuple_divide_failure(self):
+    def test_divide_failure(self):
         """Test divide failure for Minnetonka named tuples"""
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) / self.AnotherType(5, 6)
 
-    def test_namedtuple_round(self):
+    def test_round(self):
         """Test rounding a mn named tuple."""
         self.assertEqual(
             round(self.OneType(3.2, 2, 14.65)), 
@@ -2147,15 +2147,32 @@ class NamedTuplesFundasTest(unittest.TestCase):
             round(self.OneType(3.2, 2, 14.65), 1), 
             self.OneType(3.2, 2, 14.7))
 
-    def test_named_tuple_equal(self):
+    def test_le(self):
+        """Test <= on two named tuples."""
+        self.assertTrue(self.OneType(1.4, 2, 14.65) <= self.OneType(1.4, 4, 15))
+        self.assertFalse(self.OneType(1.4, 2, 14.65) <= self.OneType(1, 4, 15))
+
+    def test_le_scalar(self):
+        """Test <= on two named tuples."""
+        self.assertTrue(self.OneType(1.4, 2, 14.65) <= 20)
+        self.assertFalse(self.OneType(1.4, 2, 14.65) <= 14.0)
+        self.assertTrue(1.4 <= self.OneType(1.4, 2, 14.65))
+        self.assertFalse(2.0 <= self.OneType(1.4, 2, 14.65))
+
+    def test_le_failure(self):
+        """Test <= on two incomparable named tuples."""
+        with self.assertRaises(TypeError):
+            self.OneType(1, 2, 3) <= self.AnotherType(5, 6),
+
+    def test_equal(self):
         """Test whether two equivalent namedtuples are judged equal"""
         self.assertEqual(self.OneType(0, 10, -10), self.OneType(0, 10, -10))
 
-    def test_named_tuple_not_equal(self):
+    def test_not_equal(self):
         """Test whether two uneqal namedtuples are judged unequal"""
         self.assertNotEqual(self.OneType(0, 10, -10), self.OneType(0, 10, -9))
 
-    def test_named_tuple_create(self):
+    def test_create(self):
         """Test whether the new method _create works"""
         self.assertEqual(self.OneType._create(1), self.OneType(1, 1, 1))
         self.assertEqual(self.AnotherType._create(0), self.AnotherType(0, 0))
