@@ -2138,6 +2138,15 @@ class NamedTuplesFundasTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.OneType(1, 2, 3) / self.AnotherType(5, 6)
 
+    def test_namedtuple_round(self):
+        """Test rounding a mn named tuple."""
+        self.assertEqual(
+            round(self.OneType(3.2, 2, 14.65)), 
+            self.OneType(3, 2, 15))
+        self.assertEqual(
+            round(self.OneType(3.2, 2, 14.65), 1), 
+            self.OneType(3.2, 2, 14.7))
+
     def test_named_tuple_equal(self):
         """Test whether two equivalent namedtuples are judged equal"""
         self.assertEqual(self.OneType(0, 10, -10), self.OneType(0, 10, -10))
@@ -5999,3 +6008,4 @@ class PerTreatmentAlternative(unittest.TestCase):
         m.step()
         self.assertEqual(Bar['as_is'], 124)
         self.assertEqual(Bar['to_be'], 82)
+

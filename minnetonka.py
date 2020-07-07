@@ -4797,6 +4797,10 @@ class MinnetonkaNamedTuple():
             except:
                 return NotImplemented
 
+    def __round__(self, ndigits=0):
+        """Round the named tuple."""
+        return type(self)(*(round(x, ndigits) for x in self))
+
 
     @classmethod
     def _create(cls, val):
