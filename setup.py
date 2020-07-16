@@ -24,6 +24,6 @@ setup(
     url='https://github.com/bridgeland/minnetonka',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'License :: OSI Approved :: Apache License, Version 2.0 (Apache-2.0)'
+        'License :: OSI Approved :: Apache Software License'
         ]
 	)
