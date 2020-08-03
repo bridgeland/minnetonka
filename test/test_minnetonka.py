@@ -19,7 +19,7 @@ import random
 import collections
 import numpy as np 
 
-from minnetonka import *
+import minnetonka as mn
 
 class ModelCreationTest(unittest.TestCase):
     """Create a model, in a couple of ways. Access the treatments"""
