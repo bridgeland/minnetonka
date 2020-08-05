@@ -3,10 +3,10 @@
 """test_minnetonka.py: test the minnetonka language for value modeling"""
 
 __author__ = "Dave Bridgeland"
-__copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
+__copyright__ = "Copyright 2017-2020, Hanging Steel Productions LLC"
 __credits__ = ["Dave Bridgeland"]
 
-__version__ = "1"
+__version__ = "0.0.1"
 __maintainer__ = "Dave Bridgeland"
 __email__ = "dave@hangingsteel.com"
 __status__ = "Prototype"
