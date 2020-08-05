@@ -3613,8 +3613,8 @@ class SafeDiv(unittest.TestCase):
 class ArrayGraphXYandYX(unittest.TestCase):
     """For testing array_graph_xy"""
     # should test decreasing Xs and neither increasing nor decreasing errors
-    def test_array_graph_xy(self):
-        """Testing array_graph_xy"""
+    def test_array_graph_xy_tuple(self):
+        """Testing array_graph_xy() with tuple argument"""
         XYs = (
             (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
             (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
@@ -3626,8 +3626,22 @@ class ArrayGraphXYandYX(unittest.TestCase):
         self.assertEqual(mn.array_graph_xy(11, XYs), 0)
         self.assertEqual(mn.array_graph_xy(1, XYs), 100)
 
-    def test_array_graph_yx(self):
-        """Testing array_graph_yx"""
+    def test_array_graph_xy_array(self):
+        """Testing array_graph_xy with numpy array argument"""
+        XYs_tuple = (
+            (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
+            (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
+            (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
+            (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
+            )
+        XYs = np.array(XYs_tuple).transpose()
+        self.assertEqual(mn.array_graph_xy(2, XYs), 92.34)
+        self.assertAlmostEqual(mn.array_graph_xy(7.4, XYs), 11.374)
+        self.assertEqual(mn.array_graph_xy(11, XYs), 0)
+        self.assertEqual(mn.array_graph_xy(1, XYs), 100)
+
+    def test_array_graph_yx_typle(self):
+        """Testing array_graph_yx() on a tuple"""
         XYs = (
             (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
             (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
@@ -3638,6 +3652,21 @@ class ArrayGraphXYandYX(unittest.TestCase):
         self.assertAlmostEqual(mn.array_graph_yx(11.374, XYs), 7.4)
         self.assertEqual(mn.array_graph_yx(0, XYs), 10)
         self.assertEqual(mn.array_graph_yx(100, XYs), 1)
+
+    def test_array_graph_yx_array(self):
+        """Testing array_graph_yx() on numpy array argument"""
+        XYs_tuple = (
+            (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
+            (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
+            (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
+            (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
+            )
+        XYs = np.array(XYs_tuple).transpose()
+        self.assertEqual(mn.array_graph_yx(92.34, XYs), 2)
+        self.assertAlmostEqual(mn.array_graph_yx(11.374, XYs), 7.4)
+        self.assertEqual(mn.array_graph_yx(0, XYs), 10)
+        self.assertEqual(mn.array_graph_yx(100, XYs), 1)
+
 
 class AllAmounts(unittest.TestCase):
     def test_all_amounts(self):

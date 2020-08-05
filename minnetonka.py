@@ -4842,12 +4842,29 @@ def norm_cdf(x, mu, sigma):
 
 def array_graph_xy(x, XYs):
     """
-    Find linear interpolation of f(x) given a tuple of Xs and Ys.
+    Find linear interpolation of f(x) given a tuple of Xs and Ys. 
 
-    Like ARRAYGRAPHXY in SimLang. Despite the name of the function, the XYs 
-    argument must be a nested tuple rather than an array.
+    Like ARRAYGRAPHXY in SimLang. XYs can either be nested tuples or a 2D
+    numpy array.
+
+    Parameters
+    ----------
+    x : float
+        the point to interpolate an f(x)
+
+    XYs: ((float, float), (float, float) ....) or array (2, N) of floats
+        the x and y values of each point in the curve
+
+    Returns
+    -------
+    float
+        f(x) given the interpolation of the XYs
     """
-    Xs, Ys = map(list, zip(*XYs))
+    if type(XYs) is np.ndarray:
+        Xs = XYs[0]
+        Ys = XYs[1]
+    else:
+        Xs, Ys = map(list, zip(*XYs))
     return _inner_array_graph(x, Xs, Ys)
 
 
@@ -4862,12 +4879,29 @@ def _inner_array_graph(x, Xs, Ys):
 
 
 def array_graph_yx(y, XYs):
-    """Find x such that f(x) is approproximately y via linear interpolation.
+    """Find x such that f(y) is approproximately y via linear interpolation.
 
-    Like ARRAYGRAPHYX in SimLang. Despite the name of the function, the YXs 
-    argument must be a nested tuple rather than an array.
+    Like ARRAYGRAPHYX in SimLang. XYs can either be nested tuples or a 2D
+    numpy array.
+
+    Parameters
+    ----------
+    x : float
+        the point to interpolate an f(x)
+
+    XYs: ((float, float), (float, float) ....) or array (2, N) of floats
+        the x and y values of each point in the curve
+
+    Returns
+    -------
+    float
+        f(x) given the interpolation of the XYs
     """
-    Xs, Ys = map(list, zip(*XYs))
+    if type(XYs) is np.ndarray:
+        Xs = XYs[0]
+        Ys = XYs[1]
+    else:
+        Xs, Ys = map(list, zip(*XYs))
     return _inner_array_graph(y, Ys, Xs)
 
 def mean(number_list):
