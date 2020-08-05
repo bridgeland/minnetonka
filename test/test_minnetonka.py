@@ -3,14 +3,15 @@
 """test_minnetonka.py: test the minnetonka language for value modeling"""
 
 __author__ = "Dave Bridgeland"
-__copyright__ = "Copyright 2017-2018, Hanging Steel Productions LLC"
+__copyright__ = "Copyright 2017-2020, Hanging Steel Productions LLC"
 __credits__ = ["Dave Bridgeland"]
 
-__version__ = "1"
+__version__ = "0.0.1"
 __maintainer__ = "Dave Bridgeland"
 __email__ = "dave@hangingsteel.com"
 __status__ = "Prototype"
 
+import warnings
 import unittest 
 import unittest.mock
 import io
@@ -25,14 +26,14 @@ class ModelCreationTest(unittest.TestCase):
     """Create a model, in a couple of ways. Access the treatments"""
     def test_create_with_one_treatment(self):
         """Create a model with a single treatment"""
-        m = model(treatments=['As is'])
+        m = mn.model(treatments=['As is'])
         ts = list(m.treatments())
         self.assertEqual(len(ts), 1)
         self.assertEqual(ts[0].name, 'As is')
 
     def test_create_with_two_treatments(self):
         """Create a model with a single treatment"""
-        m = model(treatments=['As is', 'To be'])
+        m = mn.model(treatments=['As is', 'To be'])
         ts = list(m.treatments())
         self.assertEqual(len(ts), 2)
         self.assertEqual(ts[0].name, 'As is')
@@ -40,14 +41,14 @@ class ModelCreationTest(unittest.TestCase):
 
     def test_create_model_with_no_explicit_treatments(self):
         """Create a model with no explicit treatments"""
-        m = model()
+        m = mn.model()
         ts = list(m.treatments())
         self.assertEqual(len(ts), 1)
         self.assertEqual(ts[0].name, '')
 
     def test_create_model_with_descriptions(self):
         """Create a model with treatment descriptions"""
-        m = model(treatments=[('As is', 'The current situation'),
+        m = mn.model(treatments=[('As is', 'The current situation'),
                                    ('To be', 'The future')])
         ts = list(m.treatments())
         self.assertEqual(len(ts), 2)
@@ -58,7 +59,7 @@ class ModelCreationTest(unittest.TestCase):
 
     def test_four_mixed_treatments(self):
         """Create a model with four treatments, some of which are described"""
-        m = model(treatments=[('As is', 'The current situation'), 
+        m = mn.model(treatments=[('As is', 'The current situation'), 
                                    'To be', 
                                    'Alternative 1',
                                    ('Alternative 2', 'Another possibility')])
@@ -78,7 +79,7 @@ class ModelTreatmentAccess(unittest.TestCase):
     """Access the treatments from a model"""
     def test_access_treatments(self):
         """Access the treatments from a model"""
-        m = model(treatments=[('As is', 'The current situation'), 
+        m = mn.model(treatments=[('As is', 'The current situation'), 
                                ('To be', 'The future')])
         self.assertEqual(m.treatment('As is').name, 'As is')
         self.assertEqual(
@@ -89,42 +90,42 @@ class ModelTreatmentAccess(unittest.TestCase):
 class ModelVariableAccess(unittest.TestCase):
     """Access the variable (classes) of a model"""
     def test_variable_access(self):
-        """Access a variable with .variable()"""
-        DischargeBegins = variable('DischargeBegins', 12)
-        DischargeEnds = variable('DischargeEnds', 18)
-        m = model([DischargeBegins, DischargeEnds])
+        """Access a variable with .mn.variable()"""
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        DischargeEnds = mn.variable('DischargeEnds', 18)
+        m = mn.model([DischargeBegins, DischargeEnds])
         self.assertEqual(m.variable('DischargeBegins'), DischargeBegins)
         self.assertEqual(m.variable('DischargeEnds'), DischargeEnds)
 
     def test_variable_access(self):
         """Access a variable that does not exist"""
-        DischargeBegins = variable('DischargeBegins', 12)
-        DischargeEnds = variable('DischargeEnds', 18)
-        m = model([DischargeBegins, DischargeEnds])
-        with self.assertRaises(MinnetonkaError) as me:
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        DischargeEnds = mn.variable('DischargeEnds', 18)
+        m = mn.model([DischargeBegins, DischargeEnds])
+        with self.assertRaises(mn.MinnetonkaError) as me:
             m.variable('DischargeAbides')
         self.assertEqual(
             me.exception.message, 'Unknown variable DischargeAbides')
 
     def test_subscripts(self):
-        DischargeBegins = variable('DischargeBegins', 12)
-        DischargeEnds = variable('DischargeEnds', 18)
-        m = model([DischargeBegins, DischargeEnds])
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        DischargeEnds = mn.variable('DischargeEnds', 18)
+        m = mn.model([DischargeBegins, DischargeEnds])
         self.assertEqual(m['DischargeBegins'], DischargeBegins)
         self.assertEqual(m['DischargeEnds'], DischargeEnds)
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaises(mn.MinnetonkaError) as me:
             m['DischargeAbides']
         self.assertEqual(
             me.exception.message, 'Unknown variable DischargeAbides')
 
     def test_redefined_variable(self):
-        DischargeBegins = variable('DischargeBegins', 12)
-        DB2 = variable('DischargeBegins', 13)
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        DB2 = mn.variable('DischargeBegins', 13)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
-            m = model([DischargeBegins, DB2])
+            m = mn.model([DischargeBegins, DB2])
             self.assertEqual(len(w), 1)
-            self.assertEqual(w[-1].category, MinnetonkaWarning)
+            self.assertEqual(w[-1].category, mn.MinnetonkaWarning)
             self.assertEqual(
                 str(w[-1].message), 'Variable DischargeBegins redefined')
         self.assertEqual(m['DischargeBegins'][''], 13)
@@ -134,7 +135,7 @@ class TreatmentTest(unittest.TestCase):
     """Basic test of treatments"""
     def test_repr(self): 
         """Are the treatments repred correctly?"""
-        m = model(treatments=[
+        m = mn.model(treatments=[
             'As is', ('Value at risk', 'Total value that could be achieved')])
         nullTreatment, valueAtRisk = m.treatments()
         self.assertEqual(repr(nullTreatment), "Treatment('As is')")
@@ -144,7 +145,7 @@ class TreatmentTest(unittest.TestCase):
 
     def test_by_name(self):
         """Is the class Treatment keeping track of all the treatments?"""
-        m = model(treatments=[
+        m = mn.model(treatments=[
             'As is', ('Value at risk', 'Total value that could be achieved')])
         nullTreatment, valueAtRisk = m.treatments()
         self.assertEqual(m.treatment('As is'), nullTreatment)
@@ -152,9 +153,9 @@ class TreatmentTest(unittest.TestCase):
 
     def test_by_name_not_found(self):
         """Does Treatment raise an error if the treatment is not found?"""
-        m = model(treatments=[
+        m = mn.model(treatments=[
             'As is', ('Value at risk', 'Total value that could be achieved')])
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaises(mn.MinnetonkaError) as me:
             foo = m.treatment('Could be')
         self.assertEqual(
             me.exception.message, 'Model has no treatment Could be')
@@ -164,29 +165,29 @@ class SimpleQuantityTest(unittest.TestCase):
     """Tests for simple quantities"""
     def test_single_simple_quantity(self):
         """Does the simple quantity know its value?"""
-        DischargeBegins = variable('DischargeBegins', 12)
-        m = model([DischargeBegins])
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        m = mn.model([DischargeBegins])
         self.assertEqual(DischargeBegins.by_treatment('').amount(), 12)
 
     def test_single_simple_quantity_via_subscript(self):
         """Does the simple quantity know its value?"""
-        DischargeBegins = variable('DischargeBegins', 12)
-        m = model([DischargeBegins])
+        DischargeBegins = mn.variable('DischargeBegins', 12)
+        m = mn.model([DischargeBegins])
         self.assertEqual(DischargeBegins[''], 12)
 
     def test_simple_equality_two_treatments(self):
         """Does a simple quantity know its values in 2 different treatments?"""
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, 'To be': 2}))
-        m = model([DischargeBegins], ['As is', 'To be'])
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, 'To be': 2}))
+        m = mn.model([DischargeBegins], ['As is', 'To be'])
         self.assertEqual(m['DischargeBegins']['As is'], 12)
         self.assertEqual(m['DischargeBegins']['To be'], 2)
 
     def test_constant_with_default_across_treatments(self):
-        DischargeEnds = variable('DischargeEnds', 15)
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, 'To be': 2}))
-        m = model([DischargeBegins, DischargeEnds], ['As is', 'To be'])
+        DischargeEnds = mn.variable('DischargeEnds', 15)
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, 'To be': 2}))
+        m = mn.model([DischargeBegins, DischargeEnds], ['As is', 'To be'])
         self.assertEqual(DischargeEnds['As is'], 15)
         self.assertEqual(DischargeEnds['To be'], 15)
         self.assertEqual(m['DischargeBegins']['As is'], 12)
@@ -194,18 +195,18 @@ class SimpleQuantityTest(unittest.TestCase):
 
     def test_incomplete_varying_quantity(self):
         """Does an incomplete varying quantity know it's incomplete?"""
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, '2B': 2}))
-        with self.assertRaises(MinnetonkaError) as cm:
-            m = model([DischargeBegins], ['As is', 'To be'])
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, '2B': 2}))
+        with self.assertRaises(mn.MinnetonkaError) as cm:
+            m = mn.model([DischargeBegins], ['As is', 'To be'])
         self.assertEqual(cm.exception.message,
                         "Treatment 'To be' not defined")
 
     def test_quantity_knows_treatment(self): 
         """Does the simple quantity know its treatment?"""
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, 'To be': 2}))
-        m = model([DischargeBegins], ['As is', 'To be'])
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, 'To be': 2}))
+        m = mn.model([DischargeBegins], ['As is', 'To be'])
         self.assertEqual(m['DischargeBegins'].by_treatment('As is').treatment(),
                          m.treatment('As is'))
         self.assertEqual(m['DischargeBegins'].by_treatment('To be').treatment(),
@@ -213,9 +214,9 @@ class SimpleQuantityTest(unittest.TestCase):
 
     def test_treatment_knows_quantity(self):
         """Does the treatment know its simple quantity?"""
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, 'To be': 2}))
-        m = model([DischargeBegins], ['As is', 'To be'])
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, 'To be': 2}))
+        m = mn.model([DischargeBegins], ['As is', 'To be'])
         self.assertEqual(m['DischargeBegins'].by_treatment('As is'),
                          m.treatment('As is')['DischargeBegins'])
         self.assertEqual(m['DischargeBegins'].by_treatment('To be'),
@@ -223,16 +224,16 @@ class SimpleQuantityTest(unittest.TestCase):
 
     def test_reset(self):
         """Can a simple quantity reset correctly?"""
-        DischargeBegins = variable('DischargeBegins', 
-            PerTreatment({'As is': 12, 'To be': 2}))
-        m = model([DischargeBegins], ['As is', 'To be'])
+        DischargeBegins = mn.variable('DischargeBegins', 
+            mn.PerTreatment({'As is': 12, 'To be': 2}))
+        m = mn.model([DischargeBegins], ['As is', 'To be'])
         DischargeBegins['As is'] = 11
         m.reset()
         self.assertEqual(DischargeBegins['As is'], 12)
 
     def test_docstring(self):
         """Can a simple quantity have a docstring?"""
-        DischargeEnds = variable('DischargeEnds', 
+        DischargeEnds = mn.variable('DischargeEnds', 
             """The quarter when discharging ends""",
             15)
         self.assertEqual(
@@ -243,56 +244,56 @@ class ContextManagerTest(unittest.TestCase):
     """Create a model and variables using a contex manager"""
     def test_variable_access_within_context_manager(self):
         """Does a model defined as a context mgr know about the variables?"""
-        with model() as m:
-            DischargeBegins = variable('DischargeBegins', 12)
+        with mn.model() as m:
+            DischargeBegins = mn.variable('DischargeBegins', 12)
         self.assertEqual(m.variable('DischargeBegins'), DischargeBegins)
 
     def test_model_initialization_via_context_manager(self):
         """Does a model defined as a context manager initialize?"""
-        with model():
-            DischargeBegins = variable('DischargeBegins', 12)
-            DischargeEnds = variable('DischargeEnds', 15)
+        with mn.model():
+            DischargeBegins = mn.variable('DischargeBegins', 12)
+            DischargeEnds = mn.variable('DischargeEnds', 15)
         self.assertEqual(DischargeBegins[''], 12)
         self.assertEqual(DischargeEnds[''], 15)
 
     def test_variables_without_python_vars_within_context_manager(self):
         """Does a model context manager need vars to have python vars?"""
-        with model() as m:
-            variable('DischargeBegins', 12)
-            variable('DischargeEnds', 15)
+        with mn.model() as m:
+            mn.variable('DischargeBegins', 12)
+            mn.variable('DischargeEnds', 15)
         self.assertEqual(m['DischargeBegins'][''], 12)
         self.assertEqual(m['DischargeEnds'][''], 15)
 
     def test_reopen_context_manager(self):
         """Can I reopen a previously defined context manager and add a var?"""
-        with model() as m:
-            variable('DischargeBegins', 12)
+        with mn.model() as m:
+            mn.variable('DischargeBegins', 12)
         with m:
-            variable('DischargeEnds', 15)
+            mn.variable('DischargeEnds', 15)
         self.assertEqual(m['DischargeEnds'][''], 15)
 
     def test_reopen_context_manager_after_step(self):
         """Can I reopen a previously defined context manager and add a var?"""
-        with model() as m:
-            variable('DischargeBegins', 12)
+        with mn.model() as m:
+            mn.variable('DischargeBegins', 12)
         m.step()
         with m:
-            variable('DischargeEnds', 15)
+            mn.variable('DischargeEnds', 15)
         self.assertEqual(m['DischargeEnds'][''], 15)
         self.assertEqual(m['DischargeBegins'][''], 12)
 
     def test_redefine_variable(self):
         """Can I redefine a variable in a subsequent context?"""
-        with model() as m:
-            variable('DischargeBegins', 12)
+        with mn.model() as m:
+            mn.variable('DischargeBegins', 12)
         self.assertEqual(m['DischargeBegins'][''], 12)
         # Yuck. Need to encapsulate all this code to check for warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             with m:
-                variable('DischargeBegins', 13)
+                mn.variable('DischargeBegins', 13)
             self.assertEqual(len(w), 1)
-            self.assertEqual(w[-1].category, MinnetonkaWarning)
+            self.assertEqual(w[-1].category, mn.MinnetonkaWarning)
             self.assertEqual(
                 str(w[-1].message), 'Variable DischargeBegins redefined')
         self.assertEqual(m['DischargeBegins'][''], 13)
@@ -302,14 +303,14 @@ class NoArgVariableTest(unittest.TestCase):
     """Tests for variables without any arguments"""
     def test_simple_noarg(self):
         """Does a simple no arg variable work?"""
-        with model():
-            DischargeProgress = variable('DischargeProgress', lambda: 0.5)
+        with mn.model():
+            DischargeProgress = mn.variable('DischargeProgress', lambda: 0.5)
         self.assertEqual(DischargeProgress[''], 0.5)
 
     def test_simple_no_arg_with_docstring(self):
         """Does a simple no arg variable wiht a docstring work?"""
-        with model():
-            DischargeProgress = variable('DischargeProgress',  
+        with mn.model():
+            DischargeProgress = mn.variable('DischargeProgress',  
                 """Between the beginning and the end, how much progress?""",
                 lambda: 0.5)
         self.assertEqual(
@@ -319,9 +320,9 @@ class NoArgVariableTest(unittest.TestCase):
 
     def test_changing_no_arg(self):
         """Can the no arg variable change its behavior?"""
-        with model(treatments=['As is']) as m:
+        with mn.model(treatments=['As is']) as m:
             progress = 0.5
-            DischargeProgress = variable('DischargeProgress', lambda: progress)
+            DischargeProgress = mn.variable('DischargeProgress', lambda: progress)
         self.assertEqual(DischargeProgress['As is'], 0.5)
         progress = 0.7
         m.step()
@@ -329,27 +330,27 @@ class NoArgVariableTest(unittest.TestCase):
 
     def test_reset_no_arg(self):
         """Can a no arg variable reset?"""
-        with model() as m:
-            DischargeProgress = variable('DischargeProgress', lambda: 0.5)
+        with mn.model() as m:
+            DischargeProgress = mn.variable('DischargeProgress', lambda: 0.5)
         self.assertEqual(DischargeProgress[''], 0.5)
         m.reset()
         self.assertEqual(DischargeProgress[''], 0.5)
 
     def test_embedded_fn(self):
         """Can a function be defined within a model context?"""
-        with model() as m:
+        with mn.model() as m:
             def _fn(x):
                 return x + 1
 
-            Foo = variable('Foo', _fn, 'Bar')
-            variable('Bar', 9)
+            Foo = mn.variable('Foo', _fn, 'Bar')
+            mn.variable('Bar', 9)
 
         self.assertEqual(Foo[''], 10)
 
     def test_different_treatments_different_callables(self):
         """Can different treatments be given different callables"""
-        with model(treatments=['As is', 'To be']) as m:
-            Foo = variable('Foo', PerTreatment(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Foo = mn.variable('Foo', mn.PerTreatment(
                 {'As is': lambda: 12, 'To be': lambda: 13}))
 
         self.assertEqual(Foo['As is'], 12)
@@ -357,8 +358,8 @@ class NoArgVariableTest(unittest.TestCase):
 
     def test_callable_and_constant(self):
         """Can one treatment have a callable and another a constant"""
-        with model(treatments=['As is', 'To be']) as m:
-            Foo = variable('Foo', PerTreatment(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Foo = mn.variable('Foo', mn.PerTreatment(
                 {'As is': lambda: 12, 'To be': 13}))
 
         self.assertEqual(Foo['As is'], 12)
@@ -368,11 +369,11 @@ class NoArgVariableTest(unittest.TestCase):
 class OneArgVariableTest(unittest.TestCase):
     """Tests for variables that have a single argument"""
     def test_sunny_day(self):
-        with model(treatments=['As is', 'To be']):
-            DischargeBegins = variable('DischargeBegins', 
-                PerTreatment({'As is': 4, 'To be': 3}))
+        with mn.model(treatments=['As is', 'To be']):
+            DischargeBegins = mn.variable('DischargeBegins', 
+                mn.PerTreatment({'As is': 4, 'To be': 3}))
             current_step = 7
-            DischargeProgress = variable('DischargeProgress', 
+            DischargeProgress = mn.variable('DischargeProgress', 
                 """Between the beginning and the end, how much progress?""",
                 lambda db: (current_step - db) / 4,
                 'DischargeBegins') 
@@ -384,12 +385,12 @@ class OneArgVariableTest(unittest.TestCase):
 
     def test_different_treatments_different_callables(self):
         """Can different treatments be given different callables"""
-        with model(treatments=['As is', 'To be']) as m:
-            DischargeBegins = variable('DischargeBegins', 4)
+        with mn.model(treatments=['As is', 'To be']) as m:
+            DischargeBegins = mn.variable('DischargeBegins', 4)
             current_step = 7
-            DischargeProgress = variable('DischargeProgress', 
+            DischargeProgress = mn.variable('DischargeProgress', 
                 """Between the beginning and the end, how much progress?""",
-                PerTreatment(
+                mn.PerTreatment(
                     {'As is': lambda db: (current_step - db) / 4,
                      'To be': lambda db: (current_step - db + 1) / 4}),
                 'DischargeBegins')
@@ -399,15 +400,15 @@ class OneArgVariableTest(unittest.TestCase):
 
     def test_populate_no_depends(self):
         current_step = 7
-        with self.assertRaises(MinnetonkaError):
-            with model(treatments=['As is', 'To be']):
-                variable('Progress', lambda db: (current_step - db) / 4)
+        with self.assertRaises(TypeError):
+            with mn.model(treatments=['As is', 'To be']):
+                mn.variable('Progress', lambda db: (current_step - db) / 4)
 
     def test_simple_circularity(self):
         """Test for detecting a variable that depends on itself"""
-        with self.assertRaises(MinnetonkaError) as me:
-            with model():
-                variable('Reflect', lambda r: r+2, 'Reflect')
+        with self.assertRaises(mn.MinnetonkaError) as me:
+            with mn.model():
+                mn.variable('Reflect', lambda r: r+2, 'Reflect')
         self.assertEqual(me.exception.message,
             'Circularity among variables: Reflect <- Reflect')
     
@@ -415,11 +416,11 @@ class OneArgVariableTest(unittest.TestCase):
 class TwoArgsTest(unittest.TestCase):
     """Tests for variables that have two arguments"""
     def test_two_args_sunny_day(self):
-        with model():
-            variable('DischargeBegins', 5)
-            variable('DischargeEnds', 9)
+        with mn.model():
+            mn.variable('DischargeBegins', 5)
+            mn.variable('DischargeEnds', 9)
             current_step = 7
-            DischargeProgress = variable('DischargeProgress',
+            DischargeProgress = mn.variable('DischargeProgress',
                 """Between the beginning and the end, how much progress?""",
                 lambda db, de: (current_step - db) / (de - db),
                 'DischargeBegins', 'DischargeEnds') 
@@ -429,12 +430,12 @@ class TwoArgsTest(unittest.TestCase):
             'Between the beginning and the end, how much progress?')
 
     def test_two_args_2_treatments_sunny_day(self):
-        with model(treatments=['As is', 'Just might work']):
-            variable('DischargeBegins', 5)
-            variable('DischargeEnds', 
-                PerTreatment({'As is': 13, 'Just might work': 11}))
+        with mn.model(treatments=['As is', 'Just might work']):
+            mn.variable('DischargeBegins', 5)
+            mn.variable('DischargeEnds', 
+                mn.PerTreatment({'As is': 13, 'Just might work': 11}))
             current_step = 7
-            DischargeProgress = variable('DischargeProgress',
+            DischargeProgress = mn.variable('DischargeProgress',
                 lambda db, de: (current_step - db) / (de - db),
                 'DischargeBegins', 'DischargeEnds') 
         self.assertEqual(DischargeProgress['As is'], 0.25)
@@ -442,20 +443,20 @@ class TwoArgsTest(unittest.TestCase):
 
     def test_two_arg_circularity(self):
         """Can variable detect dependency on var that depends on the first?"""
-        with self.assertRaises(MinnetonkaError) as me:
-            with model():
-                variable('Foo', lambda b: b + 2, 'Bar')
-                variable('Bar', lambda f: f - 2, 'Foo')
+        with self.assertRaises(mn.MinnetonkaError) as me:
+            with mn.model():
+                mn.variable('Foo', lambda b: b + 2, 'Bar')
+                mn.variable('Bar', lambda f: f - 2, 'Foo')
         self.assertEqual(me.exception.message,
             'Circularity among variables: Foo <- Bar <- Foo')
 
     def test_three_arg_circularity(self):
         """Can variable detect dependency on var that depends on the first?"""
-        with self.assertRaises(MinnetonkaError) as me:
-            with model():
-                variable('Foo', lambda b: b + 2, 'Bar')
-                variable('Bar', lambda b: b - 2, 'Baz')
-                variable('Baz', lambda f: f + 10, 'Foo')
+        with self.assertRaises(mn.MinnetonkaError) as me:
+            with mn.model():
+                mn.variable('Foo', lambda b: b + 2, 'Bar')
+                mn.variable('Bar', lambda b: b - 2, 'Baz')
+                mn.variable('Baz', lambda f: f + 10, 'Foo')
         self.assertEqual(me.exception.message,
             'Circularity among variables: Foo <- Bar <- Baz <- Foo')
 
@@ -464,10 +465,10 @@ class ExpressionCacheTest(unittest.TestCase):
     """Test the behavior of the cache"""
     def test_cache_retention(self):
         """Test cache retention"""
-        with model():
+        with mn.model():
             hidden = 12
-            variable('Cached', lambda: hidden)
-            UsesCached = variable('UsesCached', lambda x: x, 'Cached')
+            mn.variable('Cached', lambda: hidden)
+            UsesCached = mn.variable('UsesCached', lambda x: x, 'Cached')
         self.assertEqual(UsesCached[''], 12)
         hidden = 14
         self.assertEqual(UsesCached[''], 12)
@@ -477,16 +478,16 @@ class TimeTest(unittest.TestCase):
     """Test step(), on all kinds of simple variables"""
     def test_step_constant(self):
         """Test step on a constant variable"""
-        with model() as m:
-            HoursPerDay = variable('HoursPerDay', 24)
+        with mn.model() as m:
+            HoursPerDay = mn.variable('HoursPerDay', 24)
         self.assertEqual(HoursPerDay[''], 24)
         m.step()
         self.assertEqual(HoursPerDay[''], 24)
 
     def test_TIME(self):
         """Test usage of the TIME value in a lambda"""
-        with model() as m:
-            Tm = variable('Tm', lambda md: md.TIME, '__model__')
+        with mn.model() as m:
+            Tm = mn.variable('Tm', lambda md: md.TIME, '__model__')
         self.assertEqual(Tm[''], 0)
         m.step()
         self.assertEqual(Tm[''], 1)
@@ -495,8 +496,8 @@ class TimeTest(unittest.TestCase):
 
     def test_STEP(self):
         """Test usage of the STEP value in a lambda"""
-        with model() as m:
-            St = variable('St', lambda md: md.STEP, '__model__')
+        with mn.model() as m:
+            St = mn.variable('St', lambda md: md.STEP, '__model__')
         self.assertEqual(St[''], 0)
         m.step()
         self.assertEqual(St[''], 1)
@@ -505,9 +506,9 @@ class TimeTest(unittest.TestCase):
 
     def test_TIME_smaller_timestep(self):
         """Test usage of the TIME value when timestep is not 1"""
-        with model(timestep=0.5) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
+        with mn.model(timestep=0.5) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
         self.assertEqual(Time[''], 0)
         self.assertEqual(Step[''], 0)
         m.step()
@@ -522,9 +523,9 @@ class TimeTest(unittest.TestCase):
 
     def test_TIME_n(self):
         """Test usage of the step(n)"""
-        with model() as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
+        with mn.model() as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
         self.assertEqual(Time[''], 0)
         self.assertEqual(Step[''], 0)
         m.step(5)
@@ -542,8 +543,8 @@ class TimeTest(unittest.TestCase):
 
     def test_TIME_n_smaller(self):
         """Test usage of the step(n) with a non-unitary timestep"""
-        with model(timestep=0.25) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
+        with mn.model(timestep=0.25) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
         self.assertEqual(Time[''], 0)
         m.step(5)
         self.assertEqual(Time[''], 1.25)
@@ -556,11 +557,11 @@ class TimeTest(unittest.TestCase):
 
     def test_step_usage(self):
         """Test step usage in a more complex situation."""
-        with model(treatments=['As is', 'To be']) as m:
-            variable('DischargeBegins', 5)
-            variable('DischargeEnds', 
-                PerTreatment({'As is': 13, 'To be': 11}))
-            DischargeProgress = variable(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            mn.variable('DischargeBegins', 5)
+            mn.variable('DischargeEnds', 
+                mn.PerTreatment({'As is': 13, 'To be': 11}))
+            DischargeProgress = mn.variable(
                 'DischargeProgress', 
                 lambda db, de, md: max(0, min(1, (md.TIME - db) / (de - db))),
                 'DischargeBegins', 'DischargeEnds', '__model__') 
@@ -582,13 +583,13 @@ class TimeTest(unittest.TestCase):
 
     def test_depends_on_step(self):
         """Test various kinds of variables depending on step."""
-        with model() as m:
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            StockStep = stock('StockStep', 
+        with mn.model() as m:
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            StockStep = mn.stock('StockStep', 
                 lambda s: s, ('Step',), 
                 lambda s: s, ('Step',))
-            AccumStep = accum('AccumStep', lambda s: s, ('Step',), 0)
-            PreviousStep = previous('PreviousStep', 'Step', 0)
+            AccumStep = mn.accum('AccumStep', lambda s: s, ('Step',), 0)
+            PreviousStep = mn.previous('PreviousStep', 'Step', 0)
 
         self.assertEqual(StockStep[''], 0)
         self.assertEqual(AccumStep[''], 0)
@@ -612,9 +613,9 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_start_time_simple(self):
         """Test step usage with non-zero start."""
-        with model(start_time=2019) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
+        with mn.model(start_time=2019) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
 
         self.assertEqual(Time[''], 2019)
         self.assertEqual(Step[''], 0)
@@ -630,9 +631,9 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_start_time_with_timestep(self):
         """Test step usage with non-zero start and timestep."""
-        with model(start_time=2019, timestep=0.25) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
+        with mn.model(start_time=2019, timestep=0.25) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
 
         self.assertEqual(Time[''], 2019)
         self.assertEqual(Step[''], 0)
@@ -648,10 +649,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_end_time(self):
         """Test step usage with end time."""
-        with model(end_time=5) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(end_time=5) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         self.assertEqual(Time[''], 0)
         self.assertEqual(Step[''], 0)
@@ -660,7 +661,7 @@ class StartAndEndTest(unittest.TestCase):
         self.assertEqual(Time[''], 5)
         self.assertEqual(Step[''], 5)
         self.assertEqual(Foo[''], 5)
-        with self.assertRaises(MinnetonkaError) as err:
+        with self.assertRaises(mn.MinnetonkaError) as err:
             m.step()
         self.assertEqual(err.exception.message,
                         "Attempted to simulation beyond end_time: 5")
@@ -670,10 +671,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_step_to_end(self):
         """Test simple case of stepping to end."""
-        with model(end_time=5) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(end_time=5) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         m.step(to_end=True)
         self.assertEqual(Time[''], 5)
@@ -691,10 +692,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_step_to_end_twice(self):
         """Test step to end redundantly."""
-        with model(end_time=5) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(end_time=5) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         m.step(to_end=True)
         m.step(to_end=True)
@@ -714,10 +715,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_step_to_end_with_timestep(self):
         """Test step to end with a non-one timestep."""
-        with model(end_time=5, timestep=0.25) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(end_time=5, timestep=0.25) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         m.step(to_end=True)
         self.assertEqual(Time[''], 5)
@@ -735,10 +736,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_step_to_end_with_incompatible_timestep(self):
         """Test step to end with incompatible timestep."""
-        with model(end_time=4.6, timestep=0.5) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(end_time=4.6, timestep=0.5) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         m.step(to_end=True)
         self.assertEqual(Time[''], 4.5)
@@ -756,10 +757,10 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_start_and_end(self):
         """Test a model that has both a start time and an end time."""
-        with model(start_time=2018, end_time=2022) as m:
-            Time = variable('Time', lambda md: md.TIME, '__model__')
-            Step = variable('Step', lambda md: md.STEP, '__model__')
-            Foo = stock('Foo', 1, 0)
+        with mn.model(start_time=2018, end_time=2022) as m:
+            Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+            Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+            Foo = mn.stock('Foo', 1, 0)
 
         self.assertEqual(Time[''], 2018)
         self.assertEqual(Foo[''], 0)
@@ -775,19 +776,19 @@ class StartAndEndTest(unittest.TestCase):
 
     def test_incompatible_start_and_end(self):
         """Test a model that has an incompatible start_time and end_time."""
-        with self.assertRaises(MinnetonkaError) as err:
-            with model(start_time=2018, end_time=2017) as m:
-                Time = variable('Time', lambda md: md.TIME, '__model__')
-                Step = variable('Step', lambda md: md.STEP, '__model__')
-                Foo = stock('Foo', 1, 0)
+        with self.assertRaises(mn.MinnetonkaError) as err:
+            with mn.model(start_time=2018, end_time=2017) as m:
+                Time = mn.variable('Time', lambda md: md.TIME, '__model__')
+                Step = mn.variable('Step', lambda md: md.STEP, '__model__')
+                Foo = mn.stock('Foo', 1, 0)
         self.assertEqual(err.exception.message,
                          'End time 2017 is before start time 2018')
 
     def test_STARTTIME_and_ENDTIME(self):
         """Test access of start and end variables."""
-        with model(start_time=2019, end_time=2022) as m:
-            Start = variable('Start', lambda md: md.STARTTIME, '__model__')
-            End = variable('End', lambda md: md.ENDTIME, '__model__')
+        with mn.model(start_time=2019, end_time=2022) as m:
+            Start = mn.variable('Start', lambda md: md.STARTTIME, '__model__')
+            End = mn.variable('End', lambda md: md.ENDTIME, '__model__')
 
         self.assertEqual(Start[''], 2019)
         self.assertEqual(End[''], 2022)
@@ -803,8 +804,8 @@ class ConstantTest(unittest.TestCase):
     """Test constants, that are initiallized and then don't change"""
     def test_simple_constant(self):
         """Does a simple constant have the right value?"""
-        with model() as m:
-            DischargeBegins = constant('DischargeBegins', 12)
+        with mn.model() as m:
+            DischargeBegins = mn.constant('DischargeBegins', 12)
         self.assertEqual(m['DischargeBegins'][''], 12)
         m.step()
         self.assertEqual(m['DischargeBegins'][''], 12)
@@ -822,8 +823,8 @@ class ConstantTest(unittest.TestCase):
             how_many += 1
             return 12
 
-        with model() as m:
-            DischargeBegins = constant('DischargeBegins', eval_once)
+        with mn.model() as m:
+            DischargeBegins = mn.constant('DischargeBegins', eval_once)
 
         self.assertEqual(m['DischargeBegins'][''], 12)
         m.step()
@@ -846,10 +847,10 @@ class ConstantTest(unittest.TestCase):
             how_many += 1
             return a + b
 
-        with model() as m:
-            variable('Foo', 9)
-            variable('Bar', 3)
-            DischargeBegins = constant(
+        with mn.model() as m:
+            mn.variable('Foo', 9)
+            mn.variable('Bar', 3)
+            DischargeBegins = mn.constant(
                 'DischargeBegins', eval_once, 'Foo', 'Bar')
 
         self.assertEqual(m['DischargeBegins'][''], 12)
@@ -866,9 +867,9 @@ class ConstantTest(unittest.TestCase):
 
     def test_constant_and_treatments(self):
         """Can a constant take different values in different treatments?"""
-        with model(treatments=['Bar', 'Baz']) as m:
-            DischargeBegins = constant('DischargeBegins', 
-                                        PerTreatment({'Bar': 9, 'Baz':10}))
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            DischargeBegins = mn.constant('DischargeBegins', 
+                                        mn.PerTreatment({'Bar': 9, 'Baz':10}))
 
         self.assertEqual(m['DischargeBegins']['Bar'], 9)
         self.assertEqual(m['DischargeBegins']['Baz'], 10)
@@ -882,8 +883,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_zero_initial(self):
         """Stock with no callables and no initial"""
-        with model() as m:
-            S = stock('S', 5)
+        with mn.model() as m:
+            S = mn.stock('S', 5)
         self.assertEqual(S[''], 0)
         m.step()
         self.assertEqual(S[''], 5)
@@ -897,8 +898,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_zero_initial_half_step(self):
         """Stock with no callables, no initial, and timestep = 0.5"""
-        with model(timestep=0.5) as m:
-            S = stock('S', 5)
+        with mn.model(timestep=0.5) as m:
+            S = mn.stock('S', 5)
         self.assertEqual(S[''], 0)
         m.step()
         self.assertEqual(S[''], 2.5)
@@ -911,8 +912,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_zero_initial_and_docstring(self):
         """Stock with no callables and no initial, but with docstring"""
-        with model() as m:
-            S = stock('S', """Increase by 5 every step""", 5)
+        with mn.model() as m:
+            S = mn.stock('S', """Increase by 5 every step""", 5)
         self.assertEqual(S[''], 0)
         m.step()
         self.assertEqual(S[''], 5)
@@ -920,8 +921,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_with_initial(self):
         """Stock with no callables but with an initial"""
-        with model() as m:
-            S = stock('S', 1, 22)
+        with mn.model() as m:
+            S = mn.stock('S', 1, 22)
         self.assertEqual(S[''], 22)
         m.step()
         self.assertEqual(S[''], 23)
@@ -934,8 +935,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_with_initial_and_docstring(self):
         """Stock with no callables but with an initial"""
-        with model() as m:
-            S = stock('S', """Start at 22 and increase by 1""", 1, 22)
+        with mn.model() as m:
+            S = mn.stock('S', """Start at 22 and increase by 1""", 1, 22)
         self.assertEqual(S[''], 22)
         m.step()
         self.assertEqual(S[''], 23)
@@ -943,8 +944,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_simple_stock_with_varying_initial(self):
         """Stock with no callables but with a treatment-varying initial"""
-        with model(treatments=['As is', 'To be']) as m:
-            S = stock('S', 1, PerTreatment({'As is': 22, 'To be': 23}))
+        with mn.model(treatments=['As is', 'To be']) as m:
+            S = mn.stock('S', 1, mn.PerTreatment({'As is': 22, 'To be': 23}))
         self.assertEqual(S['As is'], 22)
         self.assertEqual(S['To be'], 23)
         m.step()
@@ -962,8 +963,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_callable_flow(self):
         """Stock with callable flow, but depends on nothing"""
-        with model() as m:
-            S = stock('S', lambda: 1, (), 22)
+        with mn.model() as m:
+            S = mn.stock('S', lambda: 1, (), 22)
         self.assertEqual(S[''], 22)
         m.step()
         self.assertEqual(S[''], 23)
@@ -976,8 +977,8 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_callable_flow_and_init(self):
         """Stock with callable flow and callable init, depends on nothing"""
-        with model() as m:
-            S = stock('S', 
+        with mn.model() as m:
+            S = mn.stock('S', 
                 """Start at 22 and increase by 1""",
                 lambda: 1, (), lambda: 22, ())
         self.assertEqual(S[''], 22)
@@ -993,9 +994,9 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_simple_increment_variable(self):
         """Stock with very simple variable dependency"""
-        with model() as m:
-            variable('X', 1)
-            S = stock('S', lambda x: x, ('X',), 22)
+        with mn.model() as m:
+            mn.variable('X', 1)
+            S = mn.stock('S', lambda x: x, ('X',), 22)
         self.assertEqual(S[''], 22)
         m.step()
         self.assertEqual(S[''], 23)
@@ -1008,21 +1009,21 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_nontuple_dependency(self):
         """Test stock with a nontuple dependency, translated to tuple.""" 
-        with model() as m:
-            variable('XY', 1)
-            S = stock('S', lambda x: x, 'XY', 22)
+        with mn.model() as m:
+            mn.variable('XY', 1)
+            S = mn.stock('S', lambda x: x, 'XY', 22)
 
-        with model() as m:
-            variable('XY', 1)
-            S = stock('S', lambda: 1, (), lambda x: x, 'XY')
+        with mn.model() as m:
+            mn.variable('XY', 1)
+            S = mn.stock('S', lambda: 1, (), lambda x: x, 'XY')
 
 
     def test_stock_with_two_callables_with_depends(self):
         """Stock with depends vars for both flow and initial"""
-        with model() as m:
-            variable('X', 1)
-            variable('Y', 22)
-            S = stock('S',
+        with mn.model() as m:
+            mn.variable('X', 1)
+            mn.variable('Y', 22)
+            S = mn.stock('S',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',))
         self.assertEqual(S[''], 22)
@@ -1037,9 +1038,9 @@ class BasicStockTest(unittest.TestCase):
         self.assertEqual(S.__doc__, 'Start at 22 and increase by 1')
 
     def test_stock_with_variable_increase(self):
-        with model() as m:
-            variable('Time', lambda md: md.TIME, '__model__')
-            S = stock('S', lambda s: s, ('Time',), 0)
+        with mn.model() as m:
+            mn.variable('Time', lambda md: md.TIME, '__model__')
+            S = mn.stock('S', lambda s: s, ('Time',), 0)
         m.step()
         self.assertEqual(S[''], 0)
         m.step()
@@ -1051,11 +1052,11 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_positive_feedback(self):
         """Classic interest stock"""
-        with model() as m:
-            Savings = stock(
+        with mn.model() as m:
+            Savings = mn.stock(
                 'Savings', lambda interest: interest, ('Interest',), 1000)
-            variable('Rate', 0.05)
-            variable(
+            mn.variable('Rate', 0.05)
+            mn.variable(
                 'Interest', lambda savings, rate: savings * rate, 
                 'Savings', 'Rate')
         self.assertEqual(Savings[''], 1000)
@@ -1072,11 +1073,11 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_positive_feedback_small_timestep(self):
         """Classic interest stock with a smaller timestep"""
-        with model(timestep=0.25) as m:
-            Savings = stock('Savings', 
+        with mn.model(timestep=0.25) as m:
+            Savings = mn.stock('Savings', 
                 lambda interest: interest, ('Interest',), 1000)
-            variable('Rate', 0.05)
-            variable('Interest', 
+            mn.variable('Rate', 0.05)
+            mn.variable('Interest', 
                 lambda savings, rate: savings * rate,
                 'Savings', 'Rate')
         self.assertEqual(Savings[''], 1000)
@@ -1093,12 +1094,12 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_positive_feedback_and_treatments(self):
         """Classic interest stock"""
-        with model(treatments=['Good', 'Better', 'Best']) as m:
-            Savings = stock('Savings', 
+        with mn.model(treatments=['Good', 'Better', 'Best']) as m:
+            Savings = mn.stock('Savings', 
                 lambda interest: interest, ('Interest',), 1000)
-            variable('Rate', 
-                PerTreatment({'Good': 0.04, 'Better': 0.05, 'Best': 0.06}))
-            variable('Interest', 
+            mn.variable('Rate', 
+                mn.PerTreatment({'Good': 0.04, 'Better': 0.05, 'Best': 0.06}))
+            mn.variable('Interest', 
                 lambda savings, rate: savings * rate,
                 'Savings', 'Rate')
         self.assertEqual(Savings['Good'], 1000)
@@ -1123,20 +1124,20 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_with_many_depends(self):
         """Test stock that depends on a lot of callables"""
-        with model() as m:
-            ABCDEFGH = stock(
+        with mn.model() as m:
+            ABCDEFGH = mn.stock(
                 'ABCDEFGH', 
                 lambda a, b, c, d, e, f, g, h: a + b + c + d + e + f + g + h,
                 ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'),
                 0)
-            variable('A', lambda md: md.TIME, '__model__')
-            variable('B', lambda md: md.TIME, '__model__')
-            variable('C', lambda md: md.TIME, '__model__')
-            variable('D', lambda md: md.TIME, '__model__')
-            variable('E', lambda md: md.TIME, '__model__')
-            variable('F', lambda md: md.TIME, '__model__')
-            variable('G', lambda md: md.TIME, '__model__')
-            variable('H', lambda md: md.TIME, '__model__')
+            mn.variable('A', lambda md: md.TIME, '__model__')
+            mn.variable('B', lambda md: md.TIME, '__model__')
+            mn.variable('C', lambda md: md.TIME, '__model__')
+            mn.variable('D', lambda md: md.TIME, '__model__')
+            mn.variable('E', lambda md: md.TIME, '__model__')
+            mn.variable('F', lambda md: md.TIME, '__model__')
+            mn.variable('G', lambda md: md.TIME, '__model__')
+            mn.variable('H', lambda md: md.TIME, '__model__')
         self.assertEqual(ABCDEFGH[''], 0)
         m.step()
         self.assertEqual(ABCDEFGH[''], 0)
@@ -1149,12 +1150,12 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_order(self):
         """Test a stock that uses variables defined before and after"""
-        with model() as m:
-            variable('Before', lambda md: md.TIME, '__model__')
-            stock('UsingTimes', 
+        with mn.model() as m:
+            mn.variable('Before', lambda md: md.TIME, '__model__')
+            mn.stock('UsingTimes', 
                 lambda before, after: before + after, ('Before', 'After'), 
                 0)
-            variable('After', lambda md: md.TIME, '__model__')
+            mn.variable('After', lambda md: md.TIME, '__model__')
 
         self.assertEqual(m['UsingTimes'][''], 0)
         m.step()
@@ -1183,12 +1184,12 @@ class BasicStockTest(unittest.TestCase):
             after_count += 1
             return after_count
 
-        with model() as m:
-            variable('Before', before)
-            stock('UsingBeforeAndAfter',
+        with mn.model() as m:
+            mn.variable('Before', before)
+            mn.stock('UsingBeforeAndAfter',
                 lambda b, a: b + a, ('Before', 'After'),
                 0)
-            variable('After', after)
+            mn.variable('After', after)
 
         self.assertEqual(m['UsingBeforeAndAfter'][''], 0)
         m.step()
@@ -1208,10 +1209,10 @@ class BasicStockTest(unittest.TestCase):
 
     def test_variable_using_stock(self):
         """Test whether a variable can use an stock value"""
-        with model() as m:
-            stock('Revenue', 5, 0)
-            variable('Cost', 10)
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.stock('Revenue', 5, 0)
+            mn.variable('Cost', 10)
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         self.assertEqual(m['Earnings'][''], -10)
         m.step()
@@ -1225,10 +1226,10 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_using_stock(self):
         """Test a stock that uses another stock"""
-        with model() as m:
-            stock('First', 1)
-            stock('Second', lambda f: f, ('First',), 0)
-            stock('Third', lambda f, s: f + s, ('First', 'Second'), 0)
+        with mn.model() as m:
+            mn.stock('First', 1)
+            mn.stock('Second', lambda f: f, ('First',), 0)
+            mn.stock('Third', lambda f, s: f + s, ('First', 'Second'), 0)
 
         m.step()
         self.assertEqual(m['First'][''], 1)
@@ -1253,10 +1254,10 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_using_stock_alt_ordering(self):
         """Test a stock using another stock, with user defined first"""
-        with model() as m:
-            stock('Third', lambda f, s: f + s, ('First', 'Second'), 0)
-            stock('Second', lambda f: f, ('First',), 0)
-            stock('First', 1)
+        with mn.model() as m:
+            mn.stock('Third', lambda f, s: f + s, ('First', 'Second'), 0)
+            mn.stock('Second', lambda f: f, ('First',), 0)
+            mn.stock('First', 1)
 
         m.step()
         self.assertEqual(m['First'][''], 1)
@@ -1281,21 +1282,21 @@ class BasicStockTest(unittest.TestCase):
 
     def test_stock_init_circularity(self):
         """Test a variable circularity involving stocks"""
-        with self.assertRaises(MinnetonkaError) as me:
-            with model() as m:
-                stock('Foo', lambda b: b, ('Bar',), lambda b: b, ('Bar',))
-                variable('Bar', lambda f: f, 'Foo')
+        with self.assertRaises(mn.MinnetonkaError) as me:
+            with mn.model() as m:
+                mn.stock('Foo', lambda b: b, ('Bar',), lambda b: b, ('Bar',))
+                mn.variable('Bar', lambda f: f, 'Foo')
         self.assertEqual(me.exception.message,
             'Circularity among variables: Foo <- Bar <- Foo')
 
     def test_stock_one_treatment_only(self):
         """Variable that uses a stock for 1 treatment and constant 4 another"""
-        with model(treatments=['As is', 'To be']) as m:
-            ValueAtRisk = variable('ValueAtRisk',
-                PerTreatment({'As is': lambda x: x, 'To be': 0}),
+        with mn.model(treatments=['As is', 'To be']) as m:
+            ValueAtRisk = mn.variable('ValueAtRisk',
+                mn.PerTreatment({'As is': lambda x: x, 'To be': 0}),
                 'ValueAtRiskAsIs')
 
-            stock('ValueAtRiskAsIs', 1, 1)
+            mn.stock('ValueAtRiskAsIs', 1, 1)
 
         self.assertEqual(ValueAtRisk['To be'], 0)
         self.assertEqual(ValueAtRisk['As is'], 1)
@@ -1311,14 +1312,14 @@ class BasicStockTest(unittest.TestCase):
 
     def test_one_treatment_stock_both_sides(self):
         """A stock that has both init and incr defined with treatments""",
-        with model(treatments=['As is', 'To be']) as m:
-            Foo = stock('Foo',
-                PerTreatment({'As is': lambda x: x, 'To be': 1}),
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Foo = mn.stock('Foo',
+                mn.PerTreatment({'As is': lambda x: x, 'To be': 1}),
                 ('Bar',),
-                PerTreatment({'As is': 0, 'To be': lambda x: x + 1}),
+                mn.PerTreatment({'As is': 0, 'To be': lambda x: x + 1}),
                 ('Baz',))
-            variable('Bar', 2)
-            variable('Baz', 1)
+            mn.variable('Bar', 2)
+            mn.variable('Baz', 1)
 
         self.assertEqual(Foo['To be'], 2)
         self.assertEqual(Foo['As is'], 0)
@@ -1335,8 +1336,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_zero_initial(self):
         """Accum with no callables and no initial"""
-        with model() as m:
-            A = accum('A', 5)
+        with mn.model() as m:
+            A = mn.accum('A', 5)
 
         self.assertEqual(A[''], 0)
         m.step()
@@ -1351,8 +1352,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_zero_initial_and_docstring(self):
         """Accum with no callables and no initial, but with a docstring"""
-        with model() as m:
-            A = accum('A', """Increase by 5 every step""", 5)
+        with mn.model() as m:
+            A = mn.accum('A', """Increase by 5 every step""", 5)
 
         self.assertEqual(A[''], 0)
         m.step()
@@ -1361,8 +1362,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_with_initial(self):
         """Accum with no callables but with an initial"""
-        with model() as m:
-            A = accum('A', 1, 22)
+        with mn.model() as m:
+            A = mn.accum('A', 1, 22)
     
         self.assertEqual(A[''], 22)
         m.step()
@@ -1376,8 +1377,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_with_initial_and_docstring(self):
         """Accum with no callables but with an initial"""
-        with model() as m:
-            A = accum('A', """Start at 22 and increase by 1""", 1, 22)
+        with mn.model() as m:
+            A = mn.accum('A', """Start at 22 and increase by 1""", 1, 22)
 
         self.assertEqual(A[''], 22)
         m.step()
@@ -1386,8 +1387,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_with_varying_initial(self):
         """Accum with no callables but with a treatment-varying initial"""
-        with model(treatments=['As is', 'To be']) as m:
-            A = accum('A', 1, PerTreatment({'As is': 22, 'To be': 23}))
+        with mn.model(treatments=['As is', 'To be']) as m:
+            A = mn.accum('A', 1, mn.PerTreatment({'As is': 22, 'To be': 23}))
 
         self.assertEqual(A['As is'], 22)
         self.assertEqual(A['To be'], 23)
@@ -1401,8 +1402,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_simple_accum_zero_initial_small_timestep(self):
         """Accum with no callables and no initial"""
-        with model(timestep=0.25) as m:
-            A = accum('A', 5)
+        with mn.model(timestep=0.25) as m:
+            A = mn.accum('A', 5)
 
         self.assertEqual(A[''], 0)
         m.step()
@@ -1416,8 +1417,8 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_callable_flow(self):
         """accum with callable flow, but depends on nothing"""
-        with model() as m:
-            A = accum('A', lambda: 1, (), 22)
+        with mn.model() as m:
+            A = mn.accum('A', lambda: 1, (), 22)
 
         self.assertEqual(A[''], 22)
         m.step()
@@ -1432,8 +1433,8 @@ class BasicAccumTest(unittest.TestCase):
     def test_accum_with_callable_flow_and_init(self):
         """accum with callable flow and callable init, but depends on nothing
         """
-        with model() as m:
-            A = accum('A', 
+        with mn.model() as m:
+            A = mn.accum('A', 
                 """Start at 22 and increase by 1""",
                 lambda: 1, (), lambda: 22, ())
 
@@ -1450,9 +1451,9 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_simple_increment_variable(self):
         """accum with very simple variable dependency"""
-        with model() as m:
-            variable('X', 1)
-            A = accum('A', lambda x: x, ('X',), 22)
+        with mn.model() as m:
+            mn.variable('X', 1)
+            A = mn.accum('A', lambda x: x, ('X',), 22)
 
         self.assertEqual(A[''], 22)
         m.step()
@@ -1466,10 +1467,10 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_two_callables_with_depends(self):
         """accum with depends vars for both flow and initial"""
-        with model() as m:
-            variable('X', 1)
-            variable('Y', 22)
-            A = accum('A',
+        with mn.model() as m:
+            mn.variable('X', 1)
+            mn.variable('Y', 22)
+            A = mn.accum('A',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',))
 
@@ -1486,17 +1487,17 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_nontuple_dependency(self):
         """Test accum with a nontuple dependency, translated to tuple.""" 
-        with model() as m:
-            variable('X1', 1)
-            variable('Y2', 22)
-            A = accum('A',
+        with mn.model() as m:
+            mn.variable('X1', 1)
+            mn.variable('Y2', 22)
+            A = mn.accum('A',
                 """Start at 22 and increase by 1""",
                  lambda x: x, 'X1', lambda x: x, 'Y2') 
 
     def test_accum_with_variable_increase(self):
-        with model() as m:
-            variable('Time', lambda md: md.TIME, '__model__')
-            A = accum('A', lambda s: s, ('Time',), 0)
+        with mn.model() as m:
+            mn.variable('Time', lambda md: md.TIME, '__model__')
+            A = mn.accum('A', lambda s: s, ('Time',), 0)
 
         self.assertEqual(A[''], 0)
         m.step()
@@ -1508,20 +1509,20 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_many_depends(self):
         """Test accum that depends on a lot of callables"""
-        with model() as m:
-            ABCDEFGH = accum(
+        with mn.model() as m:
+            ABCDEFGH = mn.accum(
                 'ABCDEFGH', 
                 lambda a, b, c, d, e, f, g, h: a + b + c + d + e + f + g + h,
                 ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'),
                 0)
-            variable('A', lambda md: md.TIME, '__model__')
-            variable('B', lambda md: md.TIME, '__model__')
-            variable('C', lambda md: md.TIME, '__model__')
-            variable('D', lambda md: md.TIME, '__model__')
-            variable('E', lambda md: md.TIME, '__model__')
-            variable('F', lambda md: md.TIME, '__model__')
-            variable('G', lambda md: md.TIME, '__model__')
-            variable('H', lambda md: md.TIME, '__model__')
+            mn.variable('A', lambda md: md.TIME, '__model__')
+            mn.variable('B', lambda md: md.TIME, '__model__')
+            mn.variable('C', lambda md: md.TIME, '__model__')
+            mn.variable('D', lambda md: md.TIME, '__model__')
+            mn.variable('E', lambda md: md.TIME, '__model__')
+            mn.variable('F', lambda md: md.TIME, '__model__')
+            mn.variable('G', lambda md: md.TIME, '__model__')
+            mn.variable('H', lambda md: md.TIME, '__model__')
 
         self.assertEqual(ABCDEFGH[''], 0)
         m.step()
@@ -1533,12 +1534,12 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_order(self):
         """Test a accum that uses variables defined before and after"""
-        with model() as m:
-            variable('Before', lambda md: md.TIME, '__model__')
-            accum('UsingTimes', 
+        with mn.model() as m:
+            mn.variable('Before', lambda md: md.TIME, '__model__')
+            mn.accum('UsingTimes', 
                 lambda before, after: before + after, ('Before', 'After'), 
                 0)
-            variable('After', lambda md: md.TIME, '__model__')
+            mn.variable('After', lambda md: md.TIME, '__model__')
 
         self.assertEqual(m['UsingTimes'][''], 0)
         m.step()
@@ -1565,12 +1566,12 @@ class BasicAccumTest(unittest.TestCase):
             after_count += 1
             return after_count
 
-        with model() as m:
-            variable('Before', before)
-            accum('UsingBeforeAndAfter',
+        with mn.model() as m:
+            mn.variable('Before', before)
+            mn.accum('UsingBeforeAndAfter',
                 lambda b, a: b + a, ('Before', 'After'),
                 0)
-            variable('After', after)
+            mn.variable('After', after)
 
         self.assertEqual(m['UsingBeforeAndAfter'][''], 0)
         m.step()
@@ -1588,10 +1589,10 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_variable_using_accum(self):
         """Test whether a variable can use an accum value"""
-        with model() as m:
-            accum('Revenue', 5, 0)
-            variable('Cost', 10)
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.accum('Revenue', 5, 0)
+            mn.variable('Cost', 10)
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         self.assertEqual(m['Earnings'][''], -10)
         self.assertEqual(m['Revenue'][''], 0)
@@ -1609,10 +1610,10 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_using_accum(self):
         """Test an accume that uses a variable that is another accum"""
-        with model() as m:
-            accum('First', 1)
-            accum('Second', lambda f: f, ('First',), 0)
-            accum('Third', lambda f, s: f + s, ('First', 'Second'), 0)
+        with mn.model() as m:
+            mn.accum('First', 1)
+            mn.accum('Second', lambda f: f, ('First',), 0)
+            mn.accum('Third', lambda f, s: f + s, ('First', 'Second'), 0)
 
         m.step()
         self.assertEqual(m['First'][''], 1)
@@ -1641,10 +1642,10 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_using_accum_alt_ordering(self):
         """Test accum that uses a previously defined accum"""
-        with model() as m:
-            accum('Third', lambda f, s: f + s, ('First', 'Second'), 0)
-            accum('Second', lambda f: f, ('First',), 0)
-            accum('First', 1)
+        with mn.model() as m:
+            mn.accum('Third', lambda f, s: f + s, ('First', 'Second'), 0)
+            mn.accum('Second', lambda f: f, ('First',), 0)
+            mn.accum('First', 1)
 
         m.step()
         self.assertEqual(m['First'][''], 1)
@@ -1673,12 +1674,12 @@ class BasicAccumTest(unittest.TestCase):
 
     def test_accum_with_circularity(self):
         """Accum does not support the kind of circularity that stock does"""
-        with self.assertRaises(MinnetonkaError) as cm:
-            with model() as m:
-                accum('Savings', 
+        with self.assertRaises(mn.MinnetonkaError) as cm:
+            with mn.model() as m:
+                mn.accum('Savings', 
                     lambda interest: interest, ('Interest',), 1000)
-                variable('Rate', 0.05)
-                variable('Interest', lambda savings, rate: savings * rate,
+                mn.variable('Rate', 0.05)
+                mn.variable('Interest', lambda savings, rate: savings * rate,
                          'Savings', 'Rate')
 
         self.assertEqual(cm.exception.message,
@@ -1686,14 +1687,14 @@ class BasicAccumTest(unittest.TestCase):
     
     def test_accum_one_treatment_both_sides(self):
         """An accum that has both init and incr defined with treatments""",
-        with model(treatments=['As is', 'To be']) as m:
-            Foo = accum('Foo',
-                PerTreatment({'As is': lambda x: x, 'To be': 1}),
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Foo = mn.accum('Foo',
+                mn.PerTreatment({'As is': lambda x: x, 'To be': 1}),
                 ('Bar',),
-                PerTreatment({'As is': 0, 'To be': lambda x: x + 1}),
+                mn.PerTreatment({'As is': 0, 'To be': lambda x: x + 1}),
                 ('Baz',))
-            variable('Bar', 2)
-            variable('Baz', 1)
+            mn.variable('Bar', 2)
+            mn.variable('Baz', 1)
 
         self.assertEqual(Foo['To be'], 2)
         self.assertEqual(Foo['As is'], 0)
@@ -1709,14 +1710,14 @@ class StandardSystemDynamicsTest(unittest.TestCase):
 
     def test_population(self):
         """Test basic population growth model"""
-        with model() as m:
-            Population = stock('Population', 
+        with mn.model() as m:
+            Population = mn.stock('Population', 
                 lambda births: births, ('Births',),
                 10000)
-            Births = variable('Births', 
+            Births = mn.variable('Births', 
                 lambda pop, rate: pop * rate, 
                 'Population', 'BirthRate')
-            variable('BirthRate', 0.1)
+            mn.variable('BirthRate', 0.1)
 
         self.assertEqual(Population[''], 10000)
         self.assertEqual(Births[''], 1000)
@@ -1735,17 +1736,17 @@ class StandardSystemDynamicsTest(unittest.TestCase):
 
     def test_mice(self):
         """Test standard birth and death model"""
-        with model() as m:
-            MicePopulation = stock('MicePopulation',
+        with mn.model() as m:
+            MicePopulation = mn.stock('MicePopulation',
                 lambda births, deaths: births - deaths, 
                 ('MiceBirths', 'MiceDeaths'),
                 10000)
-            MiceBirths = variable('MiceBirths', 
+            MiceBirths = mn.variable('MiceBirths', 
                 lambda pop, rate: pop * rate, 'MicePopulation', 'MiceBirthRate')
-            variable('MiceBirthRate', 0.1)
-            MiceDeaths = variable('MiceDeaths', 
+            mn.variable('MiceBirthRate', 0.1)
+            MiceDeaths = mn.variable('MiceDeaths', 
                 lambda pop, rate: pop * rate, 'MicePopulation', 'MiceDeathRate')
-            variable('MiceDeathRate', 0.05)
+            mn.variable('MiceDeathRate', 0.05)
    
         self.assertEqual(MicePopulation[''], 10000)
         self.assertEqual(MiceBirths[''], 1000)
@@ -1767,8 +1768,8 @@ class OneDimensionalArrayTest(unittest.TestCase):
     """Test one dimensional numpy arrays"""
     def test_array_access(self):
         """Test whether a variable can take an array value"""
-        with model() as m:
-            revenue = variable('Revenue', np.array([30.1, 15, 20]))
+        with mn.model() as m:
+            revenue = mn.variable('Revenue', np.array([30.1, 15, 20]))
 
         self.assertEqual(revenue[''][0], 30.1)
         self.assertEqual(revenue[''][1], 15)
@@ -1776,28 +1777,28 @@ class OneDimensionalArrayTest(unittest.TestCase):
 
     def test_expression(self):
         """Test whether an array supports simple expressions"""
-        with model() as m:
-            variable('Revenue', np.array([30.1, 15, 20]))
-            variable('Cost', np.array([10, 10, 10]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.variable('Revenue', np.array([30.1, 15, 20]))
+            mn.variable('Cost', np.array([10, 10, 10]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Earnings'][''], np.array([20.1, 5, 10]))
 
     def test_mixed_array_and_scalar(self):
         """Test whether an array and a scalar can be combined w/o trouble"""
-        with model() as m:
-            variable('Revenue', np.array([30.1, 15, 20]))
-            variable('Cost', 10)
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.variable('Revenue', np.array([30.1, 15, 20]))
+            mn.variable('Cost', 10)
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Earnings'][''], np.array([20.1, 5, 10]))
 
     def test_simple_stock(self):
         """Test whether an array supports simple stocks"""
-        with model() as m:
-            stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
-            variable('Cost', np.array([10, 10, 10]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
+            mn.variable('Cost', np.array([10, 10, 10]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Revenue'][''], np.array([0, 0, 0]))
         assert_array_equal(m['Earnings'][''], np.array([-10, -10, -10]))
@@ -1813,10 +1814,10 @@ class OneDimensionalArrayTest(unittest.TestCase):
 
     def test_simple_stock_small_timestep(self):
         """Test whether an array supports simple stocks"""
-        with model(timestep=0.25) as m:
-            stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
-            variable('Cost', np.array([10, 10, 10]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model(timestep=0.25) as m:
+            mn.stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
+            mn.variable('Cost', np.array([10, 10, 10]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Revenue'][''], np.array([0, 0, 0]))
         assert_array_equal(m['Earnings'][''], np.array([-10, -10, -10]))
@@ -1832,12 +1833,12 @@ class OneDimensionalArrayTest(unittest.TestCase):
 
     def test_simple_stock_with_treatments(self):
         """Test whether an array supports simple stocks, with treatments"""
-        with model(treatments=['As is', 'To be']) as m: 
-            stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
-            variable('Cost', 
-                PerTreatment({'As is': np.array([10, 10, 10]), 
+        with mn.model(treatments=['As is', 'To be']) as m: 
+            mn.stock('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
+            mn.variable('Cost', 
+                mn.PerTreatment({'As is': np.array([10, 10, 10]), 
                               'To be': np.array([9, 8, 6])}))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Revenue']['As is'], np.array([0, 0, 0]))
         assert_array_equal(m['Earnings']['As is'], np.array([-10, -10, -10]))
@@ -1854,10 +1855,10 @@ class OneDimensionalArrayTest(unittest.TestCase):
 
     def test_simple_accum(self):
         """Test whether an array supports simple accums"""
-        with model() as m:
-            accum('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
-            variable('Cost', np.array([10, 10, 10]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.accum('Revenue', np.array([5, 5, 10]), np.array([0, 0, 0]))
+            mn.variable('Cost', np.array([10, 10, 10]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(m['Revenue'][''], np.array([0, 0, 0]))
         assert_array_equal(m['Earnings'][''], np.array([-10, -10, -10]))
@@ -1873,9 +1874,9 @@ class OneDimensionalArrayTest(unittest.TestCase):
 
     def test_array_sum(self):
         """Can I sum over an array?"""
-        with model() as m:
-            variable('Cost', np.array([10, 10, 5]))
-            variable('TotalCost', np.sum, 'Cost')
+        with mn.model() as m:
+            mn.variable('Cost', np.array([10, 10, 5]))
+            mn.variable('TotalCost', np.sum, 'Cost')
 
         self.assertEqual(m['TotalCost'][''], 25)
 
@@ -1884,28 +1885,28 @@ class TwoDimensionalArrayTest(unittest.TestCase):
     """Test 2D numpy arrays"""
     def test_array_access(self):
         """Test whether a variable can take a 2D array value"""
-        with model() as m:
-            Revenue = variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
+        with mn.model() as m:
+            Revenue = mn.variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
 
         assert_array_equal(Revenue[''], np.array([[30.1, 15, 20], [1, 2, 0]]))
 
     def test_mixed_array_and_scalar(self):
         """Test whether a lambda variable can take 2D arrays"""
-        with model() as m:
-            variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
-            variable('Cost', 10)
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+        with mn.model() as m:
+            mn.variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
+            mn.variable('Cost', 10)
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
 
         assert_array_equal(
             m['Earnings'][''], np.array([[20.1, 5, 10], [-9, -8, -10]]))
 
     def test_simple_stock(self):
         """Test whether a 2D array supports simple stocks"""
-        with model() as m:
-            stock('Revenue', np.array([[5, 5], [10, 15]]), np.zeros((2, 2)))
-            variable('Cost', np.array([[10, 10], [0, 9]]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-            stock('AccumulatedEarnings', 
+        with mn.model() as m:
+            mn.stock('Revenue', np.array([[5, 5], [10, 15]]), np.zeros((2, 2)))
+            mn.variable('Cost', np.array([[10, 10], [0, 9]]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+            mn.stock('AccumulatedEarnings', 
                   lambda r: r, ('Revenue',), 
                   np.zeros((2, 2)))
 
@@ -1926,11 +1927,11 @@ class TwoDimensionalArrayTest(unittest.TestCase):
 
     def test_simple_stock_short_timestep(self):
         """Test whether a 2D array supports simple stocks"""
-        with model(timestep=0.5) as m:
-            stock('Revenue', np.array([[5, 5], [10, 15]]), np.zeros((2, 2)))
-            variable('Cost', np.array([[10, 10], [0, 9]]))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-            stock('AccumulatedEarnings', 
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Revenue', np.array([[5, 5], [10, 15]]), np.zeros((2, 2)))
+            mn.variable('Cost', np.array([[10, 10], [0, 9]]))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+            mn.stock('AccumulatedEarnings', 
                 lambda r: r, ('Revenue',), 
                 np.zeros((2, 2)))
 
@@ -1951,12 +1952,12 @@ class TwoDimensionalArrayTest(unittest.TestCase):
 
     def test_array_sum(self):
         """Test sum over 2D array"""
-        with model() as m:
-            variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
-            variable('Cost', 10)
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-            variable('TotalEarnings', np.sum, 'Earnings')
-            variable('TotalEarningsByCostCenter', 
+        with mn.model() as m:
+            mn.variable('Revenue', np.array([[30.1, 15, 20], [1, 2, 0]]))
+            mn.variable('Cost', 10)
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+            mn.variable('TotalEarnings', np.sum, 'Earnings')
+            mn.variable('TotalEarningsByCostCenter', 
                 lambda e: np.sum(e, axis=0), 'Earnings')
 
         self.assertAlmostEqual(m['TotalEarnings'][''], 8.1)
@@ -1981,8 +1982,8 @@ class FunctionTest(unittest.TestCase):
                     attr[index] = index[0] * 10 + index[1] 
             return attr
 
-        with model() as m:
-            variable('Attractiveness', create_attractiveness())
+        with mn.model() as m:
+            mn.variable('Attractiveness', create_attractiveness())
 
         self.assertEqual(m['Attractiveness'][''][0, 0, 0], 0)
         self.assertEqual(m['Attractiveness'][''][2, 2, 2], 22)
@@ -2003,8 +2004,8 @@ class FunctionTest(unittest.TestCase):
                     attr[index] = index[0] * 10 + index[1] 
             return attr
 
-        with model() as m:
-            variable('Attractiveness', attractiveness, '__model__')
+        with mn.model() as m:
+            mn.variable('Attractiveness', attractiveness, '__model__')
 
         self.assertEqual(m['Attractiveness'][''][0, 0, 0], 0)
         self.assertEqual(m['Attractiveness'][''][2, 2, 2], 22)
@@ -2051,8 +2052,8 @@ class FunctionTest(unittest.TestCase):
                     update[index] = 1
             return update 
 
-        with model() as m:
-            stock('Attractiveness', 
+        with mn.model() as m:
+            mn.stock('Attractiveness', 
                 update_attractiveness, (), create_attractiveness, ())
 
         self.assertEqual(m['Attractiveness'][''][0, 0, 0], 0) 
@@ -2077,8 +2078,8 @@ class FunctionTest(unittest.TestCase):
 class NamedTuplesFundasTest(unittest.TestCase):
     """Test functionality for named tuples"""
     def setUp(self):
-        self.OneType = mn_namedtuple('OneType', ['Foo', 'Bar', 'Baz'])
-        self.AnotherType = mn_namedtuple('AnotherType', ['Foo', 'Bar'])
+        self.OneType = mn.mn_namedtuple('OneType', ['Foo', 'Bar', 'Baz'])
+        self.AnotherType = mn.mn_namedtuple('AnotherType', ['Foo', 'Bar'])
 
     def test_add(self):
         """Test addition for Minnetonka named tuples"""
@@ -2181,13 +2182,13 @@ class NamedTuplesFundasTest(unittest.TestCase):
 class UseOfNamedTupleTest(unittest.TestCase):
     """Test Minnetonka functionality for named tuples, instead of scalars"""
     def setUp(self):
-        self.Payer = mn_namedtuple(
+        self.Payer = mn.mn_namedtuple(
             'Payer', ['Medicare', 'Medicaid', 'Commercial'])
 
     def test_constant(self):
         """Test whether a constant can be a named tuple"""
-        with model() as m:
-            Revenue = variable('Revenue', self.Payer(30, 15, 20))
+        with mn.model() as m:
+            Revenue = mn.variable('Revenue', self.Payer(30, 15, 20))
 
         self.assertEqual(Revenue[''].Medicare, 30)
         self.assertEqual(Revenue[''].Medicaid, 15)
@@ -2195,29 +2196,29 @@ class UseOfNamedTupleTest(unittest.TestCase):
 
     def test_expression(self):
         """Test whether a variable with a callable can be a named tuple"""
-        with model() as m:
-            variable('Revenue', self.Payer(30, 15, 20))
-            variable('Cost', self.Payer(10, 10, 10))
-            Earnings = variable('Earnings', 
+        with mn.model() as m:
+            mn.variable('Revenue', self.Payer(30, 15, 20))
+            mn.variable('Cost', self.Payer(10, 10, 10))
+            Earnings = mn.variable('Earnings', 
                 lambda r, c: r - c, 'Revenue', 'Cost')
 
         self.assertEqual(Earnings[''], self.Payer(20, 5, 10))
 
     def test_sum(self):
         """Does a sum over a named tuple work?"""
-        with model() as m:
-            variable('Revenue', self.Payer(30, 15, 20))
-            TotalRevenue = variable('TotalRevenue', sum, 'Revenue')
+        with mn.model() as m:
+            mn.variable('Revenue', self.Payer(30, 15, 20))
+            TotalRevenue = mn.variable('TotalRevenue', sum, 'Revenue')
         self.assertEqual(TotalRevenue[''], 65)
 
 
     def test_simple_stock(self):
         """Test whether a simple stock can be a named tuple"""
-        with model() as m:
-            Revenue = stock('Revenue', 
+        with mn.model() as m:
+            Revenue = mn.stock('Revenue', 
                 self.Payer(5, 5, 10), self.Payer(0, 0, 0))
-            variable('Cost', self.Payer(10, 10, 10))
-            Earnings = variable('Earnings', 
+            mn.variable('Cost', self.Payer(10, 10, 10))
+            Earnings = mn.variable('Earnings', 
                 lambda r, c: r - c, 'Revenue', 'Cost')
 
         self.assertEqual(Revenue[''], self.Payer(0, 0, 0))
@@ -2234,11 +2235,11 @@ class UseOfNamedTupleTest(unittest.TestCase):
 
     def test_simple_stock_short_timestep(self):
         """Test whether a simple stock can be a named tuple; non-1 timestep"""
-        with model(timestep=0.5) as m:
-            Revenue = stock('Revenue', 
+        with mn.model(timestep=0.5) as m:
+            Revenue = mn.stock('Revenue', 
                 self.Payer(5, 5, 10), self.Payer(0, 0, 0))
-            variable('Cost', self.Payer(10, 10, 10))
-            Earnings = variable('Earnings', 
+            mn.variable('Cost', self.Payer(10, 10, 10))
+            Earnings = mn.variable('Earnings', 
                 lambda r, c: r - c, 'Revenue', 'Cost')
 
         self.assertEqual(Revenue[''], self.Payer(0, 0, 0))
@@ -2255,11 +2256,11 @@ class UseOfNamedTupleTest(unittest.TestCase):
 
     def test_stock_with_callables(self):
         """Test whether a stock with callables can use named tuples"""
-        with model() as m:
-            stock('Revenue', self.Payer(5, 5, 10), self.Payer(0, 0, 0))
-            variable('Cost', self.Payer(10, 10, 10))
-            variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
-            AccumulatedEarnings = stock('AccumulatedEarnings',
+        with mn.model() as m:
+            mn.stock('Revenue', self.Payer(5, 5, 10), self.Payer(0, 0, 0))
+            mn.variable('Cost', self.Payer(10, 10, 10))
+            mn.variable('Earnings', lambda r, c: r - c, 'Revenue', 'Cost')
+            AccumulatedEarnings = mn.stock('AccumulatedEarnings',
                 lambda e: e, ('Earnings',),
                 self.Payer(0, 0, 0))
 
@@ -2275,11 +2276,11 @@ class UseOfNamedTupleTest(unittest.TestCase):
 
     def test_namedtuple_per_treatment(self):
         """Test whether a treatment can accept a namedtuple"""
-        with model(treatments=['As is', 'To be']) as m:
-            BaseRevenue = variable('BaseRevenue',
-                PerTreatment({'As is': self.Payer(12, 13, 14),
+        with mn.model(treatments=['As is', 'To be']) as m:
+            BaseRevenue = mn.variable('BaseRevenue',
+                mn.PerTreatment({'As is': self.Payer(12, 13, 14),
                               'To be': self.Payer(2, 4, 6)}))
-            TotalRevenue = variable('TotalRevenue',
+            TotalRevenue = mn.variable('TotalRevenue',
                 lambda br: br + 2,
                 'BaseRevenue')
 
@@ -2292,20 +2293,20 @@ class TwoSimulations(unittest.TestCase):
     """Very simple situations of having two simulations"""
     def test_creating_two_constants_with_same_name(self):
         """Test creating two constants within two different simulations"""
-        work_model = model([variable('HoursPerDay', 8)])
-        calendar_model = model([variable('HoursPerDay', 24)])
+        work_model = mn.model([mn.variable('HoursPerDay', 8)])
+        calendar_model = mn.model([mn.variable('HoursPerDay', 24)])
         self.assertEqual(work_model['HoursPerDay'][''], 8)
         self.assertEqual(calendar_model['HoursPerDay'][''], 24)
 
     def test_two_variables_with_same_name(self):
         """Test whether two variables with the same name will udpate amouns"""
-        with model() as work_model:
-            variable('HoursPerDay', 8)
-            variable('HoursPerWeek', lambda hpd: hpd*5, 'HoursPerDay',)
+        with mn.model() as work_model:
+            mn.variable('HoursPerDay', 8)
+            mn.variable('HoursPerWeek', lambda hpd: hpd*5, 'HoursPerDay',)
 
-        with model() as calendar_model:
-            variable('HoursPerDay', 24)
-            stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
+        with mn.model() as calendar_model:
+            mn.variable('HoursPerDay', 24)
+            mn.stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
 
         self.assertEqual(work_model['HoursPerWeek'][''], 40)
         self.assertEqual(calendar_model['AccumulatedHours'][''], 0)
@@ -2321,13 +2322,13 @@ class TwoSimulations(unittest.TestCase):
 
     def test_two_models_different_timing(self):
         """Test whether two models work with different timing of steps"""
-        with model() as calendar_model_1:
-            variable('HoursPerDay', 24)
-            stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
+        with mn.model() as calendar_model_1:
+            mn.variable('HoursPerDay', 24)
+            mn.stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
 
-        with model() as calendar_model_2: 
-            variable('HoursPerDay', 24)
-            stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
+        with mn.model() as calendar_model_2: 
+            mn.variable('HoursPerDay', 24)
+            mn.stock('AccumulatedHours', lambda hpd: hpd, ('HoursPerDay',), 0)
 
         self.assertEqual(calendar_model_1['AccumulatedHours'][''], 0)
         self.assertEqual(calendar_model_2['AccumulatedHours'][''], 0)
@@ -2350,9 +2351,9 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_amount(self):
         """Can a constant take a new value?"""
-        with model(treatments=['As is', 'To be']) as m:
-            DischargeBegins = variable('DischargeBegins', 
-                PerTreatment({'As is': 12, 'To be': 2}))
+        with mn.model(treatments=['As is', 'To be']) as m:
+            DischargeBegins = mn.variable('DischargeBegins', 
+                mn.PerTreatment({'As is': 12, 'To be': 2}))
 
         self.assertEqual(DischargeBegins['As is'], 12)
         DischargeBegins['As is'] = 11
@@ -2367,8 +2368,8 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_amount_no_arg(self):
         """Can a no arg variable take a new value?"""
-        with model() as m:
-            DischargeProgress = variable('DischargeProgress', lambda: 0.5)
+        with mn.model() as m:
+            DischargeProgress = mn.variable('DischargeProgress', lambda: 0.5)
 
         self.assertEqual(DischargeProgress[''], 0.5)
         DischargeProgress[''] = 0.75
@@ -2382,9 +2383,9 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_amount_depends(self):
         """Can a variable take a new value when it has dependencies?"""
-        with model() as m:
-            Foo = variable('Foo', 9)
-            Bar = variable('Bar', lambda f: f, 'Foo')
+        with mn.model() as m:
+            Foo = mn.variable('Foo', 9)
+            Bar = mn.variable('Bar', lambda f: f, 'Foo')
 
         self.assertEqual(Bar[''], 9)
         Foo[''] = 2.4
@@ -2400,9 +2401,9 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_amount_depends_constants(self):
         """Can a constant with constant dependencies take a new value?"""
-        with model() as m:
-            Foo = constant('Foo', 9)
-            Bar = constant('Bar', lambda f: f, 'Foo')
+        with mn.model() as m:
+            Foo = mn.constant('Foo', 9)
+            Bar = mn.constant('Bar', lambda f: f, 'Foo')
 
         self.assertEqual(Bar[''], 9)
         Foo[''] = 2.4
@@ -2415,9 +2416,9 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_depends_stock(self):
         """Can a stock with constant dependencies take a new value?"""
-        with model() as m:
-            Foo = stock('Foo', lambda: 1, (), lambda x: x, ('Bar',))
-            Bar = constant('Bar', 99)
+        with mn.model() as m:
+            Foo = mn.stock('Foo', lambda: 1, (), lambda x: x, ('Bar',))
+            Bar = mn.constant('Bar', 99)
 
         self.assertEqual(m['Foo'][''], 99)
         m['Bar'][''] = 90
@@ -2428,10 +2429,10 @@ class UserSetAmount(unittest.TestCase):
 
     def test_update_depends_stock_chain(self):
         """Can a stock with change of constant dependencies take a new value?"""
-        with model() as m:
-            Foo = stock('Foo', lambda: 1, (), lambda x: x, ('Bar',))
-            Bar = constant('Bar', lambda x: x, 'Baz')
-            Baz = constant('Baz', 99)
+        with mn.model() as m:
+            Foo = mn.stock('Foo', lambda: 1, (), lambda x: x, ('Bar',))
+            Bar = mn.constant('Bar', lambda x: x, 'Baz')
+            Baz = mn.constant('Baz', 99)
 
         self.assertEqual(m['Foo'][''], 99)
         m['Baz'][''] = 90
@@ -2442,8 +2443,8 @@ class UserSetAmount(unittest.TestCase):
 
     def test_stock_with_user_setting_amount(self):
         """Test stock with user setting amount"""
-        with model() as m:
-            Foo = stock('Foo', 1, 0)
+        with mn.model() as m:
+            Foo = mn.stock('Foo', 1, 0)
 
         m.step()
         self.assertEqual(Foo[''], 1)
@@ -2460,11 +2461,11 @@ class UserSetAmount(unittest.TestCase):
 
     def test_user_setting_constant_multiple_treatments(self):
         """Can a user set the amount of a constant for multiple treatments?"""
-        with model(treatments={'As is', 'To be'}) as m:
-            DischargeBegins = variable('DischargeBegins', 
-                PerTreatment({'As is': 10, 'To be': 8, 'Might be': 6}))
-            DischargeEnds = variable('DischargeEnds', 14)
-            DischargeDuration = variable('DischargeDuration', 
+        with mn.model(treatments={'As is', 'To be'}) as m:
+            DischargeBegins = mn.variable('DischargeBegins', 
+                mn.PerTreatment({'As is': 10, 'To be': 8, 'Might be': 6}))
+            DischargeEnds = mn.variable('DischargeEnds', 14)
+            DischargeDuration = mn.variable('DischargeDuration', 
                 lambda e, b: e - b, 'DischargeEnds', 'DischargeBegins')
 
         self.assertEqual(DischargeBegins['As is'], 10)
@@ -2478,61 +2479,61 @@ class ForeachDict(unittest.TestCase):
     """For testing the foreach construct with dictionaries"""
     def test_simple(self):
         """Does the simplest possible foreach work?"""
-        with model():
-            variable('Baz', {'foo': 12, 'bar': 13})
-            Quz = variable('Quz', foreach(lambda f: f + 1), 'Baz')
+        with mn.model():
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            Quz = mn.variable('Quz', mn.foreach(lambda f: f + 1), 'Baz')
         self.assertEqual(Quz[''], {'foo': 13, 'bar': 14})
 
     def test_two_arg_foreach(self):
         """Does a two arg callable to a foreach work?"""
-        with model():
-            variable('Baz', {'foo': 12, 'bar': 13})
-            variable('Corge', {'foo': 0, 'bar': 99})
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            mn.variable('Corge', {'foo': 0, 'bar': 99})
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], {'foo': 12, 'bar': 112})
 
     def test_foreach_with_mismatch(self):
         """Does a two arg foreach with mismatched dicts error correctly?"""
-        with self.assertRaisesRegex(MinnetonkaError, 
+        with self.assertRaisesRegex(mn.MinnetonkaError, 
                 'Foreach encountered mismatched dicts'):
-            with model():
-                variable('Baz', {'foo': 12, 'bar': 13})
-                variable('Corge', {'foo': 0, 'wtf': 99})
-                Quz = variable('Quz', 
-                    foreach(lambda b, c: b + c), 'Baz', 'Corge')
+            with mn.model():
+                mn.variable('Baz', {'foo': 12, 'bar': 13})
+                mn.variable('Corge', {'foo': 0, 'wtf': 99})
+                Quz = mn.variable('Quz', 
+                    mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
 
     def test_big_dict_foreach(self):
         """Does foreach work with a 1000 element dict?"""
-        with model():
-            variable('Biggus', {'ind{:03}'.format(n): n for n in range(1000)})
-            Dickus = variable('Dickus', foreach(lambda x: x*2), 'Biggus')
+        with mn.model():
+            mn.variable('Biggus', {'ind{:03}'.format(n): n for n in range(1000)})
+            Dickus = mn.variable('Dickus', mn.foreach(lambda x: x*2), 'Biggus')
         self.assertEqual(Dickus['']['ind002'], 4)
         self.assertEqual(Dickus['']['ind999'], 1998)
 
     def test_foreach_nondict_error(self):
         """Does foreach raise error when first variable is not a dict?"""
-        with self.assertRaisesRegex(MinnetonkaError,
+        with self.assertRaisesRegex(mn.MinnetonkaError,
                 'First arg of foreach 23 must be dictionary or tuple'):
-            with model():
-                variable('Baz', 23)
-                Quz = variable('Quz', foreach(lambda f: f + 1), 'Baz')
+            with mn.model():
+                mn.variable('Baz', 23)
+                Quz = mn.variable('Quz', mn.foreach(lambda f: f + 1), 'Baz')
 
     def test_foreach_nondict_sunny_day(self):
         """Does foreach do the right thing with a nondict as second element?"""
-        with model():
-            variable('Baz', {'foo': 12, 'bar': 13})
-            variable('Corge', 12)
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            mn.variable('Corge', 12)
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], {'foo': 24, 'bar': 25})
 
     def test_foreach_stock(self):
         """Does foreach work with stocks and dicts?"""
-        with model() as m:
-            variable('Baz', {'foo': 12, 'bar': 13})
-            variable('Waldo', {'foo': 1, 'bar': 2})
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
-                foreach(lambda w: w), ('Waldo',))
+        with mn.model() as m:
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            mn.variable('Waldo', {'foo': 1, 'bar': 2})
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
+                mn.foreach(lambda w: w), ('Waldo',))
         m.step()
         self.assertEqual(Corge[''], {'foo':15, 'bar': 17} )
         m.step(2)
@@ -2540,13 +2541,13 @@ class ForeachDict(unittest.TestCase):
 
     def test_nested_foreach_stock(self):
         """Do nested foreaches work with stocks and dicts?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 {'drg001': {'trad': 7, 'rrc': 9},
                  'drg003': {'trad': 18, 'rrc': 4},
                  'drg257': {'trad': 6, 'rrc': 11}})
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 {'drg001': {'trad': 0, 'rrc': 0},
                  'drg003': {'trad': 0, 'rrc': 0},
                  'drg257': {'trad': 0, 'rrc': 0}})
@@ -2565,10 +2566,10 @@ class ForeachDict(unittest.TestCase):
 
     def test_foreach_stock_timestep(self):
         """Does foreach work with stocks and dicts, and smaller timestep?"""
-        with model(timestep=0.5) as m:
-            variable('Baz', {'foo': 12, 'bar': 13})
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model(timestep=0.5) as m:
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 {'foo': 0, 'bar': 0})
         m.step()
         self.assertEqual(Corge[''], {'foo':7, 'bar': 7.5} )
@@ -2577,11 +2578,11 @@ class ForeachDict(unittest.TestCase):
 
     def test_foreach_stock_multivariable(self):
         """Does foreach work with stocks that have multiple variables?"""
-        with model() as m:
-            variable('Baz', {'foo': 12, 'bar': 13})
-            variable('Quz', {'foo': 1, 'bar': 2})
-            Corge = stock('Corge', 
-                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+        with mn.model() as m:
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            mn.variable('Quz', {'foo': 1, 'bar': 2})
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
                 {'foo': 0, 'bar': 0})
         m.step()
         self.assertEqual(Corge[''], {'foo':13, 'bar': 15} )
@@ -2590,12 +2591,12 @@ class ForeachDict(unittest.TestCase):
 
     def test_foreach_accum(self):
         """Does foreach work with accums and dicts?"""
-        with model() as m:
-            variable('Baz', {'foo': 12, 'bar': 13})
-            variable('Waldo', {'foo': 1, 'bar': 2})
-            Corge = accum('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
-                foreach(lambda w: w), ('Waldo',))
+        with mn.model() as m:
+            mn.variable('Baz', {'foo': 12, 'bar': 13})
+            mn.variable('Waldo', {'foo': 1, 'bar': 2})
+            Corge = mn.accum('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
+                mn.foreach(lambda w: w), ('Waldo',))
         m.step()
         self.assertEqual(Corge[''], {'foo':15, 'bar': 17} )
         m.step(2)
@@ -2603,13 +2604,13 @@ class ForeachDict(unittest.TestCase):
 
     def test_nested_foreach_accum(self):
         """Do nested foreaches work with accums and dicts?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 {'drg001': {'trad': 7, 'rrc': 9},
                  'drg003': {'trad': 18, 'rrc': 4},
                  'drg257': {'trad': 6, 'rrc': 11}})
-            Corge = accum('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.accum('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 {'drg001': {'trad': 0, 'rrc': 0},
                  'drg003': {'trad': 0, 'rrc': 0},
                  'drg257': {'trad': 0, 'rrc': 0}})
@@ -2630,50 +2631,50 @@ class ForeachTuples(unittest.TestCase):
     """For testing the foreach construct with tuples"""
     def test_simple(self):
         """Does the simplest possible foreach work with named tuples?"""
-        with model():
-            variable('Baz', (12, 13, 15))
-            Quz = variable('Quz', foreach(lambda f: f + 1), 'Baz')
+        with mn.model():
+            mn.variable('Baz', (12, 13, 15))
+            Quz = mn.variable('Quz', mn.foreach(lambda f: f + 1), 'Baz')
         self.assertEqual(Quz[''], (13, 14, 16))
 
     def test_two_arg_foreach(self):
         """Does a two arg callable to a foreach work?"""
-        with model():
-            variable('Baz', (12, 13, 0))
-            variable('Corge', (0, 99, 12))
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', (12, 13, 0))
+            mn.variable('Corge', (0, 99, 12))
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], (12, 112, 12))
 
     def test_foreach_with_mismatched_tuples(self):
         """Does a two arg foreach with mismatched tuples error correctly?"""
-        with model():
-            variable('Baz', (12, 13, 0))
-            variable('Corge', (0, 99))
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', (12, 13, 0))
+            mn.variable('Corge', (0, 99))
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], (12, 112))
 
     def test_big_tuple_foreach(self):
         """Does foreach work with a 1000 element tuple?"""
-        with model():
-            variable('Biggus', tuple(range(1000)))
-            Dickus = variable('Dickus', foreach(lambda x: x*2), 'Biggus')
+        with mn.model():
+            mn.variable('Biggus', tuple(range(1000)))
+            Dickus = mn.variable('Dickus', mn.foreach(lambda x: x*2), 'Biggus')
         self.assertEqual(Dickus[''][3], 6)
         self.assertEqual(Dickus[''][999], 1998)
 
     def test_foreach_nontuple_sunny_day(self):
         """Does foreach do the right thing with a nontuple as second element?"""
-        with model():
-            variable('Baz', (12, 13))
-            variable('Corge', 12)
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', (12, 13))
+            mn.variable('Corge', 12)
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], (24, 25))
 
     def test_foreach_stock(self):
         """Does foreach work with stocks?"""
-        with model() as m:
-            variable('Baz', (12, 13))
-            variable('Waldo', (1, 2))
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model() as m:
+            mn.variable('Baz', (12, 13))
+            mn.variable('Waldo', (1, 2))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 lambda w: w, ('Waldo',))
         m.step()
         self.assertEqual(Corge[''], (15, 17))
@@ -2682,10 +2683,10 @@ class ForeachTuples(unittest.TestCase):
 
     def test_nested_foreach_stock(self):
         """Do nested foreaches work with stocks and tuples?"""
-        with model() as m:
-            Baz = variable('Baz', ((7, 9), (18, 4), (6, 11)))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+        with mn.model() as m:
+            Baz = mn.variable('Baz', ((7, 9), (18, 4), (6, 11)))
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 ((0, 0), (0, 0), (0, 0)))
         m.step()
         self.assertEqual(Corge[''], ((8, 10), (19, 5), (7, 12)))
@@ -2694,10 +2695,10 @@ class ForeachTuples(unittest.TestCase):
 
     def test_foreach_stock_timestep(self):
         """Does foreach work with stocks?"""
-        with model(timestep=0.5) as m:
-            variable('Baz', (12, 13))
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model(timestep=0.5) as m:
+            mn.variable('Baz', (12, 13))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 (0, 0))
         m.step()
         self.assertEqual(Corge[''], (7, 7.5))
@@ -2706,11 +2707,11 @@ class ForeachTuples(unittest.TestCase):
 
     def test_foreach_stock_multivariable(self):
         """Does foreach work with stocks that have multiple variables?"""
-        with model() as m:
-            variable('Baz', (12, 13))
-            variable('Quz', (1, 2))
-            Corge = stock('Corge', 
-                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+        with mn.model() as m:
+            mn.variable('Baz', (12, 13))
+            mn.variable('Quz', (1, 2))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
                 (0, 0))
         m.step()
         self.assertEqual(Corge[''], (13, 15))
@@ -2719,11 +2720,11 @@ class ForeachTuples(unittest.TestCase):
 
     def test_foreach_accum(self):
         """Does foreach work with accums?"""
-        with model() as m:
-            variable('Baz', (12, 13))
-            variable('Waldo', (1, 2))
-            Corge = accum('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model() as m:
+            mn.variable('Baz', (12, 13))
+            mn.variable('Waldo', (1, 2))
+            Corge = mn.accum('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 lambda w: w, ('Waldo',))
         m.step()
         self.assertEqual(Corge[''], (15, 17))
@@ -2732,10 +2733,10 @@ class ForeachTuples(unittest.TestCase):
 
     def test_nested_foreach_accum(self):
         """Do nested foreaches work with accums and tuples?"""
-        with model() as m:
-            Baz = variable('Baz', ((7, 9), (18, 4), (6, 11)))
-            Corge = accum('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+        with mn.model() as m:
+            Baz = mn.variable('Baz', ((7, 9), (18, 4), (6, 11)))
+            Corge = mn.accum('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 ((0, 0), (0, 0), (0, 0)))
         m.step()
         self.assertEqual(Corge[''], ((8, 10), (19, 5), (7, 12)))
@@ -2751,80 +2752,80 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_simple(self):
         """Does the simplest possible foreach work with named tuples?"""
-        with model():
-            variable('Baz', self.drg(12, 13, 15))
-            Quz = variable('Quz', foreach(lambda f: f + 1), 'Baz')
+        with mn.model():
+            mn.variable('Baz', self.drg(12, 13, 15))
+            Quz = mn.variable('Quz', mn.foreach(lambda f: f + 1), 'Baz')
         self.assertEqual(Quz[''], self.drg(13, 14, 16))
 
     def test_two_arg_foreach(self):
         """Does a two arg callable to a foreach work?"""
-        with model():
-            variable('Baz', self.drg(12, 13, 0))
-            variable('Corge', self.drg(0, 99, 12))
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', self.drg(12, 13, 0))
+            mn.variable('Corge', self.drg(0, 99, 12))
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], self.drg(12, 112, 12))
 
     def test_foreach_scalar_sunny_day(self):
         """Does foreach do the right thing with a scalar as second element?"""
-        with model():
-            variable('Baz', self.drg(12, 13, 19))
-            variable('Corge', 12)
-            Quz = variable('Quz', foreach(lambda b, c: b + c), 'Baz', 'Corge')
+        with mn.model():
+            mn.variable('Baz', self.drg(12, 13, 19))
+            mn.variable('Corge', 12)
+            Quz = mn.variable('Quz', mn.foreach(lambda b, c: b + c), 'Baz', 'Corge')
         self.assertEqual(Quz[''], self.drg(24, 25, 31))
 
     def test_foreach_scalar_sunny_day_third_elt(self):
         """Does foreach do the right thing with a scalar as third element?"""
-        with model():
-            variable('Baz', self.drg(12, 13, 19))
-            variable('Grault', self.drg(0, 0, 2))
-            variable('Corge', 12)
-            Quz = variable('Quz', 
-                foreach(lambda b, g, c: b + g + c), 'Baz', 'Grault', 'Corge')
+        with mn.model():
+            mn.variable('Baz', self.drg(12, 13, 19))
+            mn.variable('Grault', self.drg(0, 0, 2))
+            mn.variable('Corge', 12)
+            Quz = mn.variable('Quz', 
+                mn.foreach(lambda b, g, c: b + g + c), 'Baz', 'Grault', 'Corge')
         self.assertEqual(Quz[''], self.drg(24, 25, 33))
 
     def test_nested_foreach(self):
         """Do nested namedtuple foreaches work?""" 
-        with model():
-            variable('Baz', 
+        with mn.model():
+            mn.variable('Baz', 
                 self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
-            variable('Grault', 
+            mn.variable('Grault', 
                 self.drg(self.site(1, 2), self.site(3, 4), self.site(5, 6)))
-            Qux = variable('Qux',
-                foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
+            Qux = mn.variable('Qux',
+                mn.foreach(mn.foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
             Qux[''], 
             self.drg(self.site(13, 11), self.site(16, 8), self.site(24, 24)))
 
     def test_nested_foreach_one_level_const(self):
         """Do nested namedtuple foreaches work, with one level const?""" 
-        with model():
-            variable('Baz', 
+        with mn.model():
+            mn.variable('Baz', 
                 self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
-            variable('Grault', self.drg(1, 2, 3))
-            Qux = variable('Qux',
-                foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
+            mn.variable('Grault', self.drg(1, 2, 3))
+            Qux = mn.variable('Qux',
+                mn.foreach(mn.foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
             Qux[''], 
             self.drg(self.site(13, 10), self.site(15, 6), self.site(22, 21)))
 
     def test_nested_foreach_two_levels_const(self):
         """Do nested namedtuple foreaches work, with two levels const?""" 
-        with model():
-            variable('Baz', 
+        with mn.model():
+            mn.variable('Baz', 
                 self.drg(self.site(12, 9), self.site(13, 4), self.site(19, 18)))
-            variable('Grault', 9)
-            Qux = variable('Qux',
-                foreach(foreach(lambda b, g: b+g)), 'Baz', 'Grault')
+            mn.variable('Grault', 9)
+            Qux = mn.variable('Qux',
+                mn.foreach(mn.foreach(lambda b, g: b+g)), 'Baz', 'Grault')
         self.assertEqual(
             Qux[''], 
             self.drg(self.site(21, 18), self.site(22, 13), self.site(28, 27)))
 
     def test_foreach_stock(self):
         """Does foreach work with stocks and mn named tuples?"""
-        with model() as m:
-            variable('Baz', self.drg(12, 13, 19))
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model() as m:
+            mn.variable('Baz', self.drg(12, 13, 19))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 self.drg(0, 0, 0))
         m.step()
         self.assertEqual(Corge[''], self.drg(14, 15, 21))
@@ -2833,11 +2834,11 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach_stock(self):
         """Do nested foreaches work with stocks and named tuples?""" 
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 self.drg(self.site(7, 9), self.site(18, 4), self.site(6, 11)))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 self.drg(self.site(0, 0), self.site(0, 0), self.site(0, 0)))
         m.step()
         self.assertEqual(
@@ -2850,10 +2851,10 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_foreach_stock_timestep(self):
         """Does foreach work with stocks and mn named tuples?"""
-        with model(timestep=0.5) as m:
-            variable('Baz', self.drg(12, 13, 19))
-            Corge = stock('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model(timestep=0.5) as m:
+            mn.variable('Baz', self.drg(12, 13, 19))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 self.drg(0, 0, 0))
         m.step()
         self.assertEqual(Corge[''], self.drg(7, 7.5, 10.5))
@@ -2862,11 +2863,11 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_foreach_stock_multivariable(self):
         """Does foreach work with stocks that have multiple variables?"""
-        with model() as m:
-            variable('Baz', self.drg(12, 13, 19))
-            variable('Quz', self.drg(1, 2, 3))
-            Corge = stock('Corge', 
-                foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
+        with mn.model() as m:
+            mn.variable('Baz', self.drg(12, 13, 19))
+            mn.variable('Quz', self.drg(1, 2, 3))
+            Corge = mn.stock('Corge', 
+                mn.foreach(lambda b, q: b+q), ('Baz', 'Quz'), 
                 self.drg(0, 0, 0))
         m.step()
         self.assertEqual(Corge[''], self.drg(13, 15, 22))
@@ -2875,10 +2876,10 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_foreach_accum(self):
         """Does foreach work with accums and mn named tuples?"""
-        with model() as m:
-            variable('Baz', self.drg(12, 13, 19))
-            Corge = accum('Corge', 
-                foreach(lambda b: b+2), ('Baz',), 
+        with mn.model() as m:
+            mn.variable('Baz', self.drg(12, 13, 19))
+            Corge = mn.accum('Corge', 
+                mn.foreach(lambda b: b+2), ('Baz',), 
                 self.drg(0, 0, 0))
         m.step()
         self.assertEqual(Corge[''], self.drg(14, 15, 21))
@@ -2887,11 +2888,11 @@ class ForeachNamedTuples(unittest.TestCase):
 
     def test_nested_foreach_accum(self):
         """Do nested foreaches work with accums and named tuples?""" 
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 self.drg(self.site(7, 9), self.site(18, 4), self.site(6, 11)))
-            Corge = accum('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.accum('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 self.drg(self.site(0, 0), self.site(0, 0), self.site(0, 0)))
         m.step()
         self.assertEqual(
@@ -2911,11 +2912,11 @@ class ForeachMixed(unittest.TestCase):
 
     def test_dict_tuple(self):
         """Do nested foreaches work with tuples inside dicts?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 {'drg001': (7, 9), 'drg003': (18, 4), 'drg257': (6, 11)})
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 {'drg001': (0, 0), 'drg003': (0, 0), 'drg257': (0,0)})
         m.step()
         self.assertEqual(
@@ -2928,9 +2929,9 @@ class ForeachMixed(unittest.TestCase):
 
     def test_dict_namedtuple(self):
         """Does nested foreaches work with named tuples inside dicts?"""
-        with model():
-            Baz = variable('Baz', foreach(foreach(lambda x: x+1)), 'Grault')
-            Grault = constant('Grault',
+        with mn.model():
+            Baz = mn.variable('Baz', mn.foreach(mn.foreach(lambda x: x+1)), 'Grault')
+            Grault = mn.constant('Grault',
                 {'drg001': self.site(7, 9),
                  'drg003': self.site(18, 4),
                  'drg257': self.site(6, 11)})
@@ -2942,11 +2943,11 @@ class ForeachMixed(unittest.TestCase):
 
     def test_namedtuple_tuple(self):
         """Do nested foreaches work with tuples inside named tuples?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 self.drg((7, 9), (18, 4), (6, 11)))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 self.drg((0, 0), (0, 0), (0, 0)))
         m.step()
         self.assertEqual(
@@ -2959,13 +2960,13 @@ class ForeachMixed(unittest.TestCase):
 
     def test_namedtuple_dict(self):
         """Do nested foreaches work with dicts inside named tuples?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 self.drg({'trad': 7, 'rrc': 9}, 
                          {'trad': 18, 'rrc': 4}, 
                          {'trad': 6, 'rrc': 11}))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 self.drg({'trad': 0, 'rrc': 0}, 
                          {'trad': 0, 'rrc': 0}, 
                         {'trad': 0, 'rrc': 0}))
@@ -2984,11 +2985,11 @@ class ForeachMixed(unittest.TestCase):
 
     def test_tuple_namedtuple(self):
         """Do nested foreaches work with named tuples inside tuples?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 (self.site(7, 9), self.site(18, 4), self.site(6, 11)))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 (self.site(0, 0), self.site(0, 0), self.site(0, 0)))
         m.step()
         self.assertEqual(
@@ -3001,12 +3002,12 @@ class ForeachMixed(unittest.TestCase):
 
     def test_tuple_dict(self):
         """Do nested foreaches work with dicts inside tuples?"""
-        with model() as m:
-            Baz = variable('Baz', 
+        with mn.model() as m:
+            Baz = mn.variable('Baz', 
                 ({'trad': 7, 'rrc': 9}, {'trad': 18, 'rrc': 4}, 
                  {'trad': 6, 'rrc': 11}))
-            Corge = stock('Corge',
-                foreach(foreach(lambda x: x+1)), ('Baz',),
+            Corge = mn.stock('Corge',
+                mn.foreach(mn.foreach(lambda x: x+1)), ('Baz',),
                 ({'trad': 0, 'rrc': 0}, {'trad': 0, 'rrc': 0},
                  {'trad': 0, 'rrc': 0}))
         m.step()
@@ -3024,9 +3025,9 @@ class Previous(unittest.TestCase):
     """For testing previous"""
     def test_previous(self):
         """Does a simple value of previous work, with a stock?"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'Foo')
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'Foo')
 
         self.assertEqual(LastFoo[''], 0)
         m.step()
@@ -3040,10 +3041,10 @@ class Previous(unittest.TestCase):
 
     def test_previous_reversed_order(self):
         """Does a simple value of previous work, with a stock?"""
-        with model() as m:
-            LastFoo = previous('LastFoo', 'Baz')
-            variable('Baz', lambda x: x, 'Foo')
-            stock('Foo', 1, 0)
+        with mn.model() as m:
+            LastFoo = mn.previous('LastFoo', 'Baz')
+            mn.variable('Baz', lambda x: x, 'Foo')
+            mn.stock('Foo', 1, 0)
 
         self.assertEqual(LastFoo[''], 0)
         m.step()
@@ -3057,9 +3058,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_docstring(self):
         """Does a simple value of previous work, with a stock?"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'Simple previous', 'Foo')
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'Simple previous', 'Foo')
 
         self.assertEqual(LastFoo.__doc__, 'Simple previous')
         self.assertEqual(LastFoo[''], 0)
@@ -3074,9 +3075,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_small_timestep(self):
         """Does a simple value of previous work, with non-1 timestep?"""
-        with model(timestep=0.5) as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'Foo')
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'Foo')
 
         self.assertEqual(LastFoo[''], 0)
         m.step()
@@ -3090,9 +3091,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_treatments(self):
         """Does a simple value of previous work, with treatments?"""
-        with model(treatments=['As is', 'To be']) as m:
-            stock('Foo', PerTreatment({'As is': 1, 'To be': 2}), 0)
-            LastFoo = previous('LastFoo', 'Foo')
+        with mn.model(treatments=['As is', 'To be']) as m:
+            mn.stock('Foo', mn.PerTreatment({'As is': 1, 'To be': 2}), 0)
+            LastFoo = mn.previous('LastFoo', 'Foo')
 
         self.assertEqual(LastFoo['As is'], 0)
         self.assertEqual(LastFoo['To be'], 0)
@@ -3111,10 +3112,11 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_namedtuple(self):
         """Does a simple value of previous work, with a mn_namedtuple?"""
-        Payer = mn_namedtuple('Payer', ['Medicare', 'Medicaid', 'Commercial'])
-        with model() as m:
-            stock('Foo', Payer(1, 2, 3), Payer(0, 0, 0))
-            LastFoo = previous('LastFoo', 'Foo')
+        Payer = mn.mn_namedtuple(
+            'Payer', ['Medicare', 'Medicaid', 'Commercial'])
+        with mn.model() as m:
+            mn.stock('Foo', Payer(1, 2, 3), Payer(0, 0, 0))
+            LastFoo = mn.previous('LastFoo', 'Foo')
 
         self.assertEqual(LastFoo[''], Payer(0, 0, 0))
         m.step()
@@ -3128,9 +3130,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_initial_value(self):
         """Does a simple value of previous work, with an initial value?"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'Foo', 0.3)
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'Foo', 0.3)
 
         self.assertEqual(LastFoo[''], 0.3)
         m.step()
@@ -3144,9 +3146,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_initial_value_reversed_order(self):
         """Does a simple value of previous work, with an initial value?"""
-        with model() as m:
-            LastFoo = previous('LastFoo', 'Foo', 0.3)
-            stock('Foo', 1, 0)
+        with mn.model() as m:
+            LastFoo = mn.previous('LastFoo', 'Foo', 0.3)
+            mn.stock('Foo', 1, 0)
 
         self.assertEqual(LastFoo[''], 0.3)
         m.step()
@@ -3160,9 +3162,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_initial_value_and_docstring(self):
         """Does a simple value of previous work, with an initial value?"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'docstring', 'Foo', 0.3)
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'docstring', 'Foo', 0.3)
 
         self.assertEqual(LastFoo.__doc__, 'docstring')
         self.assertEqual(LastFoo[''], 0.3)
@@ -3177,9 +3179,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_constant(self):
         """Does a previous of a constant work?"""
-        with model() as m:
-            constant('Foo', 12)
-            LastFoo = previous('LastFoo', 'Foo', 0)
+        with mn.model() as m:
+            mn.constant('Foo', 12)
+            LastFoo = mn.previous('LastFoo', 'Foo', 0)
 
         self.assertEqual(LastFoo[''], 12)
         m.step()
@@ -3193,9 +3195,9 @@ class Previous(unittest.TestCase):
 
     def test_previous_with_circularity(self):
         """Does a previous work when it defines an apparent circularity?"""
-        with model() as m:
-            previous('LastFoo', 'Foo', 0)
-            Foo = variable('Foo', lambda x: x + 2, 'LastFoo')
+        with mn.model() as m:
+            mn.previous('LastFoo', 'Foo', 0)
+            Foo = mn.variable('Foo', lambda x: x + 2, 'LastFoo')
 
         self.assertEqual(Foo[''], 2)
         m.step()
@@ -3209,8 +3211,8 @@ class Previous(unittest.TestCase):
 
     def test_self_previous(self):
         """Does a previous work when it refers to itself?"""
-        with model() as m:
-            Foo = previous('Foo', 'Foo', 0)
+        with mn.model() as m:
+            Foo = mn.previous('Foo', 'Foo', 0)
 
         self.assertEqual(Foo[''], 0)
         m.step()
@@ -3224,10 +3226,10 @@ class Previous(unittest.TestCase):
 
     def test_set_previous(self):
         """Does setting the amount of a previous raise an error?"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            LastFoo = previous('LastFoo', 'docstring', 'Foo', 0.3)
-        with self.assertRaises(MinnetonkaError) as me:
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            LastFoo = mn.previous('LastFoo', 'docstring', 'Foo', 0.3)
+        with self.assertRaises(mn.MinnetonkaError) as me:
             LastFoo[''] = 12
         self.assertEqual(
             me.exception.message, 
@@ -3239,8 +3241,8 @@ class OldValues(unittest.TestCase):
     """For checking that values are stored every step"""
     def test_stock_old_values(self):
         """Does a stock keep all the old values around?"""
-        with model(treatments=['Bar', 'Baz']) as m:
-            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            Foo = mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
 
         m.step(6)
         self.assertEqual(Foo.history('Bar', 0), 0)
@@ -3259,16 +3261,16 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Foo.history('Baz', 0), 0)
         self.assertEqual(Foo.history('Bar', 1), 1)
         self.assertEqual(Foo.history('Baz', 1), 2)
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaises(mn.MinnetonkaError) as me:
             Foo.history('Bar', 3)
         self.assertEqual(
             me.exception.message, "Foo['Bar'] has no value for step 3")
 
     def test_variable_old_values(self):
         """Does a variable keep all the old values around?"""
-        with model(treatments=['Bar', 'Baz']) as m:
-            stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
-            Quz = variable('Quz', lambda x: x, 'Foo')
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Quz = mn.variable('Quz', lambda x: x, 'Foo')
 
         m.step(6)
         self.assertEqual(Quz.history('Bar', 0), 0)
@@ -3287,15 +3289,15 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Quz.history('Baz', 0), 0)
         self.assertEqual(Quz.history('Bar', 1), 1)
         self.assertEqual(Quz.history('Baz', 1), 2)
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaises(mn.MinnetonkaError) as me:
             Quz.history('Bar', 3)
         self.assertEqual(
             me.exception.message, "Quz['Bar'] has no value for step 3")
 
     def test_accum_old_values(self):
         """Does an accum keep all the old values around?"""
-        with model(treatments=['Bar', 'Baz']) as m:
-            Foo = accum('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            Foo = mn.accum('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
 
         m.step(6)
         self.assertEqual(Foo.history('Bar', 0), 0)
@@ -3314,15 +3316,15 @@ class OldValues(unittest.TestCase):
         self.assertEqual(Foo.history('Baz', 0), 0)
         self.assertEqual(Foo.history('Bar', 1), 1)
         self.assertEqual(Foo.history('Baz', 1), 2)
-        with self.assertRaises(MinnetonkaError) as me:
+        with self.assertRaises(mn.MinnetonkaError) as me:
             Foo.history('Bar', 3)
         self.assertEqual(
             me.exception.message, "Foo['Bar'] has no value for step 3")
 
     def test_constant_old_values(self):
         """Does a constant do the right thing for history() calls?"""
-        with model(treatments=['Bar', 'Baz']) as m:
-            Quz = constant('Quz', PerTreatment({'Bar': 9, 'Baz':10}))
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            Quz = mn.constant('Quz', mn.PerTreatment({'Bar': 9, 'Baz':10}))
 
         m.step(6)
         self.assertEqual(Quz.history('Bar', 0), 9)
@@ -3338,10 +3340,10 @@ class OldValues(unittest.TestCase):
 
     def test_old_derived_values(self):
         """Does history do the right thing if the treatment is derived?"""
-        with model(treatments=['Bar', 'Baz'],
-                   derived_treatments={'Quz': AmountBetter('Baz', 'Bar')}
+        with mn.model(treatments=['Bar', 'Baz'],
+                   derived_treatments={'Quz': mn.AmountBetter('Baz', 'Bar')}
         ) as m:
-            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            Foo = mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0
             ).derived()
 
         m.step(6)
@@ -3355,12 +3357,12 @@ class ModelHistory(unittest.TestCase):
     """Testing history of the whole model."""
     def test_history(self):
         """Test history of several variables and two treatments."""
-        with model(treatments=['Bar', 'Baz']) as m:
-            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
-            Quz = variable('Quz', lambda x: x, 'Foo')
-            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
-            Grault = constant('Grault', PerTreatment({'Bar': 9, 'Baz':10}))
-            Thud = variable('Thud', lambda x: x, 'Foo').no_history()
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            Foo = mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Quz = mn.variable('Quz', lambda x: x, 'Foo')
+            Corge = mn.accum('Corge', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Grault = mn.constant('Grault', mn.PerTreatment({'Bar': 9, 'Baz':10}))
+            Thud = mn.variable('Thud', lambda x: x, 'Foo').no_history()
 
         self.assertEqual(
             m.history(),
@@ -3392,21 +3394,21 @@ class ModelHistory(unittest.TestCase):
 
     def test_derived_history(self):
         """Test history of several variables and two treatments."""
-        with model(treatments=['Bar', 'Baz'], 
+        with mn.model(treatments=['Bar', 'Baz'], 
                    derived_treatments={
-                        'Plugh': AmountBetter('Baz', 'Bar')}
+                        'Plugh': mn.AmountBetter('Baz', 'Bar')}
             ) as m:
-            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            Foo = mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0
             ).derived()
-            Quz = variable('Quz', lambda x: x, 'Foo'
+            Quz = mn.variable('Quz', lambda x: x, 'Foo'
             ).derived(scored_as='golf')
-            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0
+            Corge = mn.accum('Corge', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0
             ).derived()
-            Grault = constant('Grault', PerTreatment({'Bar': 9, 'Baz':10})
+            Grault = mn.constant('Grault', mn.PerTreatment({'Bar': 9, 'Baz':10})
             ).derived()
-            Thud = variable('Thud', lambda x: x, 'Foo').no_history(
+            Thud = mn.variable('Thud', lambda x: x, 'Foo').no_history(
             ).derived()
-            Fred = variable('Fred', 
+            Fred = mn.variable('Fred', 
                 lambda foo, quz: {'foo': foo, 'quz': quz},
                 'Foo', 'Quz'
             ).derived(scored_as='combo')
@@ -3463,8 +3465,8 @@ class Unitary(unittest.TestCase):
 
     def test_simple_variable(self):
         """Test whether a simple variable can be unitary."""
-        with model(treatments=['As is', 'To be']):
-            Bar = variable('Bar', 12)
+        with mn.model(treatments=['As is', 'To be']):
+            Bar = mn.variable('Bar', 12)
 
         self.assert_unitary(Bar)
         self.assertEqual(Bar['As is'], 12)
@@ -3475,8 +3477,8 @@ class Unitary(unittest.TestCase):
 
     def test_per_treatment(self):
         """Test whether a variable defined with PerTreatment is unitary."""
-        with model(treatments=['As is', 'To be']):
-            Foo = variable('Foo', PerTreatment({'As is': 12, 'To be': 13}))
+        with mn.model(treatments=['As is', 'To be']):
+            Foo = mn.variable('Foo', mn.PerTreatment({'As is': 12, 'To be': 13}))
 
         self.assert_not_unitary(Foo)
         self.assertEqual(Foo['As is'], 12)
@@ -3487,13 +3489,13 @@ class Unitary(unittest.TestCase):
 
     def test_variables_that_depend(self):
         """Test whether a variable that depends on a unitary is unitary."""
-        with model(treatments=['As is', 'To be']):
-            Unitary = variable('Unitary', 12)
-            Fragmented = variable('Fragmented', 
-                PerTreatment({'As is': 12, 'To be': 13}))
-            DependsOnUnitary = variable('DependsOnUnitary', 
+        with mn.model(treatments=['As is', 'To be']):
+            Unitary = mn.variable('Unitary', 12)
+            Fragmented = mn.variable('Fragmented', 
+                mn.PerTreatment({'As is': 12, 'To be': 13}))
+            DependsOnUnitary = mn.variable('DependsOnUnitary', 
                 lambda x: x, 'Unitary')
-            DependsOnFragmented = variable('DependsOnFragmented', 
+            DependsOnFragmented = mn.variable('DependsOnFragmented', 
                 lambda x: x, 'Fragmented')
         
         self.assert_unitary(DependsOnUnitary)
@@ -3501,20 +3503,20 @@ class Unitary(unittest.TestCase):
 
     def test_unitary_stock(self):
         """Test whether a stock can be unitary."""
-        with model(treatments=['As is', 'To be']):
-            SimpleStock = stock('SimpleStock', 1, 1)
-            UnitaryVar = variable('UnitaryVar', 2)
-            FragmentedVar = variable('FragmentedVar', 
-                PerTreatment({'As is': 2, 'To be': 3}))
-            UnitaryStock = stock('UnitaryStock', 
+        with mn.model(treatments=['As is', 'To be']):
+            SimpleStock = mn.stock('SimpleStock', 1, 1)
+            UnitaryVar = mn.variable('UnitaryVar', 2)
+            FragmentedVar = mn.variable('FragmentedVar', 
+                mn.PerTreatment({'As is': 2, 'To be': 3}))
+            UnitaryStock = mn.stock('UnitaryStock', 
                 lambda x: x, ('UnitaryVar',), 0)
-            FragmentedStock1 = stock('FragmentedStock1',
+            FragmentedStock1 = mn.stock('FragmentedStock1',
                 lambda x: x, ('FragmentedVar',), 
                 lambda x: x, ('UnitaryVar',))
-            FragmentedStock2 = stock('FragmentedStock2',
+            FragmentedStock2 = mn.stock('FragmentedStock2',
                 lambda x: x, ('UnitaryVar',),
                 lambda x: x, ('FragmentedVar',))
-            FragmentedStock3 = stock('FragmentedStock3',
+            FragmentedStock3 = mn.stock('FragmentedStock3',
                 lambda x: x, ('UnitaryVar',),
                 lambda x: x, ('FragmentedVar',))
 
@@ -3526,20 +3528,20 @@ class Unitary(unittest.TestCase):
 
     def test_unitary_accum(self):
         """Test whether an accum can be unitary."""
-        with model(treatments=['As is', 'To be']):
-            SimpleAccum = accum('SimpleAccum', 1, 1)
-            UnitaryVar = variable('UnitaryVar', 2)
-            FragmentedVar = variable('FragmentedVar', 
-                PerTreatment({'As is': 2, 'To be': 3}))
-            UnitaryAccum = accum('UnitaryAccum', 
+        with mn.model(treatments=['As is', 'To be']):
+            SimpleAccum = mn.accum('SimpleAccum', 1, 1)
+            UnitaryVar = mn.variable('UnitaryVar', 2)
+            FragmentedVar = mn.variable('FragmentedVar', 
+                mn.PerTreatment({'As is': 2, 'To be': 3}))
+            UnitaryAccum = mn.accum('UnitaryAccum', 
                 lambda x: x, ('UnitaryVar',), 0)
-            FragmentedAccum1 = accum('FragmentedAccum1',
+            FragmentedAccum1 = mn.accum('FragmentedAccum1',
                 lambda x: x, ('FragmentedVar',), 
                 lambda x: x, ('UnitaryVar',))
-            FragmentedAccum2 = accum('FragmentedAccum2',
+            FragmentedAccum2 = mn.accum('FragmentedAccum2',
                 lambda x: x, ('UnitaryVar',),
                 lambda x: x, ('FragmentedVar',))
-            FragmentedAccum3 = accum('FragmentedAccum3',
+            FragmentedAccum3 = mn.accum('FragmentedAccum3',
                 lambda x: x, ('UnitaryVar',),
                 lambda x: x, ('FragmentedVar',))
 
@@ -3551,49 +3553,49 @@ class Unitary(unittest.TestCase):
 
     def test_previous(self):
         """Test whether a previous can be unitary."""
-        with model(treatments=['As is', 'To be']):
-            UnitaryVar = variable('UnitaryVar', 2)
-            FragmentedVar = variable('FragmentedVar', 
-                PerTreatment({'As is': 2, 'To be': 3}))
-            UnitaryPrevious = previous('UnitaryPrevious', 'UnitaryVar')
-            FragmentedPrevious = previous('FragmentedPrevious', 'FragmentedVar')
+        with mn.model(treatments=['As is', 'To be']):
+            UnitaryVar = mn.variable('UnitaryVar', 2)
+            FragmentedVar = mn.variable('FragmentedVar', 
+                mn.PerTreatment({'As is': 2, 'To be': 3}))
+            UnitaryPrevious = mn.previous('UnitaryPrevious', 'UnitaryVar')
+            FragmentedPrevious = mn.previous('FragmentedPrevious', 'FragmentedVar')
 
         self.assert_unitary(UnitaryPrevious)
         self.assert_not_unitary(FragmentedPrevious)
 
     def test_causal_loop_unitary(self):
         """Test that a simple model with a causal loop is unitary."""
-        with model(treatments=['As is', 'To be']) as m2:
-            InterestRate = constant('InterestRate', 0.04)
-            Interest = variable('Interest', 
+        with mn.model(treatments=['As is', 'To be']) as m2:
+            InterestRate = mn.constant('InterestRate', 0.04)
+            Interest = mn.variable('Interest', 
                 lambda s, ir: s * ir, 'Savings', 'InterestRate')
-            Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
+            Savings = mn.stock('Savings', lambda i: i, ('Interest',), 1000)
         self.assert_unitary(InterestRate)
         self.assert_unitary(Interest)
         self.assert_unitary(Savings)
 
     def test_causal_loop_not_unitary(self):
         """Test that a simple model with a causal loop is not unitary."""
-        with model(treatments=['As is', 'To be']) as m2:
-            InterestRate = constant('InterestRate', 
-                PerTreatment({'As is': 0.04, 'To be': 0.15}))
-            Interest = variable('Interest', 
+        with mn.model(treatments=['As is', 'To be']) as m2:
+            InterestRate = mn.constant('InterestRate', 
+                mn.PerTreatment({'As is': 0.04, 'To be': 0.15}))
+            Interest = mn.variable('Interest', 
                 lambda s, ir: s * ir, 'Savings', 'InterestRate')
-            Savings = stock('Savings', lambda i: i, ('Interest',), 1000)
+            Savings = mn.stock('Savings', lambda i: i, ('Interest',), 1000)
         self.assert_not_unitary(InterestRate)
         self.assert_not_unitary(Interest)
         self.assert_not_unitary(Savings)
 
     def test_unitary_set_warning(self):
         """Test that setting a unitary var in one treatment issues warning."""
-        with model(treatments=['As is', 'To be']):
-            InterestRate = constant('InterestRate', 0.03)
+        with mn.model(treatments=['As is', 'To be']):
+            InterestRate = mn.constant('InterestRate', 0.03)
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             InterestRate['To be'] = 0.05
             self.assertEqual(len(w), 1)
-            self.assertEqual(w[-1].category, MinnetonkaWarning)
+            self.assertEqual(w[-1].category, mn.MinnetonkaWarning)
             self.assertEqual(str(w[-1].message), 
                 'Setting amount of unitary variable InterestRate '+
                 'in only one treatment')
@@ -3603,54 +3605,83 @@ class SafeDiv(unittest.TestCase):
     """For testing safe_div"""
     def test_safe_div(self):
         """Testing safe_div"""
-        self.assertEqual(safe_div(5, 4), 1.25)
-        self.assertEqual(safe_div(5, 0), 0)
-        self.assertEqual(safe_div(5, 0, 1), 1)
+        self.assertEqual(mn.safe_div(5, 4), 1.25)
+        self.assertEqual(mn.safe_div(5, 0), 0)
+        self.assertEqual(mn.safe_div(5, 0, 1), 1)
 
 
 class ArrayGraphXYandYX(unittest.TestCase):
     """For testing array_graph_xy"""
     # should test decreasing Xs and neither increasing nor decreasing errors
-    def test_array_graph_xy(self):
-        """Testing array_graph_xy"""
+    def test_array_graph_xy_tuple(self):
+        """Testing array_graph_xy() with tuple argument"""
         XYs = (
             (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
             (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
             (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
             (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
             )
-        self.assertEqual(array_graph_xy(2, XYs), 92.34)
-        self.assertAlmostEqual(array_graph_xy(7.4, XYs), 11.374)
-        self.assertEqual(array_graph_xy(11, XYs), 0)
-        self.assertEqual(array_graph_xy(1, XYs), 100)
+        self.assertEqual(mn.array_graph_xy(2, XYs), 92.34)
+        self.assertAlmostEqual(mn.array_graph_xy(7.4, XYs), 11.374)
+        self.assertEqual(mn.array_graph_xy(11, XYs), 0)
+        self.assertEqual(mn.array_graph_xy(1, XYs), 100)
 
-    def test_array_graph_yx(self):
-        """Testing array_graph_yx"""
+    def test_array_graph_xy_array(self):
+        """Testing array_graph_xy with numpy array argument"""
+        XYs_tuple = (
+            (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
+            (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
+            (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
+            (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
+            )
+        XYs = np.array(XYs_tuple).transpose()
+        self.assertEqual(mn.array_graph_xy(2, XYs), 92.34)
+        self.assertAlmostEqual(mn.array_graph_xy(7.4, XYs), 11.374)
+        self.assertEqual(mn.array_graph_xy(11, XYs), 0)
+        self.assertEqual(mn.array_graph_xy(1, XYs), 100)
+
+    def test_array_graph_yx_typle(self):
+        """Testing array_graph_yx() on a tuple"""
         XYs = (
             (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
             (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
             (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
             (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
             )
-        self.assertEqual(array_graph_yx(92.34, XYs), 2)
-        self.assertAlmostEqual(array_graph_yx(11.374, XYs), 7.4)
-        self.assertEqual(array_graph_yx(0, XYs), 10)
-        self.assertEqual(array_graph_yx(100, XYs), 1)
+        self.assertEqual(mn.array_graph_yx(92.34, XYs), 2)
+        self.assertAlmostEqual(mn.array_graph_yx(11.374, XYs), 7.4)
+        self.assertEqual(mn.array_graph_yx(0, XYs), 10)
+        self.assertEqual(mn.array_graph_yx(100, XYs), 1)
+
+    def test_array_graph_yx_array(self):
+        """Testing array_graph_yx() on numpy array argument"""
+        XYs_tuple = (
+            (1, 100), (1.5, 97.24), (2, 92.34), (2.5, 88.41), (3, 85.07), 
+            (3.5, 80.42), (4, 75.39), (4.5, 66.52), (5, 57.80), (5.5, 47.95), 
+            (6, 36.47), (6.5, 25.31), (7, 16.71), (7.5, 10.04), (8, 6.19), 
+            (8.5, 3.35), (9, 2.10), (9.5, 1.01), (10, 0)
+            )
+        XYs = np.array(XYs_tuple).transpose()
+        self.assertEqual(mn.array_graph_yx(92.34, XYs), 2)
+        self.assertAlmostEqual(mn.array_graph_yx(11.374, XYs), 7.4)
+        self.assertEqual(mn.array_graph_yx(0, XYs), 10)
+        self.assertEqual(mn.array_graph_yx(100, XYs), 1)
+
 
 class AllAmounts(unittest.TestCase):
     def test_all_amounts(self):
         """Test the all_amounts() for a variety of variables"""
 
-        with model(treatments=['As is', 'To be']) as m:
-            Savings = stock(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Savings = mn.stock(
                 'Savings', lambda interest: interest, ('Interest',), 1000)
-            Rate = variable(
-                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
-            Interest = variable(
+            Rate = mn.variable(
+                'Rate', mn.PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = mn.variable(
                 'Interest', lambda savings, rate: savings * rate, 
                 'Savings', 'Rate')
-            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
-            AccumInterest = accum('AccumInterest', 
+            PreviousInterest = mn.previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = mn.accum('AccumInterest', 
                 lambda i: i, ('Interest',), 0)
 
         self.assertEqual(Savings.all(), {'As is': 1000, 'To be': 1000})
@@ -3696,16 +3727,16 @@ class AllAmounts(unittest.TestCase):
 class StrAndRepr(unittest.TestCase):
     def test_str(self):
         """Test str() for a variety of variables"""
-        with model(treatments=['As is', 'To be']) as m:
-            Savings = stock(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Savings = mn.stock(
                 'Savings', lambda interest: interest, ('Interest',), 1000)
-            Rate = constant(
-                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
-            Interest = variable(
+            Rate = mn.constant(
+                'Rate', mn.PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = mn.variable(
                 'Interest', lambda savings, rate: savings * rate, 
                 'Savings', 'Rate')
-            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
-            AccumInterest = accum('AccumInterest', 
+            PreviousInterest = mn.previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = mn.accum('AccumInterest', 
                 lambda i: i, ('Interest',), 0)
 
         self.assertEqual(str(Savings), "<Stock Savings>")
@@ -3716,16 +3747,16 @@ class StrAndRepr(unittest.TestCase):
 
     def test_repr(self):
         """Test repr() for a variety of variables"""
-        with model(treatments=['As is', 'To be']) as m:
-            Savings = stock(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Savings = mn.stock(
                 'Savings', lambda interest: interest, ('Interest',), 1000)
-            Rate = constant(
-                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
-            Interest = variable(
+            Rate = mn.constant(
+                'Rate', mn.PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = mn.variable(
                 'Interest', lambda savings, rate: savings * rate, 
                 'Savings', 'Rate')
-            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
-            AccumInterest = accum('AccumInterest', 
+            PreviousInterest = mn.previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = mn.accum('AccumInterest', 
                 lambda i: i, ('Interest',), 0)
 
         self.assertEqual(repr(Savings), "stock('Savings')")
@@ -3753,22 +3784,22 @@ class ShowVariable(unittest.TestCase):
     def test_show(self):
         """Test that show provides everything important about a variable"""
 
-        with model(treatments=['As is', 'To be']) as m:
-            Savings = stock(
+        with mn.model(treatments=['As is', 'To be']) as m:
+            Savings = mn.stock(
                 'Savings', 
                 lambda interest: interest, 
                 ('Interest',), 1000)
-            Rate = variable(
-                'Rate', PerTreatment({'As is': 0.05, 'To be': 0.06}))
-            Interest = variable(
+            Rate = mn.variable(
+                'Rate', mn.PerTreatment({'As is': 0.05, 'To be': 0.06}))
+            Interest = mn.variable(
                 'Interest', 
                 lambda savings, rate: savings * rate, 
                 'Savings', 'Rate')
-            PreviousInterest = previous('PreviousInterest', 'Interest', 0)
-            AccumInterest = accum('AccumInterest', 
+            PreviousInterest = mn.previous('PreviousInterest', 'Interest', 0)
+            AccumInterest = mn.accum('AccumInterest', 
                 lambda i: i,
                 ('Interest',), 0)
-            NoFutureSavings = variable(
+            NoFutureSavings = mn.variable(
                 'NoFutureSavings', lambda s: s, 'Savings'
             ).undefined_in('To be')
 
@@ -3848,8 +3879,8 @@ class ValidateAndSetTest(unittest.TestCase):
     """Test Model.validate_and_set()."""
     def test_no_validator(self):
         """Test Model.validate_and_set() when no validator is defined."""
-        with model() as m:
-            InterestRate = constant('InterestRate', 0.04)
+        with mn.model() as m:
+            InterestRate = mn.constant('InterestRate', 0.04)
         self.assertEqual(
             m.validate_and_set('InterestRate', '', 0.05),
             {
@@ -3862,8 +3893,8 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_bad_variable(self):
         """Test Model.validate_and_set() with a bad variable."""
-        with model() as m:
-            constant('InterestRate', 0.04)
+        with mn.model() as m:
+            mn.constant('InterestRate', 0.04)
         self.assertEqual(
             m.validate_and_set('InterestRat', '', 0.05),
             {
@@ -3877,8 +3908,8 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_bad_treatment(self):
         """Test Model.validate_and_set() with a bad treatment."""
-        with model(treatments=['foo']) as m:
-            constant('InterestRate', 0.04)
+        with mn.model(treatments=['foo']) as m:
+            mn.constant('InterestRate', 0.04)
         self.assertEqual(
             m.validate_and_set('InterestRate', 'bar', 0.05),
             {
@@ -3892,8 +3923,8 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_one_validator(self):
         """Test Model.validate_and_set() with a validator defined."""
-        with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).constraint(
+        with mn.model(treatments=['current', 'possible']) as m:
+            mn.constant('InterestRate', 0.04).constraint(
                 lambda amt: amt > 0,
                 "TooSmall",
                 lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
@@ -3920,8 +3951,8 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_two_validators(self):
         """Test Model.validate_and_set() with two validators defined."""
-        with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).constraint(
+        with mn.model(treatments=['current', 'possible']) as m:
+            mn.constant('InterestRate', 0.04).constraint(
                 lambda amt: amt > 0,
                 "TooSmall",
                 lambda amt, nm: f'{nm} is {amt}; must be greater than 0.',
@@ -3971,8 +4002,8 @@ class ValidateAndSetTest(unittest.TestCase):
                 else:
                     return False, "Bad", "Really bad", 1 
 
-        with model(treatments=['current', 'possible']) as m:
-            constant('InterestRate', 0.04).constraint(_FakeValidator)
+        with mn.model(treatments=['current', 'possible']) as m:
+            mn.constant('InterestRate', 0.04).constraint(_FakeValidator)
 
         self.assertEqual(
             m.validate_and_set('InterestRate', '__all__', 0.5),
@@ -3997,9 +4028,9 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_multiple_treatments(self):
         """Test Model.validate_and_set() when with multiple treatments."""
-        with model(treatments=['current', 'imagined']) as m:
-            InterestRate = constant('InterestRate', 
-                PerTreatment({'current': 0.04, 'imagined': 0.04}))
+        with mn.model(treatments=['current', 'imagined']) as m:
+            InterestRate = mn.constant('InterestRate', 
+                mn.PerTreatment({'current': 0.04, 'imagined': 0.04}))
         self.assertEqual(
             m.validate_and_set('InterestRate', 'current', 0.05),
             {
@@ -4013,8 +4044,8 @@ class ValidateAndSetTest(unittest.TestCase):
 
     def test_reset_model(self):
         """Test change value then, then Model.reset())"""
-        with model() as m:
-            InterestRate = constant('InterestRate', 0.04)
+        with mn.model() as m:
+            InterestRate = mn.constant('InterestRate', 0.04)
 
         self.assertEqual(InterestRate[''], 0.04)
         m.validate_and_set('InterestRate', '', 0.05)
@@ -4036,8 +4067,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 self.width = width
                 self.height = height
 
-        with model() as m:
-            Size = constant('Size', _Size(18, 16, 14))
+        with mn.model() as m:
+            Size = mn.constant('Size', _Size(18, 16, 14))
         self.assertEqual(Size[''].length, 18)
         self.assertEqual(
             m.validate_and_set('Size', '', 17, excerpt='.length'),
@@ -4058,9 +4089,9 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 self.width = width
                 self.height = height
 
-        with model(treatments=['current', 'imagined']) as m:
-            Size = constant('Size', 
-                PerTreatment(
+        with mn.model(treatments=['current', 'imagined']) as m:
+            Size = mn.constant('Size', 
+                mn.PerTreatment(
                     {'current': _Size(18, 16, 14),'imagined': _Size(18, 16, 14)}
                 ))
         self.assertEqual(Size['current'].length, 18)
@@ -4076,12 +4107,12 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
             })
         self.assertEqual(Size['current'].length, 17)
         self.assertEqual(Size['imagined'].length, 18)
-        with self.assertRaisesRegex(MinnetonkaError,
+        with self.assertRaisesRegex(mn.MinnetonkaError,
                 'validate_and_set for Size on multiple treatments'):
             m.validate_and_set('Size', '__all__', 20, excerpt='.length')
 
-        with model(treatments=['current', 'imagined']) as m:
-            Size = constant('Size', _Size(18, 16, 14))
+        with mn.model(treatments=['current', 'imagined']) as m:
+            Size = mn.constant('Size', _Size(18, 16, 14))
 
         self.assertEqual(
             m.validate_and_set('Size', '__all__', 17, excerpt='.length'),
@@ -4108,8 +4139,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
             def validate(self, attr, amount):
                 return True, '', '', None
 
-        with model() as m:
-            Size = constant('Size', _Size(18, 16, 14))
+        with mn.model() as m:
+            Size = mn.constant('Size', _Size(18, 16, 14))
         self.assertEqual(Size[''].length, 18)
         self.assertEqual(
             m.validate_and_set('Size', '', 17, excerpt='.length'),
@@ -4133,8 +4164,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
             def validate(self, attr, amount):
                 return False, 'Bad', 'Really quite bad', None
 
-        with model() as m:
-            Size = constant('Size', _Size(18, 16, 14))
+        with mn.model() as m:
+            Size = mn.constant('Size', _Size(18, 16, 14))
         self.assertEqual(Size[''].length, 18)
         self.assertEqual(
             m.validate_and_set('Size', '', 17, excerpt='.length'),
@@ -4163,8 +4194,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
             def length(self):
                 return self._length
 
-        with model() as m:
-            Size = constant('Size', _Size(18, 16, 14))
+        with mn.model() as m:
+            Size = mn.constant('Size', _Size(18, 16, 14))
         self.assertEqual(Size[''].length, 18)
         self.assertEqual(
             m.validate_and_set('Size', '', 17, excerpt='.length'),
@@ -4198,8 +4229,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 self.begin = begin 
                 self.end = end 
 
-        with model() as m:
-            Size = constant('Size', 
+        with mn.model() as m:
+            Size = mn.constant('Size', 
                 _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
         self.assertEqual(Size[''].length.customary.begin, 1.0)
         self.assertEqual(
@@ -4222,8 +4253,8 @@ class ValidateAndSetAttributeTest(unittest.TestCase):
                 self.width = width
                 self.height = height
 
-        with model() as m:
-            Size = constant('Size', lambda: _Size(18, 16, 14))
+        with mn.model() as m:
+            Size = mn.constant('Size', lambda: _Size(18, 16, 14))
 
         self.assertEqual(Size[''].length, 18)
         m.validate_and_set('Size', '', 19, excerpt='.length')
@@ -4239,21 +4270,21 @@ class ValidateAllTest(unittest.TestCase):
     """Test validate_all()."""
     def test_nothing_to_validate(self):
         """Test validate_all() when no constraints are defined."""
-        with model() as m:
-            constant('X7Allowed', False)
-            constant('X5Allowed', False)
-            constant('X4Allowed', False)
+        with mn.model() as m:
+            mn.constant('X7Allowed', False)
+            mn.constant('X5Allowed', False)
+            mn.constant('X4Allowed', False)
 
         self.assertEqual(m.validate_all(), {'success': True})
 
     def test_simple(self):
         """Test validate_all() with a simple constraint."""
-        with model() as m:
-            constant('X7Allowed', False)
-            constant('X5Allowed', False)
-            X4 = constant('X4Allowed', False)
+        with mn.model() as m:
+            mn.constant('X7Allowed', False)
+            mn.constant('X5Allowed', False)
+            X4 = mn.constant('X4Allowed', False)
 
-            constraint(
+            mn.constraint(
                 ['X7Allowed', 'X5Allowed', 'X4Allowed'],
                 lambda *machines: any(machines),
                 "AtLeastOneTruthy",
@@ -4281,13 +4312,13 @@ class ValidateAllTest(unittest.TestCase):
 
     def test_one_treatment(self):
         """Test validate_all() that fails in one treatment only."""
-        with model(treatments=['current', 'future']) as m:
-            constant('X7Allowed', False)
-            constant('X5Allowed', False)
-            X4 = constant(
-                'X4Allowed', PerTreatment({'current': True, 'future': True}))
+        with mn.model(treatments=['current', 'future']) as m:
+            mn.constant('X7Allowed', False)
+            mn.constant('X5Allowed', False)
+            X4 = mn.constant(
+                'X4Allowed', mn.PerTreatment({'current': True, 'future': True}))
 
-            constraint(
+            mn.constraint(
                 ['X7Allowed', 'X5Allowed', 'X4Allowed'],
                 lambda *machines: any(machines),
                 "AtLeastOneTruthy",
@@ -4316,23 +4347,23 @@ class ValidateAllTest(unittest.TestCase):
 
     def test_two_constraints(self):
         """Test validate_all() with two different constraints."""
-        with model() as m:
-            constant('X7Allowed', False)
-            X5 = constant('X5Allowed', False)
-            constant('X4Allowed', False)
+        with mn.model() as m:
+            mn.constant('X7Allowed', False)
+            X5 = mn.constant('X5Allowed', False)
+            mn.constant('X4Allowed', False)
 
-            constraint(
+            mn.constraint(
                 ['X7Allowed', 'X5Allowed', 'X4Allowed'],
                 lambda *machines: any(machines),
                 "AtLeastOneTruthy",
                 lambda names, amounts, trt: 
                     f'All machines are disabled: {", ".join(names)}')
 
-            constant('Small', 0.4)
-            constant('Medium', 0.5)
-            Large = constant('Large', 0.05)
+            mn.constant('Small', 0.4)
+            mn.constant('Medium', 0.5)
+            Large = mn.constant('Large', 0.05)
 
-            constraint(
+            mn.constraint(
                 ['Small', 'Medium', 'Large'],
                 lambda *sizes: sum(sizes) == 1.0,
                 'InvalidDistribution',
@@ -4367,9 +4398,9 @@ class ValidateAllTest(unittest.TestCase):
 
     def test_constraint_raising_error(self):
         """Test validate_all() with a broken constraint that raises error."""
-        with model() as m:
-            constant('X7Allowed', False)
-            constraint(
+        with mn.model() as m:
+            mn.constant('X7Allowed', False)
+            mn.constraint(
                 ['X7Allowed'],
                 lambda machine: 1 / 0,
                 "Whatever",
@@ -4392,9 +4423,9 @@ class ValidateAllTest(unittest.TestCase):
                 ]
             })
 
-        with model() as m:
-            constant('X7Allowed', False)
-            constraint(
+        with mn.model() as m:
+            mn.constant('X7Allowed', False)
+            mn.constraint(
                 ['X7Allowed'],
                 lambda x: False,
                 "Whatever",
@@ -4421,17 +4452,17 @@ class DerivedTreatmentTest(unittest.TestCase):
     """Test derived treatments."""
     def test_simple(self):
         """Test simple application of derived treatment."""
-        with model(treatments=['current', 'possible'], 
+        with mn.model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at-risk': AmountBetter('possible', 'current')}
+                        'at-risk': mn.AmountBetter('possible', 'current')}
         ) as m:
-            Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25})
+            Revenue = mn.constant('Revenue', 
+                mn.PerTreatment({'current': 20, 'possible': 25})
             ).derived()
-            Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})
+            Cost = mn.constant('Cost',
+                mn.PerTreatment({'current': 19, 'possible': 18})
             ).derived(scored_as='golf')
-            Earnings = variable('Earnings',
+            Earnings = mn.variable('Earnings',
                 lambda r, c: r-c,
                 'Revenue', 'Cost'
             ).derived()
@@ -4443,37 +4474,37 @@ class DerivedTreatmentTest(unittest.TestCase):
 
     def test_derived_treatment_name_dupes_treatment(self):
         """Test derived treatment with name that is already treatemnt."""
-        with self.assertRaisesRegex(MinnetonkaError, 
+        with self.assertRaisesRegex(mn.MinnetonkaError, 
                 'Derived treatment possible is also a treatment'):
-            model(treatments=['current', 'possible'], 
+            mn.model(treatments=['current', 'possible'], 
                   derived_treatments={
-                    'possible': AmountBetter('possible', 'current')})
+                    'possible': mn.AmountBetter('possible', 'current')})
 
     def test_setting_derived_treatment(self):
-        with model(treatments=['current', 'possible'], 
+        with mn.model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at-risk': AmountBetter('possible', 'current')}
+                        'at-risk': mn.AmountBetter('possible', 'current')}
         ) as m:
-            Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25}))
+            Revenue = mn.constant('Revenue', 
+                mn.PerTreatment({'current': 20, 'possible': 25}))
 
-        with self.assertRaisesRegex(MinnetonkaError, 
+        with self.assertRaisesRegex(mn.MinnetonkaError, 
                 'Cannot set Revenue in derived treatment at-risk.'):
             Revenue['at-risk'] = 2.7
 
     def test_mix(self):
         """Test a variable that is scored as a mix."""
-        with model(treatments=['current', 'possible'], 
+        with mn.model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at-risk': AmountBetter('possible', 'current')}
+                        'at-risk': mn.AmountBetter('possible', 'current')}
         ) as m:
-            Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25})
+            Revenue = mn.constant('Revenue', 
+                mn.PerTreatment({'current': 20, 'possible': 25})
             ).derived()
-            Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})
+            Cost = mn.constant('Cost',
+                mn.PerTreatment({'current': 19, 'possible': 18})
             ).derived(scored_as='golf')
-            Summary = variable('Summary',
+            Summary = mn.variable('Summary',
                 lambda r, c: {'revenue':r, 'cost':c},
                 'Revenue', 'Cost'
             ).derived(scored_as='combo')
@@ -4484,38 +4515,38 @@ class DerivedTreatmentTest(unittest.TestCase):
 
     def test_attempt_to_access_derived_of_nonderived(self):
         """Attempt to access derived treatment of non-derived variable."""
-        with model(treatments=['current', 'possible'], 
+        with mn.model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at-risk': AmountBetter('possible', 'current')}
+                        'at-risk': mn.AmountBetter('possible', 'current')}
         ) as m:
-            Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25})
+            Revenue = mn.constant('Revenue', 
+                mn.PerTreatment({'current': 20, 'possible': 25})
             ) 
-            Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})
+            Cost = mn.constant('Cost',
+                mn.PerTreatment({'current': 19, 'possible': 18})
             ).derived(scored_as='golf')
-            Earnings = variable('Earnings',
+            Earnings = mn.variable('Earnings',
                 lambda r, c: r-c,
                 'Revenue', 'Cost'
             ).derived()
 
-        with self.assertRaisesRegex(MinnetonkaError, 
+        with self.assertRaisesRegex(mn.MinnetonkaError, 
                 'Unknown treatment at-risk for variable Revenue'):
             Revenue['at-risk']
 
     def test_is_derived(self):
         """Test the function is_derived.""" 
-        with model(treatments=['current', 'possible'], 
+        with mn.model(treatments=['current', 'possible'], 
                    derived_treatments={
-                        'at-risk': AmountBetter('possible', 'current')}
+                        'at-risk': mn.AmountBetter('possible', 'current')}
         ) as m:
-            Revenue = constant('Revenue', 
-                PerTreatment({'current': 20, 'possible': 25})
+            Revenue = mn.constant('Revenue', 
+                mn.PerTreatment({'current': 20, 'possible': 25})
             ) 
-            Cost = constant('Cost',
-                PerTreatment({'current': 19, 'possible': 18})
+            Cost = mn.constant('Cost',
+                mn.PerTreatment({'current': 19, 'possible': 18})
             ).derived(scored_as='golf')
-            Earnings = variable('Earnings',
+            Earnings = mn.variable('Earnings',
                 lambda r, c: r-c,
                 'Revenue', 'Cost'
             ).derived()
@@ -4529,11 +4560,11 @@ class ReplayTest(unittest.TestCase):
     def test_simple_replay(self):
         """Test Model.recording() and Model.replay() of simple variables."""
         def create_model():
-            with model(treatments=['then', 'now']) as m:
-                constant('Foo', PerTreatment({'then': 9, 'now': 10}))
-                constant('Bar', 2)
-                variable('Baz', lambda a, b: a+b, 'Foo', 'Bar')
-                constant('Quz', 99)
+            with mn.model(treatments=['then', 'now']) as m:
+                mn.constant('Foo', mn.PerTreatment({'then': 9, 'now': 10}))
+                mn.constant('Bar', 2)
+                mn.variable('Baz', lambda a, b: a+b, 'Foo', 'Bar')
+                mn.constant('Quz', 99)
             return m
 
         m = create_model() 
@@ -4578,8 +4609,8 @@ class ReplayTest(unittest.TestCase):
                 self.end = end 
 
         def create_model():
-            with model() as m:
-                constant('Size', 
+            with mn.model() as m:
+                mn.constant('Size', 
                     _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
             return m
 
@@ -4619,13 +4650,13 @@ class ReplayTest(unittest.TestCase):
                 self.end = end 
 
         def create_model():
-            with model() as m:
-                constant('Size', 
+            with mn.model() as m:
+                mn.constant('Size', 
                     _Size(_Measure(18, _Interval(1.0, 2.0)), 16, 14))
             return m
 
         m = create_model()
-        with self.assertRaisesRegex(MinnetonkaError,
+        with self.assertRaisesRegex(mn.MinnetonkaError,
                 'Cannot save amount for later playback'):
             m.validate_and_set('Size', '', _Measure(10, 12), excerpt='.width')
         
@@ -4642,10 +4673,10 @@ class ReplayTest(unittest.TestCase):
     def test_included_step(self):
         """Test Model.recording with a step or two involved."""
         def create_model():
-            with model(end_time=10) as m:
-                variable('X', 1)
-                variable('Y', 22)
-                S = stock('S',
+            with mn.model(end_time=10) as m:
+                mn.variable('X', 1)
+                mn.variable('Y', 22)
+                S = mn.stock('S',
                     """Start at 22 and increase by 1""",
                      lambda x: x, ('X',), lambda x: x, ('Y',))
             return m 
@@ -4679,8 +4710,8 @@ class ReplayTest(unittest.TestCase):
     def test_reset(self):
         """Test model recording with a reset or two."""
         def create_model():
-            with model() as m:
-                variable('X', 1) 
+            with mn.model() as m:
+                mn.variable('X', 1) 
             return m 
 
         m = create_model() 
@@ -4703,10 +4734,10 @@ class ReplayTest(unittest.TestCase):
     def test_multiple_resets(self):
         """Test that multiple resets and multiple steps are only done once."""
         def create_model():
-            with model(end_time=10) as m:
-                variable('X', 1)
-                variable('Y', 22)
-                S = stock('S',
+            with mn.model(end_time=10) as m:
+                mn.variable('X', 1)
+                mn.variable('Y', 22)
+                S = mn.stock('S',
                     """Start at 22 and increase by 1""",
                      lambda x: x, ('X',), lambda x: x, ('Y',))
             return m 
@@ -4742,10 +4773,10 @@ class ReplayTest(unittest.TestCase):
     def test_ignore_step(self):
         """Test replay while ignoring steps."""
         def create_model():
-            with model(end_time=10) as m:
-                variable('X', 1)
-                variable('Y', 22)
-                S = stock('S',
+            with mn.model(end_time=10) as m:
+                mn.variable('X', 1)
+                mn.variable('Y', 22)
+                S = mn.stock('S',
                     """Start at 22 and increase by 1""",
                      lambda x: x, ('X',), lambda x: x, ('Y',))
             return m 
@@ -4780,26 +4811,26 @@ class ReplayTest(unittest.TestCase):
 class CrossTreatmentTest(unittest.TestCase):
     """Test a cross."""
     def test_cross_constant(self):
-        with model(treatments=['As is', 'To be']) as m: 
-            Bar = constant('Bar', PerTreatment({'As is': 1, 'To be': 2}))
-            Foo = cross('Foo', 'Bar', 'As is')
+        with mn.model(treatments=['As is', 'To be']) as m: 
+            Bar = mn.constant('Bar', mn.PerTreatment({'As is': 1, 'To be': 2}))
+            Foo = mn.cross('Foo', 'Bar', 'As is')
 
         self.assertEqual(Foo['As is'], 1)
         self.assertEqual(Foo['To be'], 1)
 
     def test_cross_variable(self):
-        with model(treatments=['As is', 'To be']) as m: 
-            Bar = constant('Bar', PerTreatment({'As is': 1, 'To be': 2}))
-            Baz = variable('Baz', lambda x: x+2, 'Bar')
-            Foo = cross('Foo', 'Baz', 'As is')
+        with mn.model(treatments=['As is', 'To be']) as m: 
+            Bar = mn.constant('Bar', mn.PerTreatment({'As is': 1, 'To be': 2}))
+            Baz = mn.variable('Baz', lambda x: x+2, 'Bar')
+            Foo = mn.cross('Foo', 'Baz', 'As is')
 
         self.assertEqual(Foo['As is'], 3)
         self.assertEqual(Foo['To be'], 3)
 
     def test_cross_model_variable(self):
-        with model(treatments=['As is', 'To be']) as m: 
-            S = stock('S', PerTreatment({'As is': 1, 'To be': 2}))
-            Foo = cross('Foo', 'S', 'As is')
+        with mn.model(treatments=['As is', 'To be']) as m: 
+            S = mn.stock('S', mn.PerTreatment({'As is': 1, 'To be': 2}))
+            Foo = mn.cross('Foo', 'S', 'As is')
 
         m.step()
         self.assertEqual(Foo['As is'], 1)
@@ -4812,9 +4843,9 @@ class UndefinedInTest(unittest.TestCase):
     """Test defining variable undefined in some treatments."""
     def test_undefined_value(self):
         """Test the value of something undefined."""
-        with model(treatments=['conjecture', 'current', 'possible', 'design']):
-            Foo = constant('Foo', 12 ).undefined_in('conjecture')
-            Bar = variable('Bar',
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']):
+            Foo = mn.constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = mn.variable('Bar',
                 lambda x: x + 1,
                 'Foo').undefined_in('conjecture', 'current')
         self.assertEqual(Foo['current'], 12)
@@ -4825,17 +4856,17 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_undefined_stock(self):
         """Test a stock that is undefined for some treatments.""" 
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
-            variable('X', 1)
-            variable('Y', 
-                PerTreatment({'conjecture': 22, 'current': 22, 'possible': 22})
+            mn.variable('X', 1)
+            mn.variable('Y', 
+                mn.PerTreatment({'conjecture': 22, 'current': 22, 'possible': 22})
             ).undefined_in('design')
-            S = stock('S',
+            S = mn.stock('S',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',)
             ).undefined_in('design')
-            P = variable('P', lambda x: x, 'S'
+            P = mn.variable('P', lambda x: x, 'S'
             ).undefined_in('possible', 'design')
 
         self.assertEqual(S['current'], 22)
@@ -4870,15 +4901,15 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_undefined_accum(self):
         """Test an accum that is undefined for some treatments.""" 
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
-            variable('X', 1)
-            variable('Y', 22)
-            A = stock('A',
+            mn.variable('X', 1)
+            mn.variable('Y', 22)
+            A = mn.stock('A',
                 """Start at 23 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',)
             ).undefined_in('design')
-            P = variable('P', lambda x: x, 'A'
+            P = mn.variable('P', lambda x: x, 'A'
             ).undefined_in('possible', 'design')
 
         self.assertEqual(A['current'], 22)
@@ -4913,10 +4944,10 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_partial_per_treatment(self):
         """Test PerTreatment that is not defined for undefined treatments."""
-        with model(treatments=['conjecture', 'current', 'possible', 'design']):
-            Foo = constant('Foo', 12 ).undefined_in('conjecture')
-            Bar = variable('Bar',
-                PerTreatment({
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']):
+            Foo = mn.constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = mn.variable('Bar',
+                mn.PerTreatment({
                     'current': lambda x: x+1,
                     'possible': lambda x: x+2
                     }),
@@ -4928,10 +4959,10 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_recalculate(self):
         """Test recalculating with undefined."""
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                 ) as m:
-            Foo = constant('Foo', 12 ).undefined_in('conjecture')
-            Bar = variable('Bar',
+            Foo = mn.constant('Foo', 12 ).undefined_in('conjecture')
+            Bar = mn.variable('Bar',
                 lambda x: x + 1,
                 'Foo').undefined_in('conjecture', 'current')
         self.assertEqual(Foo['current'], 12)
@@ -4950,15 +4981,15 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_previous(self):
         """Test a previous that is undefined for some treatments.""" 
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
-            variable('X', 1)
-            variable('Y', 22).undefined_in('design')
-            S = stock('S',
+            mn.variable('X', 1)
+            mn.variable('Y', 22).undefined_in('design')
+            S = mn.stock('S',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',)
             ).undefined_in('design')
-            P = previous('P', 'S').undefined_in('possible', 'design')
+            P = mn.previous('P', 'S').undefined_in('possible', 'design')
 
         self.assertEqual(S['current'], 22)
         self.assertEqual(S['design'], None)
@@ -4980,11 +5011,11 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_all_amounts(self):
         """Test all amounts with undefined."""
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
-            X = variable('X', 1)
-            Y = variable('Y', 22).undefined_in('design')
-            S = stock('S',
+            X = mn.variable('X', 1)
+            Y = mn.variable('Y', 22).undefined_in('design')
+            S = mn.stock('S',
                 """Start at 22 and increase by 1""",
                  lambda x: x, ('X',), lambda x: x, ('Y',)
             ).undefined_in('design', 'possible')
@@ -5007,12 +5038,12 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_dispatch_function(self):
         """Test dispatch function with undefined."""
-        with model(treatments=['conjecture', 'current', 'possible', 'design']
+        with mn.model(treatments=['conjecture', 'current', 'possible', 'design']
                ) as m:
-            X = variable('X', 1).undefined_in('conjecture', 'current')
-            Y = variable('Y', 22).undefined_in('possible', 'design')
-            XorY = variable('XorY',
-                PerTreatment({
+            X = mn.variable('X', 1).undefined_in('conjecture', 'current')
+            Y = mn.variable('Y', 22).undefined_in('possible', 'design')
+            XorY = mn.variable('XorY',
+                mn.PerTreatment({
                     'conjecture': lambda _, y: y,
                     'current': lambda _, y: y,
                     'possible': lambda x, _: x,
@@ -5027,10 +5058,10 @@ class UndefinedInTest(unittest.TestCase):
     def test_history(self):
         """Test history with some variables undefined."""
 
-        with model(treatments=['Bar', 'Baz']) as m:
-            Foo = stock('Foo', PerTreatment({'Bar': 1, 'Baz': 2}), 0)
-            Quz = variable('Quz', lambda x: x, 'Foo').undefined_in('Baz')
-            Corge = accum('Corge', PerTreatment({'Bar': 1, 'Baz': 2}), 0) 
+        with mn.model(treatments=['Bar', 'Baz']) as m:
+            Foo = mn.stock('Foo', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0)
+            Quz = mn.variable('Quz', lambda x: x, 'Foo').undefined_in('Baz')
+            Corge = mn.accum('Corge', mn.PerTreatment({'Bar': 1, 'Baz': 2}), 0) 
 
         self.assertEqual(
             m.history(),
@@ -5060,12 +5091,12 @@ class UndefinedInTest(unittest.TestCase):
 
     def test_validate_all(self):
         """Test validate_all(), with a variable in one treatment."""
-        with model(treatments=['all good', 'one bad']) as m:
-            constant('Small', 0.4)
-            constant('Medium', 0.5).undefined_in('one bad')
-            Large = constant('Large', 0.05)
+        with mn.model(treatments=['all good', 'one bad']) as m:
+            mn.constant('Small', 0.4)
+            mn.constant('Medium', 0.5).undefined_in('one bad')
+            Large = mn.constant('Large', 0.05)
 
-            constraint(
+            mn.constraint(
                 ['Small', 'Medium', 'Large'],
                 lambda *sizes: sum(sizes) == 1.0,
                 'InvalidDistribution',
@@ -5084,11 +5115,11 @@ class UndefinedInTest(unittest.TestCase):
     
     # def test_undefined_rainy_day(self):
     #     """Test error handling when a variable uses an undefined variable."""
-    #     with self.assertRaisesRegex(MinnetonkaError,
+    #     with self.assertRaisesRegex(mn.MinnetonkaError,
     #             "Bar uses undefined conjecture amount of Foo"):
-    #         with model(treatments=['conjecture', 'current']):
-    #             Foo = constant('Foo', 12 ).undefined_in('conjecture')
-    #             Bar = variable('Bar', lambda x: x + 1, 'Foo')
+    #         with mn.model(treatments=['conjecture', 'current']):
+    #             Foo = mn.constant('Foo', 12 ).undefined_in('conjecture')
+    #             Bar = mn.variable('Bar', lambda x: x + 1, 'Foo')
 
 class OnInitTest(unittest.TestCase):
     """Test on_init and on_reset."""
@@ -5097,8 +5128,8 @@ class OnInitTest(unittest.TestCase):
         def set_seed(md):
             random.seed(99)
 
-        with model(on_init=set_seed, on_reset=set_seed) as m:
-            foo = variable('Foo', lambda: random.randint(0, 999))
+        with mn.model(on_init=set_seed, on_reset=set_seed) as m:
+            foo = mn.variable('Foo', lambda: random.randint(0, 999))
 
         foo1a = foo['']
         m.step()
@@ -5129,9 +5160,9 @@ class DetailsTest(unittest.TestCase):
     def test_constant(self):
         """Test details for a constant."""
 
-        with model() as m:
-            foo = constant('Foo', 12)
-            bar = constant('Bar', 99
+        with mn.model() as m:
+            foo = mn.constant('Foo', 12)
+            bar = mn.constant('Bar', 99
             ).substitute_description_for_amount("Bar is a pathetic constant")
 
         self.assertEqual(
@@ -5152,15 +5183,15 @@ class DetailsTest(unittest.TestCase):
                 'caucus': 'Bar is a pathetic constant'
             })
 
-        with model(
+        with mn.model(
             treatments=['As is', 'To be'], 
-            derived_treatments={'Improvement': AmountBetter('To be', 'As is')}
+            derived_treatments={'Improvement': mn.AmountBetter('To be', 'As is')}
         ) as m:
 
-            foo = constant('Foo', PerTreatment({'As is': 2, 'To be': 2.6}))
-            baz = constant('Baz', lambda x: x+x, 'Foo', 
+            foo = mn.constant('Foo', mn.PerTreatment({'As is': 2, 'To be': 2.6}))
+            baz = mn.constant('Baz', lambda x: x+x, 'Foo', 
             ).derived()
-            bar = constant('Bar', PerTreatment({'As is': 20})
+            bar = mn.constant('Bar', mn.PerTreatment({'As is': 20})
             ).undefined_in('To be'
             ).summarizer(
                 "Number as English",
@@ -5209,13 +5240,13 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model(treatments=['As is', 'To be']) as m:
-            week = variable('Week', lambda md: md.TIME, '__model__'
+        with mn.model(treatments=['As is', 'To be']) as m:
+            week = mn.variable('Week', lambda md: md.TIME, '__model__'
             ).summarizer("As English", _convert_to_english
             ).caucuser(lambda amts: 'complex')
-            next_week = variable('NextWeek', lambda x: x+1, 'Week'
+            next_week = mn.variable('NextWeek', lambda x: x+1, 'Week'
             ).caucuser(sum)
-            week_after = variable('WeekAfter', lambda x: x+2, 'Week'
+            week_after = mn.variable('WeekAfter', lambda x: x+2, 'Week'
             ).substitute_description_for_amount(
                 "Sometime in the distant future")
 
@@ -5264,12 +5295,12 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model(treatments=['As is', 'To be']) as m:
-            week = variable('Week', lambda md: md.TIME, '__model__'
+        with mn.model(treatments=['As is', 'To be']) as m:
+            week = mn.variable('Week', lambda md: md.TIME, '__model__'
             ).summarizer("As English", _convert_to_english
             ).caucuser(lambda amts: 'complex')
-            next_week = variable('NextWeek', lambda x: x+1, 'Week')
-            week_after = variable('WeekAfter', lambda x: x+2, 'Week'
+            next_week = mn.variable('NextWeek', lambda x: x+1, 'Week')
+            week_after = mn.variable('WeekAfter', lambda x: x+2, 'Week'
             ).substitute_description_for_amount(
                 "Sometime in the distant future")
 
@@ -5290,13 +5321,14 @@ class DetailsTest(unittest.TestCase):
     def test_normal_derived(self):
         """Test details with a variable that has a derived treatment."""
 
-        with model(
+        with mn.model(
             treatments=['As is', 'To be'], 
-            derived_treatments={'Improvement': AmountBetter('To be', 'As is')}
+            derived_treatments={
+                'Improvement': mn.AmountBetter('To be', 'As is')}
         ) as m:
-            foo = stock('Foo', PerTreatment({'As is': 1, 'To be': 2})
+            foo = mn.stock('Foo', mn.PerTreatment({'As is': 1, 'To be': 2})
             ).derived().caucuser(sum)
-            bar = variable('Bar', lambda x: x, 'Foo'
+            bar = mn.variable('Bar', lambda x: x, 'Foo'
             ).derived(scored_as='golf')
 
         m.step(3)
@@ -5340,13 +5372,13 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model(treatments=['As is', 'To be']) as m:
-            first = stock('First', PerTreatment({'As is': 1, 'To be': 2})
+        with mn.model(treatments=['As is', 'To be']) as m:
+            first = mn.stock('First', mn.PerTreatment({'As is': 1, 'To be': 2})
             ).summarizer('As English', _convert_to_english
             ).caucuser(lambda amts: 'complex')
-            second = stock('Second', lambda f: f, ('First',), 0
+            second = mn.stock('Second', lambda f: f, ('First',), 0
             ).caucuser(sum)
-            third = stock('Third', lambda f, s: f + s, ('First', 'Second'), 0
+            third = mn.stock('Third', lambda f, s: f + s, ('First', 'Second'), 0
             ).substitute_description_for_amount('A lot')
 
         m.step(4)
@@ -5394,12 +5426,12 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model(treatments=['As is', 'To be']) as m:
-            first = accum('First', PerTreatment({'As is': 1, 'To be': 2})
+        with mn.model(treatments=['As is', 'To be']) as m:
+            first = mn.accum('First', mn.PerTreatment({'As is': 1, 'To be': 2})
             ).summarizer('As English', _convert_to_english
             ).caucuser(lambda amts: 'complex')
-            second = accum('Second', lambda f: f, ('First',), 0)
-            third = accum('Third', lambda f, s: f + s, ('First', 'Second'), 0
+            second = mn.accum('Second', lambda f: f, ('First',), 0)
+            third = mn.accum('Third', lambda f, s: f + s, ('First', 'Second'), 0
             ).substitute_description_for_amount('A lot')
 
         m.step(4)
@@ -5447,13 +5479,13 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model() as m:
-            stock('Foo', 1, 0)
-            lf = previous('LastFoo', 'Foo'
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            lf = mn.previous('LastFoo', 'Foo'
             ).summarizer('As English', _convert_to_english
             ).caucuser(lambda amts: 'complex')
-            lf2 = previous('LastFoo2', 'Foo').caucuser(sum)
-            lf3 = previous('LastFoo3', 'Foo'
+            lf2 = mn.previous('LastFoo2', 'Foo').caucuser(sum)
+            lf3 = mn.previous('LastFoo3', 'Foo'
             ).substitute_description_for_amount('A lot')
 
         m.step(4)
@@ -5499,9 +5531,9 @@ class DetailsTest(unittest.TestCase):
             except KeyError:
                 return "Many"
 
-        with model(treatments=['As is', 'To be']) as m:
-            s = stock('S', PerTreatment({'As is': 1, 'To be': 2}))
-            foo = cross('Foo', 'S', 'As is'
+        with mn.model(treatments=['As is', 'To be']) as m:
+            s = mn.stock('S', mn.PerTreatment({'As is': 1, 'To be': 2}))
+            foo = mn.cross('Foo', 'S', 'As is'
             ).summarizer('As English', _convert_to_english
             ).caucuser(lambda amts: 'complex') 
 
@@ -5522,15 +5554,15 @@ class ModifiedTest(unittest.TestCase):
     """Test the is_modified() function on a variable instance."""
     def test_constant(self):
         """Test is_modified on a constant instance."""
-        with model() as m:
-            foo = constant('Foo', 12)
+        with mn.model() as m:
+            foo = mn.constant('Foo', 12)
 
         self.assertFalse(m.is_modified('Foo', ''))
         foo[''] = 13
         self.assertTrue(m.is_modified('Foo', ''))
 
-        with model(treatments=['As is', 'To be']) as m:
-            bar = constant('Bar', PerTreatment({'As is': 12, 'To be': 13}))
+        with mn.model(treatments=['As is', 'To be']) as m:
+            bar = mn.constant('Bar', mn.PerTreatment({'As is': 12, 'To be': 13}))
 
         self.assertFalse(m.is_modified('Bar', 'As is'))
         self.assertFalse(m.is_modified('Bar', 'To be'))
@@ -5543,8 +5575,8 @@ class ModifiedTest(unittest.TestCase):
 
     def test_constant_reset(self):
         """Test is_modified on a constant after being reset."""
-        with model() as m:
-            foo = constant('Foo', 12) 
+        with mn.model() as m:
+            foo = mn.constant('Foo', 12) 
 
         foo[''] = 13
         self.assertTrue(m.is_modified('Foo', ''))
@@ -5557,9 +5589,9 @@ class ModifiedTest(unittest.TestCase):
 
     def test_variable(self):
         """Test is_modified on a variable instance."""
-        with model() as m:
-            foo = constant('Foo', 12)
-            bar = variable('Bar', lambda x: x + 2, 'Foo')
+        with mn.model() as m:
+            foo = mn.constant('Foo', 12)
+            bar = mn.variable('Bar', lambda x: x + 2, 'Foo')
 
         self.assertFalse(m.is_modified('Bar', ''))
         foo[''] = 13        
@@ -5572,9 +5604,9 @@ class VelocityTest(unittest.TestCase):
     """Testing velocity()"""
     def test_simple(self):
         """Test a simple use of velocity work, with a stock"""
-        with model() as m:
-            stock('Foo', 1, 0)
-            FooVelocity = velocity('FooVelocity', 'Foo')
+        with mn.model() as m:
+            mn.stock('Foo', 1, 0)
+            FooVelocity = mn.velocity('FooVelocity', 'Foo')
 
         self.assertEqual(FooVelocity[''], 0)
         m.step()
@@ -5586,9 +5618,9 @@ class VelocityTest(unittest.TestCase):
 
     def test_timestep(self):
         """Test a simple use of velocity work, with a timestep that is not 1"""
-        with model(timestep=0.5) as m:
-            stock('Foo', 1, 0)
-            FooVelocity = velocity('FooVelocity', 'Foo')
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Foo', 1, 0)
+            FooVelocity = mn.velocity('FooVelocity', 'Foo')
 
         self.assertEqual(FooVelocity[''], 0)
         m.step()
@@ -5600,15 +5632,15 @@ class VelocityTest(unittest.TestCase):
 
     def test_treatments(self):
         """Test velocity works across treatments"""
-        with model(treatments=['as is', 'to be']) as m:
-            Bar = stock('Bar', 1, 0)
-            Foo = variable('Foo', 
-                PerTreatment({
+        with mn.model(treatments=['as is', 'to be']) as m:
+            Bar = mn.stock('Bar', 1, 0)
+            Foo = mn.variable('Foo', 
+                mn.PerTreatment({
                     'as is': lambda x: x * x,
                     'to be': lambda x: x * x * x
                     }),
                 'Bar')
-            FooVelocity = velocity('FooVelocity', 'Foo')
+            FooVelocity = mn.velocity('FooVelocity', 'Foo')
 
         self.assertEqual(FooVelocity['as is'], 0)
         self.assertEqual(FooVelocity['to be'], 0)
@@ -5630,24 +5662,24 @@ class VelocityTest(unittest.TestCase):
 
     def test_cycle(self):
         """Test that a cycle is caught."""
-        with self.assertRaises(MinnetonkaError) as me:
-            with model() as m:
-                Foo = variable('Foo', lambda x: x+1, 'FooVelocity')
-                FooVelocity = velocity('FooVelocity', 'Foo')
+        with self.assertRaises(mn.MinnetonkaError) as me:
+            with mn.model() as m:
+                Foo = mn.variable('Foo', lambda x: x+1, 'FooVelocity')
+                FooVelocity = mn.velocity('FooVelocity', 'Foo')
         self.assertEqual(me.exception.message,
             'Circularity among variables: Foo <- FooVelocity <- Foo')
 
     def test_array(self):
         """Test velocity with numpy arrays."""
-        with model() as m:
-            stock('Savings', 
+        with mn.model() as m:
+            mn.stock('Savings', 
                 lambda x: x, 'Interest', np.array([1000, 1000, 1000]))
-            variable('Interest',
+            mn.variable('Interest',
                 lambda savings, rate: savings * rate,
                 'Savings',
                 'Rate')
-            constant('Rate', np.array([0.08, 0.09, 0.1]))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', np.array([0.08, 0.09, 0.1]))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
         m.step()
@@ -5665,15 +5697,15 @@ class VelocityTest(unittest.TestCase):
 
     def test_array_timestep(self):
         """Test velocity with numpy arrays and nonzero timestep."""
-        with model(timestep=0.5) as m:
-            stock('Savings', 
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
                 lambda x: x, 'Interest', np.array([1000, 1000, 1000]))
-            variable('Interest',
+            mn.variable('Interest',
                 lambda savings, rate: savings * rate,
                 'Savings',
                 'Rate')
-            constant('Rate', np.array([0.08, 0.09, 0.1]))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', np.array([0.08, 0.09, 0.1]))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         assert_array_equal(SavingsVelocity[''], np.array([0, 0, 0]))
         m.step()
@@ -5691,15 +5723,15 @@ class VelocityTest(unittest.TestCase):
 
     def test_tuple(self):
         """Test velocity with tuple values."""
-        with model() as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+        with mn.model() as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', (0.08, 0.09, 0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', (0.08, 0.09, 0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], (0, 0, 0))
         m.step()
@@ -5719,15 +5751,15 @@ class VelocityTest(unittest.TestCase):
 
     def test_tuple_timestep(self):
         """Test velocity with tuple values and nonzero timestep."""
-        with model(timestep=0.5) as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', (1000, 1000, 1000))
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', (0.08, 0.09, 0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', (0.08, 0.09, 0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], (0, 0, 0))
         m.step()
@@ -5747,16 +5779,16 @@ class VelocityTest(unittest.TestCase):
 
     def test_dict(self):
         """Test velocity with dict values."""
-        with model() as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', 
+        with mn.model() as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', 
                 {'foo': 1000, 'bar': 900, 'baz': 800})
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
         m.step()
@@ -5776,16 +5808,16 @@ class VelocityTest(unittest.TestCase):
 
     def test_dict_timestep(self):
         """Test velocity with dict values and nonzero timestep."""
-        with model(timestep=0.5) as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', 
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', 
                 {'foo': 1000, 'bar': 900, 'baz': 800})
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], {'foo': 0, 'bar': 0, 'baz': 0})
         m.step(2)
@@ -5808,16 +5840,16 @@ class VelocityTest(unittest.TestCase):
     def test_named_tuple(self):
         """Test velocity with named tuple values."""
         FBB = collections.namedtuple('FBB', ['foo', 'bar', 'baz'])
-        with model() as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', 
+        with mn.model() as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', 
                 FBB(foo=1000, bar=900, baz=800))
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
         m.step()
@@ -5838,16 +5870,16 @@ class VelocityTest(unittest.TestCase):
     def test_named_tuple_timestep(self):
         """Test velocity with named tuple values and nonzero timestep."""
         FBB = collections.namedtuple('FBB', ['foo', 'bar', 'baz'])
-        with model(timestep=0.5) as m:
-            stock('Savings', 
-                foreach(lambda x: x), 'Interest', 
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
+                mn.foreach(lambda x: x), 'Interest', 
                 FBB(foo=1000, bar=900, baz=800))
-            variable('Interest',
-                foreach(lambda savings, rate: savings * rate),
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: savings * rate),
                 'Savings',
                 'Rate')
-            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
         m.step(2)
@@ -5869,17 +5901,17 @@ class VelocityTest(unittest.TestCase):
 
     def test_mn_named_tuple(self):
         """Test velocity with mn_namedtuple values."""
-        FBB = mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
-        with model() as m:
-            stock('Savings', 
+        FBB = mn.mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with mn.model() as m:
+            mn.stock('Savings', 
                 lambda x: x, 'Interest', 
                 FBB(foo=1000, bar=900, baz=800))
-            variable('Interest',
+            mn.variable('Interest',
                 lambda savings, rate: savings * rate,
                 'Savings',
                 'Rate')
-            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
         m.step()
@@ -5899,17 +5931,17 @@ class VelocityTest(unittest.TestCase):
 
     def test_mn_named_tuple_timestep(self):
         """Test velocity with mn_namedtuple values and nonzero timestep."""
-        FBB = mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
-        with model(timestep=0.5) as m:
-            stock('Savings', 
+        FBB = mn.mn_namedtuple('FBB', ['foo', 'bar', 'baz'])
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
                 lambda x: x, 'Interest', 
                 FBB(foo=1000, bar=900, baz=800))
-            variable('Interest',
+            mn.variable('Interest',
                 lambda savings, rate: savings * rate,
                 'Savings',
                 'Rate')
-            constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', FBB(foo=0.08, bar=0.09, baz=0.1))
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(SavingsVelocity[''], FBB(foo=0, bar=0, baz=0))
         m.step(2)
@@ -5931,16 +5963,16 @@ class VelocityTest(unittest.TestCase):
 
     def test_dict_tuple(self):
         """Test velocity with dicts of tuples."""
-        with model() as m:
-            stock('Savings', 
-                foreach(foreach(lambda x: x)), 'Interest', 
+        with mn.model() as m:
+            mn.stock('Savings', 
+                mn.foreach(mn.foreach(lambda x: x)), 'Interest', 
                 {'foo': (1000, 1050), 'bar': (900, 950), 'baz': (800, 850)})
-            variable('Interest',
-                foreach(lambda savings, rate: tuple(s * rate for s in savings)),
+            mn.variable('Interest',
+                mn.foreach(lambda savings, rate: tuple(s * rate for s in savings)),
                 'Savings',
                 'Rate')
-            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings')
+            mn.constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings')
 
         self.assertEqual(
             SavingsVelocity[''], 
@@ -5967,16 +5999,17 @@ class VelocityTest(unittest.TestCase):
 
     def test_dict_tuple_timestep(self):
         """Test velocity with dict of tuples and nonzero timestep."""
-        with model(timestep=0.5) as m:
-            stock('Savings', 
-                foreach(foreach(lambda x: x)), 'Interest', 
+        with mn.model(timestep=0.5) as m:
+            mn.stock('Savings', 
+                mn.foreach(mn.foreach(lambda x: x)), 'Interest', 
                 {'foo': (1000, 1050), 'bar': (900, 950), 'baz': (800, 850)})
-            variable('Interest',
-                foreach(lambda savings, rate: tuple(s * rate for s in savings)),
+            mn.variable('Interest',
+                mn.foreach(
+                    lambda savings, rate: tuple(s * rate for s in savings)),
                 'Savings',
                 'Rate')
-            constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
-            SavingsVelocity = velocity('SavingsVelocity', 'Savings') 
+            mn.constant('Rate', {'foo': 0.08, 'bar': 0.09, 'baz': 0.1})
+            SavingsVelocity = mn.velocity('SavingsVelocity', 'Savings') 
 
         self.assertEqual(
             SavingsVelocity[''], 
@@ -6011,10 +6044,10 @@ class PerTreatmentAlternative(unittest.TestCase):
     """Test alternative syntax for PerTreatment."""
     def test_alt_syntax(self):
         """Test per_treatment."""
-        with model(treatments=['as_is', 'to_be']) as m:
-            Foo = variable('Foo', per_treatment(as_is=12, to_be=9))
-            Bar = stock('Bar', 
-                per_treatment(as_is=lambda x: x, to_be=lambda x: -x),
+        with mn.model(treatments=['as_is', 'to_be']) as m:
+            Foo = mn.variable('Foo', mn.per_treatment(as_is=12, to_be=9))
+            Bar = mn.stock('Bar', 
+                mn.per_treatment(as_is=lambda x: x, to_be=lambda x: -x),
                 'Foo',
                 100)
         self.assertEqual(Foo['as_is'], 12)
