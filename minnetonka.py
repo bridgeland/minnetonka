@@ -4841,9 +4841,11 @@ def norm_cdf(x, mu, sigma):
 
 
 def array_graph_xy(x, XYs):
-    """Find linear interpolation of f(x) given a tuple of Xs and Ys.
+    """
+    Find linear interpolation of f(x) given a tuple of Xs and Ys.
 
-    Like ARRAYGRAPHXY in SimLang.
+    Like ARRAYGRAPHXY in SimLang. Despite the name of the function, the XYs 
+    argument must be a nested tuple rather than an array.
     """
     Xs, Ys = map(list, zip(*XYs))
     return _inner_array_graph(x, Xs, Ys)
@@ -4862,7 +4864,8 @@ def _inner_array_graph(x, Xs, Ys):
 def array_graph_yx(y, XYs):
     """Find x such that f(x) is approproximately y via linear interpolation.
 
-    Like ARRAYGRAPHYX in SimLang.
+    Like ARRAYGRAPHYX in SimLang. Despite the name of the function, the YXs 
+    argument must be a nested tuple rather than an array.
     """
     Xs, Ys = map(list, zip(*XYs))
     return _inner_array_graph(y, Ys, Xs)
