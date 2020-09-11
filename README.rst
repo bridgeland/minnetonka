@@ -68,6 +68,12 @@ Getting Started
 Installation
 ============
 
+Install the latest version of Minnetonka:
+
+```
+     $ pip install minnetonka
+```
+
 Dependendencies
 ===============
 
