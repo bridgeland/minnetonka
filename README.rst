@@ -62,7 +62,7 @@ with a planned investment generating additional earnings.
 Getting Started
 ===============
 
-- `Building a model in Minnetonka <building_model.html>`__
+- `Building a model in Minnetonka <start_here.ipynb>`__
 - `API reference <https://bridgeland.github.io/minnetonka/>`__
 
 Installation
